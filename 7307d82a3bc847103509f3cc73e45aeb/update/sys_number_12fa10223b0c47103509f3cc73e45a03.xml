@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_number">
+    <sys_number action="INSERT_OR_UPDATE">
+        <category display_value="" name="x_sysus_tracenow_notifications">x_sysus_tracenow_notifications</category>
+        <maximum_digits>7</maximum_digits>
+        <number>1000</number>
+        <prefix>NOT</prefix>
+        <sys_class_name>sys_number</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2026-04-07 09:34:56</sys_created_on>
+        <sys_id>12fa10223b0c47103509f3cc73e45a03</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>NOT</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_number_12fa10223b0c47103509f3cc73e45a03</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2026-04-07 09:34:56</sys_updated_on>
+    </sys_number>
+</record_update>

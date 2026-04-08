@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_css_include">
+    <sp_css_include action="INSERT_OR_UPDATE">
+        <lazy_load>false</lazy_load>
+        <name>TRACENow Main Styles</name>
+        <rtl_css_file_url/>
+        <source>local</source>
+        <sp_css display_value="TRACENow Main Styles">a1d2ac223b44c710920bd84a85e45a36</sp_css>
+        <sys_class_name>sp_css_include</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-04-07 10:09:26</sys_created_on>
+        <sys_id>63d2ac223b44c710920bd84a85e45a4f</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>TRACENow Main Styles</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_css_include_63d2ac223b44c710920bd84a85e45a4f</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-04-07 10:09:26</sys_updated_on>
+        <url/>
+    </sp_css_include>
+</record_update>

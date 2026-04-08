@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="86fadcee3bc847103509f3cc73e45a84" label="notifications" max_length="40" name="x_sysus_tracenow_notifications" type="collection">
+        <element attributes="edge_encryption_enabled=true" default="javascript:global.getNextObjNumberPadded();" label="Number" max_length="40" name="number" type="string"/>
+        <element label="Priority" max_length="40" name="priority" type="string"/>
+        <element default="javascript:current.getTableName();" label="Class" max_length="40" name="sys_class_name" type="string"/>
+        <element label="Type" max_length="40" name="type" type="string"/>
+        <element label="Message" max_length="4000" name="message" type="string"/>
+        <element label="Read" max_length="40" name="read" type="boolean"/>
+        <element label="Title" max_length="40" name="title" type="string"/>
+        <element label="User" max_length="32" name="user" reference="sys_user" type="reference"/>
+        <index name="index">
+            <element name="user"/>
+        </index>
+    </element>
+</database>
