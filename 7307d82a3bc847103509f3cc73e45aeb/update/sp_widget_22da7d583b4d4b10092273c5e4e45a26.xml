@@ -1,0 +1,1046 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller = function($scope, $timeout) {
+  var c = this;
+
+	c.filters = {
+  dateRange: "30",  // ✅ default
+  table: "",
+  type: ""
+};
+  c.refreshData = function() {
+    c.server.update();
+  };
+
+  $timeout(function () {
+
+    if (typeof Chart === "undefined") {
+      console.error("Chart.js not loaded");
+      return;
+    }
+
+    var ctx = document.getElementById('donutChart');
+    if (!ctx) return;
+
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Success', 'Failed', 'Partial', 'Skipped'],
+        datasets: [{
+          data: [c.data.successCount, c.data.failedCount, c.data.partialCount],
+          backgroundColor: [
+            '#10b981',
+            '#ef4444',
+            '#f59e0b'
+          ],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: false,
+        cutout: '70%',
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+
+  }, 500); // slight delay helps in Service Portal
+	//click handler
+	c.onLegendClick = function(type) {
+  alert("Clicked: " + type);
+
+  // ]]>🔥<![CDATA[ future:
+  // filter chart
+  // open records
+  // navigate
+};
+//directing to page	
+c.goToDetails = function(status) {
+
+  var url = '?id=tracenow_migration_details&status=' + status;
+
+  window.location.href = url;
+};	
+};
+]]></client_script>
+        <controller_as>c</controller_as>
+        <css>/* LAYOUT */
+.layout {
+  display: flex;
+  max-height: calc(100vh - 64px);
+  position: relative;
+  background: linear-gradient(
+    to bottom right,
+    #ffffff 0%,
+    rgba(17, 106, 248, 0.05) 50%,
+    rgba(10, 80, 245, 0.10) 100%
+  );
+}
+
+/* SIDEBAR */
+.sidebar-area {
+  flex-basis: 260px;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+/* MAIN CONTENT */
+.content-area {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 30px;
+  margin: 0 auto;
+  overflow-y: auto;
+  height: calc(100vh - 64px);
+  width: 100%;
+  padding: 30px 15%;
+}
+
+.dash-wrap {
+  padding: 20px;
+  background: #f1f5f9;
+}
+
+/* Sidebar width */
+.dm-sidebar-slot {
+  flex-basis: 260px;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+@media(max-width:1600px) {
+  .content-area {
+    padding: 30px;
+  }
+}
+
+/* HERO CONTAINER */
+.hero {
+  position: relative;
+  border-radius: 24px;
+  padding: 48px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f8fafc, #dbeafe);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+}
+
+/* subtle glow blobs */
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(17, 106, 248, 0.22), transparent 70%);
+  filter: blur(60px);
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  bottom: -60px;
+  left: -60px;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(155, 192, 252, 0.28), transparent 70%);
+  filter: blur(60px);
+}
+
+/* INNER LAYOUT */
+.hero-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  z-index: 2;
+}
+
+.hero-left {
+  max-width: 60%;
+}
+
+/* BADGE */
+.mic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(17, 106, 248, 0.10);
+  color: #116AF8;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 18px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+}
+
+/* HEADING */
+.hero h1 {
+  font-size: 42px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.hero h1 span {
+  color: #116AF8;
+}
+
+/* DESCRIPTION */
+.hero p {
+  margin-top: 14px;
+  color: #475569;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* LINK */
+.overview-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  font-size: 14px;
+  color: #0A50F5;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.overview-link:hover {
+  color: #083EC4;
+}
+
+/* ACTIONS */
+.hero-actions {
+  display: flex;
+  gap: 14px;
+}
+
+/* BUTTON BASE */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+/* GHOST BUTTON */
+.btn.ghost {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #0f172a;
+  backdrop-filter: blur(6px);
+}
+
+.btn.ghost:hover {
+  background: #ffffff;
+  transform: translateY(-2px);
+}
+
+/* PRIMARY BUTTON */
+.btn.primary {
+  background: linear-gradient(135deg, #116AF8, #0A50F5);
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(17, 106, 248, 0.35);
+}
+
+.btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(17, 106, 248, 0.45);
+}
+
+/* FILTER */
+.filter-bar {
+  margin-top: 20px;
+  background: #e2e8f0;
+  padding: 14px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
+.filter-item select {
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+/* CARDS */
+.cards {
+  display: flex;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+/* BASE CARD */
+.card {
+  flex: 1;
+  position: relative;
+  padding: 22px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+
+/* HOVER EFFECT */
+.card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+}
+
+/* TOP BAR GLOW */
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 4px;
+  width: 100%;
+  border-radius: 18px 18px 0 0;
+}
+
+/* ICON */
+.card .icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+/* HEADER */
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* TREND */
+.trend {
+  font-size: 13px;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+/* TEXT */
+.card p {
+  color: #64748b;
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+.card h2 {
+  font-size: 30px;
+  font-weight: 700;
+  margin: 6px 0;
+  letter-spacing: -0.5px;
+}
+
+.sub {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* COLOR THEMES */
+
+/* BLUE */
+.card.blue::before {
+  background: linear-gradient(90deg, #9BC0FC, #116AF8);
+}
+.card.blue .icon {
+  background: rgba(155, 192, 252, 0.20);
+  color: #116AF8;
+}
+
+/* GREEN */
+.card.green::before {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+.card.green .icon {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+}
+
+/* PURPLE */
+.card.purple::before {
+  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+}
+.card.purple .icon {
+  background: rgba(139, 92, 246, 0.15);
+  color: #7c3aed;
+}
+
+/* ORANGE */
+.card.orange::before {
+  background: linear-gradient(90deg, #fb923c, #f97316);
+}
+.card.orange .icon {
+  background: rgba(249, 115, 22, 0.15);
+  color: #ea580c;
+}
+
+/* VISUALIZATION */
+.analytics-row {
+  display: flex;
+  gap: 20px;
+  margin-top: 24px;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+/* CARD BASE */
+.analytics-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+}
+
+.analytics-card.small {
+  flex: 0 0 340px;
+}
+
+.analytics-card.large {
+  flex: 1;
+}
+
+/* HEADER */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.sub-text {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* GAUGE */
+.gauge-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+/* SVG */
+.gauge-svg {
+  width: 240px;
+  height: 140px;
+}
+
+/* arcs */
+.gauge-bg {
+  fill: none;
+  stroke: #e2e8f0;
+  stroke-width: 14;
+  stroke-linecap: round;
+}
+
+.gauge-progress {
+  fill: none;
+  stroke: #116AF8;
+  stroke-width: 14;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease;
+}
+
+/* NEEDLE FIX */
+.needle-wrap {
+  position: absolute;
+  left: 50%;
+  top: 100px;
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+}
+
+.needle-line {
+  width: 2px;
+  height: 75px;
+  background: #1e293b;
+  transform-origin: bottom center;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.needle-center {
+  width: 12px;
+  height: 12px;
+  background: #1e293b;
+  border-radius: 50%;
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* TEXT */
+.gauge-center {
+  text-align: center;
+  margin-top: -10px;
+}
+
+.small-btn {
+  margin-top: 10px;
+  padding: 6px 12px;
+}
+
+.btn a {
+  color: #ffffff;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* SMALL BUTTON BASE */
+.small-btn {
+  background: linear-gradient(90deg, #116AF8, #0A50F5);
+  color: #fff;
+  transition: all 0.25s ease;
+}
+
+/* HOVER EFFECT */
+.small-btn:hover {
+  background: linear-gradient(90deg, #0A50F5, #083EC4);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(17, 106, 248, 0.32);
+}
+
+/* ARROW ANIMATION */
+.small-btn i {
+  transition: transform 0.2s ease;
+}
+
+/* MOVE ARROW SLIGHTLY */
+.small-btn:hover i {
+  transform: translateX(3px);
+}
+
+/* DONUT */
+.donut-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.donut {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #116AF8 0% 88%,
+    #ef4444 88% 91.6%,
+    #f59e0b 91.6% 98.4%,
+    #9BC0FC 98.4% 100%
+  );
+  position: relative;
+}
+
+.donut::after {
+  content: "";
+  width: 120px;
+  height: 120px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 40px;
+  left: 40px;
+}
+
+canvas#donutChart {
+  max-width: 220px;
+}
+
+/* LEGEND */
+.legend {
+  margin-left: 10px;
+  flex: 1;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 12px;
+  transition: all 0.25s ease;
+}
+
+/* HOVER EFFECT */
+.legend-item:hover {
+  background: #f1f5f9;
+  transform: translateX(6px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ACTIVE CLICK FEEL */
+.legend-item:active {
+  transform: scale(0.98);
+}
+
+/* ARROW ANIMATION */
+.arrow {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.legend-item:hover .arrow {
+  transform: translateX(4px);
+}
+
+.legend-item .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+/* wrap text nicely */
+.legend-item div {
+  flex: 1;
+  margin-left: 8px;
+}
+
+.legend-item.success .dot { background: #116AF8; }
+.legend-item.failed .dot  { background: #ef4444; }
+.legend-item.partial .dot { background: #f59e0b; }
+
+.legend-item p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.legend-item small {
+  color: #64748b;
+}
+
+/* VALUE + ARROW */
+.value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>true</has_preview>
+        <id/>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link>
+        <name>tracenow_analytics</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function() {
+
+  data.side = $sp.getWidget('tracenow_sidebar');
+  data.totalMigrations = 414;
+  data.avgDuration = "2m 34s";
+	var mig_recs = {}, duration = 0, recs_count = 0;
+	
+	
+
+  var gr = new GlideRecordSecure("x_sysus_tracenow_migration_details");
+  gr.addQuery('sys_created_by', gs.getUserName());
+	gr.query();
+
+  var total = 0; 
+  var count = 0;
+	var time_count = 0;
+
+  var success = 0;
+  var failed = 0;
+  var partial = 0;
+	var totalSeconds = 0;
+
+  while (gr.next()) {
+		//count total successful migrated records 
+		mig_recs = gr.getValue('table');
+		var new_mig_recs = JSON.parse(mig_recs);
+		console.log('new_mig_recs = ' + JSON.stringify(new_mig_recs));
+		for (var i = 0; i < new_mig_recs.length; i++) {
+
+			var rec = new_mig_recs[i];
+
+			console.log('table = ' + rec.table);
+
+			if (rec.status === "success") {
+				recs_count++;
+			}
+		}
+
+    var rate = parseFloat(gr.getValue('success_rate')) || 0;
+
+    // ]]>🔹<![CDATA[ average logic
+    total += rate;
+    count++;
+		duration += gr.getValue('duration');
+
+    // ]]>🔹<![CDATA[ classification logic
+    if (rate == 100) {
+      success++;
+    } 
+    else if (rate == 0) {
+      failed++;
+    } 
+    else {
+      partial++;
+    }
+		var durationStr = gr.getValue('duration'); // e.g. "2 min 30 sec"
+
+		if (durationStr) {
+
+			// ]]>🔹<![CDATA[ extract minutes & seconds
+			var minMatch = durationStr.match(/(\d+)\s*min/);
+			var secMatch = durationStr.match(/(\d+)\s*sec/);
+
+			var minutes = minMatch ? parseInt(minMatch[1], 10) : 0;
+			var seconds = secMatch ? parseInt(secMatch[1], 10) : 0;
+
+			var total_time = (minutes * 60) + seconds;
+
+			totalSeconds += total_time;
+			time_count++;
+		}
+  }
+	//console.log('mig_recs =' + mig_recs);
+
+	//console.log('recs_count = ' + recs_count);
+	
+	// ✅ calculate average
+    var avgSeconds = (count > 0) ? Math.floor(totalSeconds / count) : 0;
+
+    // ]]>🔹<![CDATA[ convert back to min/sec
+    var avgMin = Math.floor(avgSeconds / 60);
+    var avgSec = avgSeconds % 60;
+
+    data.avgDuration = avgMin + " min " + avgSec + " sec";
+
+  // ✅ average success rate
+	if (count > 0) {
+		data.successRate = ((success / count) * 100).toFixed(1);
+		data.failureRate = ((failed / count) * 100).toFixed(1);
+		data.partialRate = ((partial / count) * 100).toFixed(1);
+	} else {
+		data.successRate = 0;
+		data.failureRate = 0;
+		data.partialRate = 0;
+	}
+	
+
+	data.totalRecords = recs_count;
+  // ✅ counts
+  data.successCount = success;
+  data.failedCount = failed;
+  data.partialCount = partial;
+	data.totalCount = count;
+})();
+]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-05-20 09:50:40</sys_created_on>
+        <sys_id>22da7d583b4d4b10092273c5e4e45a26</sys_id>
+        <sys_mod_count>13</sys_mod_count>
+        <sys_name>tracenow_analytics</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_widget_22da7d583b4d4b10092273c5e4e45a26</sys_update_name>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-06-09 06:55:14</sys_updated_on>
+        <template><![CDATA[<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar-area">
+    <sp-widget widget="::c.data.side"></sp-widget>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="content-area">
+
+    <div class="dash-wrap">
+
+      <!-- HERO -->
+      <div class="hero">
+  <div class="hero-content">
+
+    <div class="hero-left">
+      <div class="mic-badge">
+        <span class="dot"></span>
+        Migration Intelligence Center
+      </div>
+
+      <h1>
+        Advanced Analytics & <span>Drill-Down</span>
+      </h1>
+
+      <p>
+        Deep dive into migration performance with interactive visualizations
+        and granular record-level insights across instances.
+      </p>
+
+      <div class="hero-links">
+        <a class="overview-link">
+          <i class="fa fa-bar-chart"></i> Analytics Overview
+        </a>
+      </div>
+    </div>
+
+   <!-- <div class="hero-actions">
+      <button class="btn ghost">
+        <i class="fa fa-download"></i> Export Report
+      </button>
+
+      <button class="btn primary" ng-click="c.refreshData()">
+        <i class="fa fa-refresh"></i> Refresh Data
+      </button>
+    </div>-->
+
+  </div>
+</div>
+
+      <!-- FILTER BAR -->
+    <!--  <div class="filter-bar">
+        <div class="filter-title">
+          <i class="fa fa-filter"></i> Filters:
+        </div>
+
+        <div class="filter-item">
+  <i class="fa fa-calendar"></i>
+  <select ng-model="c.filters.dateRange" ng-change="c.applyFilters()">
+    <option value="30">Last 30 Days</option>
+    <option value="7">Last 7 Days</option>
+    <option value="90">Last 90 Days</option>
+    <option value="365">Last Year</option>
+  </select>
+</div>
+
+<div class="filter-item">
+  <i class="fa fa-database"></i>
+  <select ng-model="c.filters.table" ng-change="c.applyFilters()">
+    <option value="">All Tables</option>
+    <option value="incident">Incident</option>
+    <option value="problem">Problem</option>
+    <option value="change_request">Change</option>
+  </select>
+</div>
+
+<div class="filter-item">
+  <i class="fa fa-cubes"></i>
+  <select ng-model="c.filters.type" ng-change="c.applyFilters()">
+    <option value="">All Types</option>
+    <option value="single_record">Single Record</option>
+    <option value="single_table">Single Table</option>
+    <option value="multi_table">Multi-Table</option>
+  </select>
+</div>
+      </div> -->
+
+      <!-- CARDS -->
+      <div class="cards">
+
+        <div class="card blue">
+          <div class="card-top">
+            <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity-icon lucide-activity"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></div>
+            <span class="trend">+18 this week</span>
+          </div>
+          <p>Total Migrations</p>
+          <h2>{{c.data.totalCount}}</h2>
+          <span class="sub">All-time runs</span>
+        </div>
+
+        <div class="card green">
+          <div class="card-top">
+            <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-target-icon lucide-target"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></i></div>
+            <span class="trend">+3.2%</span>
+          </div>
+          <p>Success Rate</p>
+          <h2>{{c.data.successRate}}%</h2>
+          <span class="sub">Last 30 days</span>
+        </div>
+
+        <div class="card purple">
+          <div class="card-top">
+            <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-database-icon lucide-database"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg></div>
+            <span class="trend">+12.5K</span>
+          </div>
+          <p>Total Records</p>
+          <h2>{{c.data.totalRecords}}</h2>
+          <span class="sub">Migrated successfully</span>
+        </div>
+
+        <div class="card orange">
+          <div class="card-top">
+            <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap-icon lucide-zap"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></div>
+            <span class="trend">-18s faster</span>
+          </div>
+          <p>Avg Duration</p>
+          <h2>{{c.data.avgDuration}}</h2>
+          <span class="sub">Per migration</span>
+        </div>
+
+      </div>
+
+      <!-- VISUALIZATION -->
+      <div class="analytics-row">
+
+        <!-- SUCCESS RATE -->
+        <div class="analytics-card small">
+
+          <div class="card-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-target-icon lucide-target"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            <span>Success Rate</span>
+          </div>
+
+          <div class="gauge-wrap">
+
+            <svg class="gauge-svg" viewBox="0 0 200 120">
+              <path d="M20 100 A80 80 0 0 1 180 100" class="gauge-bg"/>
+              <path d="M20 100 A80 80 0 0 1 180 100"
+                    class="gauge-progress"
+                    stroke-dasharray="251"
+                    stroke-dashoffset="{{251 - (251 * c.data.successRate / 100)}}"/>
+            </svg>
+
+            <div class="needle-wrap">
+              <div class="needle-line"
+                   ng-style="{'transform': 'translateX(-50%) rotate(' + ((c.data.successRate * 1.8) - 90) + 'deg)'}">
+              </div>
+              <div class="needle-center"></div>
+            </div>
+
+            <div class="gauge-center">
+              <h2>{{c.data.successRate}}%</h2>
+              <p>Overall Success</p>
+              <span>{{c.data.successCount}} of {{c.data.totalCount}} migrations</span>
+
+              <div>
+                
+              <button class="btn primary small-btn">
+                <a href="/_tracenow?id=tracenow_migration_details">View Details <i class="fa fa-angle-right"></i></a>
+              </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- DONUT (INTERACTIVE) -->
+        <div class="analytics-card large">
+
+          <div class="card-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layers-icon lucide-layers"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></svg>
+            <span>Migration Status Distribution</span>
+          </div>
+
+          <p class="sub-text">Click on segments to drill down</p>
+
+          <div class="donut-wrap">
+
+            <!-- CHART.JS -->
+            <canvas id="donutChart" width="220" height="220"></canvas>
+
+            <!-- LEGEND -->
+            <div class="legend">
+
+              <div class="legend-item success" ng-click="c.goToDetails('Success')">
+  <span class="dot"></span>
+  <div>
+    <p>Success</p>
+    <small>{{c.data.successCount}} migrations</small>
+  </div>
+  <span class="value">{{c.data.successRate}}%<i class="fa fa-angle-right arrow"></i></span>
+</div>
+
+<div class="legend-item failed" ng-click="c.goToDetails('Failed')">
+  <span class="dot"></span>
+  <div>
+    <p>Failed</p>
+    <small>{{c.data.failedCount}} migrations</small>
+  </div>
+  <span class="value">{{c.data.failureRate}}%<i class="fa fa-angle-right arrow"></i></span>
+</div>
+
+<div class="legend-item partial" ng-click="c.goToDetails('Partial')">
+  <span class="dot"></span>
+  <div>
+    <p>Partial</p>
+    <small>{{c.data.partialCount}} migrations</small>
+  </div>
+  <span class="value">{{c.data.partialRate}}%<i class="fa fa-angle-right arrow"></i></span>
+</div>
+  
+            </div>
+
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div> <!-- dash-wrap -->
+
+  </div> <!-- content-area -->
+
+</div> <!-- layout -->
+]]></template>
+    </sp_widget>
+</record_update>

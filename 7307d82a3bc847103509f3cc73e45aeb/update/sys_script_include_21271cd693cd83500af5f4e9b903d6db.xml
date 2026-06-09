@@ -1,0 +1,1165 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_sysus_tracenow.DM_MigrationCore</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <mobile_callable>false</mobile_callable>
+        <name>DM_MigrationCore</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[var DM_MigrationCore = Class.create();
+DM_MigrationCore.prototype = {
+    initialize: function() {
+            this._v37SkipAdditions = [
+                'sc_cat_item_delivery_plan', 'sc_cat_item_delivery_task',
+                'chg_model', 'metric_definition', 'sc_cat_item',
+                'kb_knowledge_base_request', 'clm_condition_check',
+                'clm_condition_checker', 'sys_ui_macro',
+                'sc_homepage_renderer', 'sc_catalog', 'sc_category',
+                'user_criteria', 'taxonomy', 'sp_page', 'topic',
+                'sc_cat_item_producer', 'fx_currency', 'fx_price',
+                'task_sla', 'metric_instance'
+            ];
+            this._migratedRecords     = {};
+            this._sysIdLookup         = {};
+            this._visited             = {};
+            this._cacheRefFields      = {};
+            this._cacheHierarchy      = {};
+            this._cacheNaturalKey     = {};
+            this._cacheUserNameExists = {};
+            this._activityStreamDone  = {};
+            this._auditRowsToFix      = [];
+            this._cacheM2MDiscovery       = {};
+            this._cacheTaskRelDiscovery   = {};
+            this._cacheTablesReferencing  = {};
+            this._cacheDocIdRelations     = null;
+            this.CLEAN_RERUN = true;
+            this.DEBUG       = true;
+            this.KEEP_CACHES_ACROSS_CALLS = false;
+            this.FAST_MODE = false;
+            this.DEEP_RECURSION_ENABLED = false;
+            this.MAX_RELATED_DEPTH      = 1;
+            this.MAX_DEEP_RECORDS       = 500;
+            this.DEEP_RECURSE_TABLES = {
+                /* Empty — recursion is off so this set isn't consulted */
+            };
+            this._deepStats = { migrated: 0, skipped: 0, capped: false };
+            this.REF_DEEP_RECURSE_ENABLED    = true;
+            this.REF_DEEP_RECURSE_ALL_TABLES = false;  /* task-derived only */
+            this.REF_DEEP_RECURSE_MAX_DEPTH  = 1;      /* one level of ref-deep-recurse */
+            this.REF_DEEP_RECURSE_TABLES = {
+                task:              true,
+                incident:          true,
+                problem:           true,
+                problem_task:      true,
+                change_request:    true,
+                change_task:       true,
+                sc_request:        true,
+                sc_req_item:       true,
+                sc_task:           true,
+                universal_request: true
+            };
+            this._refDeepDepth = 0;
+            this._refDeepDone = {};
+            this.USER_CHAIN = {
+                migrateGroupMemberships: true,    // sys_user_grmember — ON: required so
+                                                  // assigned_to passes 'Abort changes on
+                                                  // group' BR on change_task/change_request
+                migrateRoles:            false,   // sys_user_has_role
+                managerChainDepth:       1        // 0=none, 1=direct, 2+=org chart
+            };
+            this.endTime      = 0;
+            this.durationMs   = 0;
+            this.durationText = '';
+            this.IDENTITY_FIELDS = {
+                caller_id:                "sys_user",
+                opened_by:                "sys_user",
+                closed_by:                "sys_user",
+                resolved_by:              "sys_user",
+                assigned_to:              "sys_user",
+                watch_list:               "sys_user",
+                additional_assignee_list: "sys_user",
+                assignment_group:         "sys_user_group",
+                manager:                  "sys_user"
+            };
+            this.SPECIAL_REF_FIELDS = {
+                service:           "cmdb_ci_service",
+                service_offering:  "service_offering",
+                contract:          "contract",
+                parent:            "task",
+                caller_id:         "sys_user",
+                opened_by:         "sys_user",
+                closed_by:         "sys_user",
+                resolved_by:       "sys_user",
+                assigned_to:       "sys_user",
+                assignment_group:  "sys_user_group",
+                manager:           "sys_user",
+                universal_request: "universal_request"
+            };
+            this.SKIP_TABLES = {
+                sys_user:          true,
+                sys_user_group:    true,
+                sys_user_role:     true,
+                sys_user_has_role: true,
+                sys_user_grmember: true,
+                cmn_department:    true,
+                cmn_location:      true,
+                core_company:      true,
+                sys_db_object:     true,
+                sys_dictionary:    true,
+                sys_choice:        true,
+                sys_scope:                  true,   /* the scope registry itself */
+                awa_service_channel:        true,   /* Advanced Work Assignment framework */
+                awa_service_channel_group:  true
+            };
+            for (var i = 0; i < this._v37SkipAdditions.length; i++) {
+                this.SKIP_TABLES[this._v37SkipAdditions[i]] = true;
+            }
+            this.NATURAL_KEY_TABLES = {
+                sys_user:        "user_name",
+                sys_user_group:  "name",
+                sys_db_object:   "name",
+                contract_sla:    "name",
+                cmn_schedule:    "name",
+                sys_choice:      null,
+                sys_dictionary:  null
+            };
+            this.AUTO_CREATE_NATURAL_KEY = true;
+            this.NATURAL_KEY_CREATE_FIELDS = {
+                sys_user: [
+                    "user_name", "first_name", "last_name", "name", "email",
+                    "title", "department", "company", "active", "phone",
+                    "mobile_phone", "manager", "location"
+                ],
+                sys_user_group: [
+                    "name", "description", "manager", "email",
+                    "active", "type", "parent"
+                ],
+                sys_db_object: [],
+                contract_sla: [
+                    "name", "type", "duration_type", "duration",
+                    "schedule", "timezone", "pause_type", "active"
+                ],
+                cmn_schedule: [
+                    "name", "document", "type", "time_zone"
+                ]
+            };
+            this.M2M_DEFINITIONS = [
+                {
+                    table:  "task_rel_task",
+                    fields: [
+                        { field: "parent", refTable: "task" },
+                        { field: "child",  refTable: "task" }
+                    ]
+                }
+            ];
+            this.M2M_DISCOVERY = {
+                enabled: true,
+                excludeTables: {
+                    "task_sla":             true,   // insertSLAs
+                    "sys_audit":            true,
+                    "sys_audit_relation":   true,
+                    "sys_journal_field":    true,
+                    "sys_history_set":      true,
+                    "sys_history_line":     true,
+                    "sys_email":            true,
+                    "sys_attachment":       true,
+                    "sys_metadata":         true,
+                    "sys_template":         true,
+                    "sysapproval_approver": true,   // _migrateApprovalsRecursive
+                    "metric_instance":      true,
+                    "task_rel_task":        true    // M2M_DEFINITIONS
+                },
+                excludeRefTables: {
+                    "sys_choice":     true,
+                    "sys_dictionary": true,
+                    "sys_db_object":  true
+                }
+            };
+            this.M2M_OVERRIDES = [
+                // {
+                //     table:        "task_outage",
+                //     taskField:    "task",
+                //     refField:     "cmdb_ci",
+                //     refTable:     "cmdb_ci",
+                //     primaryField: ""
+                // }
+            ];
+            this.RELATED_REFERENCE_FIELDS = [
+                {
+                    name:    "Universal Request",
+                    field:   "universal_request",
+                    refTable: "universal_request",
+                    reverseDirection: true,
+                    enabled: true
+                }
+                /* Add custom relationship-style reference fields here, e.g.:
+                {
+                    name:             "Custom Workflow Link",
+                    field:            "u_workflow_parent",
+                    refTable:         "u_workflow",
+                    reverseDirection: true,
+                    enabled:          true
+                }
+                */
+            ];
+            this.RELATIONSHIP_M2M_HINTS = [
+                // { table: "u_universal_request_task", taskField: "task", refField: "universal_request" }
+            ];
+            this.M2M_RESOLVER_CONFIG = {
+                "_default": {
+                    lookupField: "name",
+                    safeFields:  [
+                        "short_description", "description",
+                        "active", "operational_status"
+                    ]
+                },
+                "cmdb_ci": {
+                    lookupField: "name",
+                    safeFields:  [
+                        "sys_class_name", "asset_tag", "serial_number",
+                        "operational_status", "install_status",
+                        "category", "subcategory",
+                        "short_description", "comments", "discovery_source"
+                    ]
+                },
+                "service_offering": {
+                    lookupField: "name",
+                    safeFields:  [
+                        "short_description", "operational_status",
+                        "service_classification", "owned_by"
+                    ]
+                },
+                "cmdb_ci_service": {
+                    lookupField: "name",
+                    safeFields:  [
+                        "short_description", "operational_status", "version", "owned_by"
+                    ]
+                }
+            };
+            this.stats    = { total: 0, inserted: 0, updated: 0, failed: 0 };
+            this.progress = { total: 0, processed: 0, percent: 0 };
+            this._operationCounted = {};
+            this.SOURCE_URL  = '';
+            this.SOURCE_USER = '';
+            this.SOURCE_PSWD = '';
+            this.MAX_RECURSION = 50;
+            this.executionLogs    = [];
+            this.currentRecordLog = {};
+            this.discovery  = new DM_DiscoveryEngine(this);
+            this.references = new DM_ReferenceResolver(this);
+            this.related    = new DM_RelatedDataMigrator(this);
+    
+        },
+    migrateWithDependencies: function(table, sourceSysId, depth) {
+            if ((table === 'sys_user' || table === 'sys_user_group') &&
+                this.NATURAL_KEY_TABLES && this.NATURAL_KEY_TABLES[table]) {
+                try {
+                    var srcRowForNK = this.fetchSourceRecord(table, sourceSysId);
+                    if (srcRowForNK) {
+                        var nkResult = this.references._resolveByNaturalKey(table, srcRowForNK);
+                        if (nkResult) {
+                            if (this.DEBUG) {
+                                this.logStep('★ v37 natural-key pre-check resolved ' + table + '/' + sourceSysId + ' → ' + nkResult);
+                            }
+                            return nkResult;
+                        }
+                    }
+                } catch (eNK) {
+                }
+            }
+            table       = String(table).trim();
+            sourceSysId = String(sourceSysId).trim();
+            depth       = depth || 0;
+            if (!sourceSysId)               return '';
+            if (depth > this.MAX_RECURSION) return '';
+            if (depth > 0 && this.SKIP_TABLES && this.SKIP_TABLES[table]) {
+                var grSkip = new GlideRecordSecure(table);
+                if (grSkip.get(sourceSysId)) {
+                    this.references._setMigrated(table, sourceSysId, sourceSysId);
+                    return sourceSysId;
+                }
+                if (this.NATURAL_KEY_TABLES.hasOwnProperty(table)) {
+                    var nkResolved = this.references._resolveByNaturalKey(table, sourceSysId);
+                    var resolved   = nkResolved || sourceSysId;
+                    this.references._setMigrated(table, sourceSysId, resolved);
+                    return resolved;
+                }
+                this.references._setMigrated(table, sourceSysId, sourceSysId);
+                return sourceSysId;
+            }
+            if (depth > 0 && this.NATURAL_KEY_TABLES.hasOwnProperty(table)) {
+                var nkDep = this.references._resolveByNaturalKey(table, sourceSysId);
+                if (!nkDep && this.AUTO_CREATE_NATURAL_KEY) {
+                    var srcNKRec = this.fetchSourceRecord(table, sourceSysId);
+                    if (srcNKRec) nkDep = this.references._createNaturalKeyRecord(table, srcNKRec);
+                }
+                var nkResult = nkDep || sourceSysId;
+                this.references._setMigrated(table, sourceSysId, nkResult);
+                return nkResult;
+            }
+            if (table === "sys_choice" || table === "sys_dictionary") {
+                this.references._setMigrated(table, sourceSysId, sourceSysId);
+                return sourceSysId;
+            }
+            var key = table + "_" + sourceSysId;
+            var _origKey = key;   // ★ V39 — remember the table name we ENTERED with
+            if (this._migratedRecords[key]) return this._migratedRecords[key];
+            if (this._visited[key])         return this._migratedRecords[key] || '';
+            this._visited[key] = true;
+            var record = this.fetchSourceRecord(table, sourceSysId);
+            if (!record) return '';
+            var actualClass = this.discovery.normalizeRef(record.sys_class_name);
+            if (table === "universal_request" || actualClass === "universal_request" ||
+                table === "task" && actualClass) {
+                this.logStep("  [UR-DIAG] migrateWithDependencies entered table='" + table +
+                              "' actualClass='" + actualClass + "' sysId=" + sourceSysId);
+            }
+            if (actualClass &&
+                actualClass !== table &&
+                this.discovery._tableExists(actualClass)) {
+                var chain = this.discovery._getTableHierarchy(actualClass);
+                if (actualClass === "universal_request" || table === "universal_request") {
+                    this.logStep("  [UR-DIAG] Class chain for '" + actualClass +
+                                  "': [" + chain.join(", ") +
+                                  "]  - indexOf('" + table + "') = " + chain.indexOf(table));
+                }
+                if (chain.indexOf(table) !== -1) {
+                    var betterRecord = this.fetchSourceRecord(actualClass, sourceSysId);
+                    if (betterRecord) {
+                        this.logStep("  [UR-DIAG] Class refinement: " + table + " → " +
+                                      actualClass + " for " + sourceSysId);
+                        record = betterRecord;
+                        table  = actualClass;
+                        key = table + "_" + sourceSysId;
+                        this._visited[key] = true;
+                    } else {
+                        this.logStep("  [UR-DIAG] ⚠ Class refinement wanted to switch to " +
+                                      actualClass + " but fetchSourceRecord returned null");
+                    }
+                } else if (actualClass === "universal_request" || table === "universal_request") {
+                    this.logStep("  [UR-DIAG] ⚠ Class refinement SKIPPED: '" + actualClass +
+                                  "' is NOT a subclass of '" + table +
+                                  "' according to class hierarchy");
+                }
+            }
+            var refFields = this.discovery._getCachedRefFields(table);
+            for (var special in this.SPECIAL_REF_FIELDS) {
+                var existsSpecial = false;
+                for (var iSp = 0; iSp < refFields.length; iSp++) {
+                    if (refFields[iSp].field === special) { existsSpecial = true; break; }
+                }
+                if (!existsSpecial && record.hasOwnProperty(special)) {
+                    refFields.unshift({
+                        field:    special,
+                        refTable: this.SPECIAL_REF_FIELDS[special]
+                    });
+                }
+            }
+            for (var r = 0; r < refFields.length; r++) {
+                var rf = refFields[r];
+                if (!rf.refTable) continue;
+                var srcRef = this.discovery.normalizeRef(record[rf.field]);
+                if (!srcRef) continue;
+                try {
+                    var targetRef;
+                    if (this.SKIP_TABLES && this.SKIP_TABLES[rf.refTable]) {
+                        var grLocal2 = new GlideRecordSecure(rf.refTable);
+                        if (grLocal2.get(srcRef)) {
+                            targetRef = srcRef;
+                            this.references._setMigrated(rf.refTable, srcRef, srcRef);
+                        } else if (this.NATURAL_KEY_TABLES.hasOwnProperty(rf.refTable)) {
+                            targetRef = this.references._resolveByNaturalKey(rf.refTable, srcRef);
+                                        if (!targetRef && this.AUTO_CREATE_NATURAL_KEY) {
+                                            var srcNKRec = this.fetchSourceRecord(rf.refTable, srcRef);
+                                            if (srcNKRec) {
+                                                targetRef = this.references._createNaturalKeyRecord(rf.refTable, srcNKRec);
+                                                if (this.DEBUG && targetRef) {
+                                                    this.logStep('  ★ v37 auto-created ' + rf.refTable + ' for missing target ref: ' + srcRef + ' → ' + targetRef);
+                                                }
+                                            }
+                                        }
+                        } else {
+                            targetRef = "";
+                        }
+                    } else if (this.NATURAL_KEY_TABLES.hasOwnProperty(rf.refTable)) {
+                        targetRef = this.references._resolveByNaturalKey(rf.refTable, srcRef);
+                        if (!targetRef && this.AUTO_CREATE_NATURAL_KEY) {
+                            var srcNKRefRec = this.fetchSourceRecord(rf.refTable, srcRef);
+                            if (srcNKRefRec) {
+                                targetRef = this.references._createNaturalKeyRecord(rf.refTable, srcNKRefRec);
+                            }
+                        }
+                    } else {
+                        targetRef = this.migrateWithDependencies(rf.refTable, srcRef, depth + 1);
+                    }
+                    if (targetRef) {
+                        record[rf.field] = String(targetRef);
+                        this.currentRecordLog.references_migrated++;
+                    } else {
+                        record[rf.field] = "";
+                    }
+                } catch (e) {
+                    this.currentRecordLog.references_failed++;
+                    this.currentRecordLog.errors.push("Reference failed: " + rf.field);
+                    gs.warn("⚠ reference failed: " + table + "." + rf.field);
+                }
+            }
+            var targetId = this.safeUpsert(record, table, record.sys_id);
+            this.references._setMigrated(table, sourceSysId, targetId);
+            if (targetId && key !== _origKey) {
+                this._migratedRecords[_origKey] = targetId;
+            }
+            if (depth > 0 &&
+                targetId &&
+                this.REF_DEEP_RECURSE_ENABLED &&
+                (this.REF_DEEP_RECURSE_ALL_TABLES || this.REF_DEEP_RECURSE_TABLES[table])) {
+                if (this._refDeepDepth >= this.REF_DEEP_RECURSE_MAX_DEPTH) {
+                    if (this.DEBUG) {
+                        this.logStep("  ⊘ ref-deep-recurse depth cap (" +
+                                      this.REF_DEEP_RECURSE_MAX_DEPTH + ") — skipping " +
+                                      table + "/" + sourceSysId);
+                    }
+                } else {
+                    var refDoneKey = "refdeep_" + table + "_" + sourceSysId;
+                    if (!this._refDeepDone[refDoneKey] &&
+                        this._deepStats.migrated < this.MAX_DEEP_RECORDS) {
+                        this._refDeepDone[refDoneKey] = true;
+                        this._deepStats.migrated++;
+                        if (this.DEBUG) {
+                            this.logStep("  ↳ ref-deep-recurse: " + table + "/" + sourceSysId +
+                                          " (referenced from depth " + depth + ")");
+                        }
+                        this._refDeepDepth++;
+                        try {
+                            this._refDeepRecurseSuite(table, sourceSysId, targetId);
+                        } catch (eRD) {
+                            gs.warn("Ref-deep-recurse failed for " + table + "/" + sourceSysId + ": " + eRD);
+                        } finally {
+                            this._refDeepDepth--;
+                        }
+                    }
+                }
+            }
+            if (depth === 0 && targetId) {
+                try { this.related.migrateTaskRelationships(table, sourceSysId, targetId); }
+                    catch (e) { gs.warn('v37 suite: migrateTaskRelationships failed: ' + e); }
+                try { this.related.migrateRelatedM2M(table, sourceSysId, targetId); }
+                    catch (e) { gs.warn('v37 suite: migrateRelatedM2M failed: ' + e); }
+                try { this.related.migrateRelatedReferenceFields(table, sourceSysId, targetId); }
+                    catch (e) { gs.warn('v37 suite: migrateRelatedReferenceFields failed: ' + e); }
+                try { this.related.migrateDocumentIdRelations(table, sourceSysId, targetId); }
+                    catch (e) { gs.warn('v37 suite: migrateDocumentIdRelations failed: ' + e); }
+                try { this.related.migrateRelatedLists(table, sourceSysId, targetId, 1); }
+                    catch (e) { gs.warn('v37 suite: migrateRelatedLists failed: ' + e); }
+                try { this.related.copyAttachments(table, sourceSysId, targetId); }
+                    catch (e) { gs.warn('v37 suite: copyAttachments failed: ' + e); }
+                if (!this.SKIP_TABLES['task_sla']) {
+                    try { this.related.insertSLAs(sourceSysId, targetId); }
+                        catch (e) { gs.warn('v37 suite: insertSLAs failed: ' + e); }
+                }
+                try { this.related.migrateM2MRelations(table, sourceSysId, targetId); }
+                    catch (e) { gs.warn('v37 suite: migrateM2MRelations failed: ' + e); }
+                try { this.related.migrateActivityStreamFor(table, sourceSysId, targetId); }
+                    catch (e) { gs.warn('v37 suite: migrateActivityStreamFor failed: ' + e); }
+                if (typeof this._postMigrationFixup === 'function') {
+                    try { this._postMigrationFixup(table, targetId); }
+                        catch (e) { gs.warn('v37 suite: _postMigrationFixup failed: ' + e); }
+                }
+            }
+            return targetId;
+        },
+    _refDeepRecurseSuite: function(table, sourceId, targetId) {
+            this.related.migrateTaskRelationships(table, sourceId, targetId);
+            this.related.migrateRelatedM2M(table, sourceId, targetId);
+            this.related.migrateRelatedReferenceFields(table, sourceId, targetId);
+            this.related.migrateDocumentIdRelations(table, sourceId, targetId);
+            this.related.migrateRelatedLists(table, sourceId, targetId, 1);
+            this.related.copyAttachments(table, sourceId, targetId);
+            this.related.insertSLAs(sourceId, targetId);
+            this.related.migrateActivityStreamFor(table, sourceId, targetId);
+        },
+    fetchSourceRecord: function(table, sysId) {
+            if (!table || !sysId) return null;
+            if (!this._cacheSourceRecord) this._cacheSourceRecord = {};
+            var ck = String(table).trim() + "::" + String(sysId).trim();
+            if (this._cacheSourceRecord.hasOwnProperty(ck)) {
+                return this._cacheSourceRecord[ck];
+            }
+            var api     = new sn_ws.RESTMessageV2();
+            var baseUrl = this.SOURCE_URL.replace(/\/+$/, '');
+            api.setEndpoint(
+                baseUrl +
+                "/api/now/table/" + String(table).trim() +
+                "/" + String(sysId).trim() +
+                "?sysparm_display_value=false"
+            );
+            api.setHttpMethod("GET");
+            api.setBasicAuth(this.SOURCE_USER, this.SOURCE_PSWD);
+            var response = api.execute();
+            if (response.getStatusCode() != 200) {
+                this._cacheSourceRecord[ck] = null;
+                return null;
+            }
+            var result = JSON.parse(response.getBody()).result;
+            this._cacheSourceRecord[ck] = result;
+            return result;
+        },
+    safeUpsert: function(record, table, sysId) {
+    
+            var gr     = new GlideRecordSecure(table);
+            var exists = sysId && gr.get(sysId);
+    
+            if (!exists) {
+                gr.initialize();
+                if (sysId) gr.setNewGuidValue(sysId);
+            }
+    
+            for (var field in record) {
+    
+                if (!gr.isValidField(field)) continue;
+                if (field === "sys_id") continue;
+    
+                var value = record[field];
+                if (value && typeof value === "object" && value.value !== undefined)
+                    value = value.value;
+    
+                try { gr.setValue(field, value); } catch (e) {}
+            }
+    
+            var result;
+            if (exists) {
+                result = gr.update();
+            } else {
+                try {
+                    result = gr.insert();
+                } catch (insertErr) {
+                    var errMsg = String(insertErr || '');
+                    /* ★ v37 — duplicate sys_id from cross-scope ACL hiding a
+                       pre-existing record. GlideRecordSecure.get(sysId) returned
+                       false (no read ACL) so we took the insert path, but the
+                       primary-key write hit the existing row. Fall through to
+                       update path with a plain GlideRecord. */
+                    if (errMsg.indexOf('Duplicate entry') !== -1 ||
+                        errMsg.indexOf('duplicate') !== -1) {
+                        this.logStep('  ↻ v37 duplicate-key on insert, switching to update for ' + table + '/' + sysId);
+                        var grUpd = new GlideRecord(table);
+                        if (grUpd.get(sysId)) {
+                            for (var uf in record) {
+                                if (uf === 'sys_id' || uf === 'sys_created_on' ||
+                                    uf === 'sys_created_by' || uf === 'number') continue;
+                                if (!grUpd.isValidField(uf)) continue;
+                                var uv = record[uf];
+                                if (uv && typeof uv === 'object' && uv.value !== undefined) uv = uv.value;
+                                try { grUpd.setValue(uf, uv); } catch (eF) {}
+                            }
+                            try { grUpd.update(); result = sysId; } catch (eU) {
+                                this.logStep('  ✗ v37 update fallback failed: ' + eU);
+                                result = '';
+                            }
+                        } else {
+                            this.logStep('  ✗ v37 duplicate-key but plain GR cannot read either: ' + table + '/' + sysId);
+                            result = '';
+                        }
+                    } else {
+                        throw insertErr;
+                    }
+                }
+            }
+    
+            /* ★ v38 — from user's uploaded SI. Number preservation via
+               _preserveOriginalNumber. WRAPPED so undefined-variable bugs and
+               SecurityException from setWorkflow can't crash safeUpsert. */
+            try {
+                var srcNum;
+                if (record && record.number) {
+                    srcNum = (typeof record.number === 'object' && record.number.value !== undefined)
+                             ? record.number.value : record.number;
+                }
+                if (srcNum && result && gr.isValidField('number')) {
+                    this._preserveOriginalNumber(table, result, srcNum);
+                }
+            } catch (numEx) {
+                gs.warn('Number preservation failed for ' + table + ': ' + numEx.message);
+            }
+    
+            /* ★ v30: diag log for the UR table specifically so we can see
+               if the insert/update is silently returning empty. */
+            if (table === "universal_request") {
+                this.logStep("  [UR-DIAG] safeUpsert universal_request: " +
+                              (exists ? "UPDATE" : "INSERT") +
+                              " sysId='" + sysId + "' returned: '" + result + "'");
+            }
+    
+            /* ★ v37 — removed broken number-preservation block.
+               v36 test proved cross-scope policy blocks setValue('number')
+               at UPDATE too, not just INSERT. There is no workaround from
+               inside the scoped app. Numbers will be regenerated. */
+    
+    
+            return result;
+        },
+
+    _preserveOriginalNumber: function(table, targetSysId, sourceNumber) {
+    
+            try {
+    
+                if (!sourceNumber || !targetSysId) return false;
+    
+                var gr = new GlideRecord(table);
+                if (!gr.get(targetSysId)) return false;
+                if (!gr.isValidField('number')) return false;
+    
+                var currentNumber = gr.getValue('number');
+                if (String(currentNumber) === String(sourceNumber)) return true;
+    
+                try { gr.setWorkflow(false);    } catch (e1) {}
+                try { gr.autoSysFields(false);  } catch (e2) {}
+                try { gr.setUseEngines(false);  } catch (e3) {}
+    
+                gr.setValue('number', sourceNumber);
+                gr.update();
+    
+                var verify = new GlideRecord(table);
+                if (verify.get(targetSysId)) {
+                    var finalNumber = verify.getValue('number');
+                    if (String(finalNumber) === String(sourceNumber)) {
+                        gs.info('[NUM PRESERVED] ' + table + ' -> ' + sourceNumber);
+                        return true;
+                    }
+                    gs.warn('[NUM FAILED] Wanted=' + sourceNumber + ' Actual=' + finalNumber);
+                }
+    
+            } catch (ex) {
+                gs.error('[NUM PRESERVATION ERROR] ' + ex.message);
+            }
+    
+            return false;
+        },
+
+    migrateRecord: function(sourceUrl, username, password, table, sysId) {
+            try {
+                this.startTime   = new Date().getTime();
+                this.SOURCE_URL  = sourceUrl.replace(/\/+$/, '');
+                this.SOURCE_USER = username;
+                this.SOURCE_PSWD = password;
+                this.executionLogs = [];
+                this._ensureRecordLog();
+                this._deepStats    = { migrated: 0, skipped: 0, capped: false };
+                this._refDeepDepth = 0;
+                if (!this.KEEP_CACHES_ACROSS_CALLS) {
+                    this._refDeepDone           = {};
+                    this._cacheSourceRecord     = {};
+                    this._cacheFetchChildren    = {};
+                    this._cacheRestQuery        = {};
+                    this._cacheTableExists      = {};
+                    this._cacheGuessTableField  = {};
+                    this._activityStreamDone    = {};
+                } else {
+                    this._refDeepDone        = {};
+                    this._activityStreamDone = {};
+                    this._cacheFetchChildren = {};
+                    this._cacheRestQuery     = {};
+                }
+                if (this.USER_CHAIN.migrateGroupMemberships) {
+                    gs.warn("⚠⚠⚠ USER_CHAIN.migrateGroupMemberships=true — " +
+                             "users will be added to source-side groups on target. " +
+                             "Privilege escalation risk. Confirm this is intentional.");
+                }
+                if (this.USER_CHAIN.migrateRoles) {
+                    gs.warn("⚠⚠⚠ USER_CHAIN.migrateRoles=true — " +
+                             "users will receive source-side roles on target. " +
+                             "Privilege escalation risk. Confirm this is intentional.");
+                }
+                if (this.USER_CHAIN.managerChainDepth > 1) {
+                    gs.warn("⚠ USER_CHAIN.managerChainDepth=" + this.USER_CHAIN.managerChainDepth +
+                             " — manager chain will walk multiple levels. May pull entire org.");
+                }
+                if (!gs.hasRole("admin")) {
+                    gs.error("❌ dm_test requires admin role. Running user '" +
+                              gs.getUserName() + "' is not admin. Aborting.");
+                    throw "dm_test requires admin role";
+                }
+                if (!this._brWarningShown) {
+                    this._brWarningShown = true;
+                    gs.warn("⚠ dm_test v36 (TraceNow scoped, admin-only build) — " +
+                             "business rules, workflows, notifications, SLAs WILL fire " +
+                             "on every insert because setWorkflow suppression is unavailable " +
+                             "from a scoped app. Confirm email/notifications/workflows are " +
+                             "paused on target before running large batches.");
+                }
+                this.logStep("]]>🚀<![CDATA[ START MIGRATION: " + table + "/" + sysId);
+                var targetId = this.migrateWithDependencies(table, sysId, 0);
+                if (!targetId) throw "Primary record migration failed";
+                this.related.migrateTaskRelationships(table, sysId, targetId);
+                this.related.migrateRelatedM2M(table, sysId, targetId);
+                this.related.migrateRelatedReferenceFields(table, sysId, targetId);
+                this.related.migrateDocumentIdRelations(table, sysId, targetId);
+                this.related.migrateRelatedLists(table, sysId, targetId);
+                this.related.copyAttachments(table, sysId, targetId);
+                this.related.insertSLAs(sysId, targetId);
+                this.related.migrateM2MRelations(table, sysId, targetId);
+                this.related.migrateActivityStreamFor(table, sysId, targetId);
+                this._postMigrationFixup(table, targetId);
+                this.endTime      = new Date().getTime();
+                this.durationMs   = this.endTime - this.startTime;
+                this.durationText = (this.durationMs / 1000).toFixed(2) + " seconds";
+                this.logStep("✅ Migration completed in " + this.durationText);
+                var nP = this._numberPreservedCount || 0;
+                var nB = this._numberBlockedCount   || 0;
+                if (nP > 0 || nB > 0) {
+                    this.logStep("   [NUM] Number preservation: " + nP +
+                                  " preserved, " + nB + " blocked");
+                }
+                if (this.DEEP_RECURSION_ENABLED) {
+                    this.logStep("Deep recursion: " + this._deepStats.migrated +
+                                  " task-record(s) recursed" +
+                                  (this._deepStats.capped ? " (CAPPED at " + this.MAX_DEEP_RECORDS + ")" : ""));
+                }
+                if (this.DEBUG) this.related.verifyRelatedM2M(table, targetId);
+                return targetId;
+            } catch (e) {
+                gs.error("❌ Migration failed: " + e);
+                return "";
+            }
+        },
+    migrateRecords: function(sourceUrl, username, password, table, sysIds) { 
+            if (!sysIds || sysIds.length === 0) {
+                return { total: 0, success: 0, failed: 0, durationMs: 0,
+                         durationText: "0.00 seconds", results: [] };
+            }
+            var batchStart = new Date().getTime();
+            var prevFlag = this.KEEP_CACHES_ACROSS_CALLS;
+            this.KEEP_CACHES_ACROSS_CALLS = true;
+            if (!this._cacheSourceRecord)    this._cacheSourceRecord    = {};
+            if (!this._cacheTableExists)     this._cacheTableExists     = {};
+            if (!this._cacheGuessTableField) this._cacheGuessTableField = {};
+            if (!this._cacheHierarchy)       this._cacheHierarchy       = {};
+            if (!this._cacheRefFields)       this._cacheRefFields       = {};
+            if (!this._cacheNaturalKey)      this._cacheNaturalKey      = {};
+            if (!this._cacheUserNameExists)  this._cacheUserNameExists  = {};
+            if (!this._cacheM2MDiscovery)    this._cacheM2MDiscovery    = {};
+            if (!this._cacheTaskRelDiscovery) this._cacheTaskRelDiscovery = {};
+            if (!this._cacheTablesReferencing) this._cacheTablesReferencing = {};
+            if (!this._sysIdLookup)     this._sysIdLookup     = {};
+            if (!this._migratedRecords) this._migratedRecords = {};
+            if (!this._visited)         this._visited         = {};
+            var results = [];
+            var success = 0;
+            var failed  = 0;
+            gs.info("]]>📦<![CDATA[ BATCH MIGRATION START — " + sysIds.length + " record(s) of " + table);
+            for (var i = 0; i < sysIds.length; i++) {
+                var sid = sysIds[i];
+                if (!sid) { failed++; continue; }
+                var recStart = new Date().getTime();
+                var tgt      = '';
+                var ok       = false;
+                try {
+                    tgt = this.migrateRecord(sourceUrl, username, password, table, sid);
+                    if (tgt) { ok = true; success++; }
+                    else     { failed++; }
+                } catch (e) {
+                    gs.error("Batch item failed: " + sid + " — " + e);
+                    failed++;
+                }
+                var recMs = new Date().getTime() - recStart;
+                results.push({
+                    sourceId:     sid,
+                    targetId:     tgt,
+                    success:      ok,
+                    durationMs:   recMs,
+                    durationText: (recMs / 1000).toFixed(2) + "s"
+                });
+                gs.info("  [" + (i + 1) + "/" + sysIds.length + "] " +
+                         (ok ? "✔" : "✗") + " " + sid +
+                         " — " + (recMs / 1000).toFixed(2) + "s" +
+                         " (running total: ok=" + success + " fail=" + failed + ")");
+            }
+            this.KEEP_CACHES_ACROSS_CALLS = prevFlag;
+            var batchMs   = new Date().getTime() - batchStart;
+            var avgMs     = batchMs / sysIds.length;
+            var summary = {
+                total:        sysIds.length,
+                success:      success,
+                failed:       failed,
+                durationMs:   batchMs,
+                durationText: (batchMs / 1000).toFixed(2) + " seconds",
+                avgPerRecord: (avgMs / 1000).toFixed(2) + " seconds",
+                results:      results
+            };
+            gs.info("]]>📦<![CDATA[ BATCH MIGRATION COMPLETE — " + success + "/" + sysIds.length +
+                     " succeeded in " + summary.durationText +
+                     " (avg " + summary.avgPerRecord + " per record)");
+            return summary;
+        },
+    migrateMixedRecords: function(sourceUrl, username, password, items, options) {
+            if (!items || items.length === 0) {
+                return { total: 0, success: 0, failed: 0, durationMs: 0,
+                         durationText: "0.00 seconds", byTable: {}, results: [] };
+            }
+            options = options || {};
+            var sortByTable = (options.sortByTable !== false);   // default true
+            var stopOnError = options.stopOnError === true;      // default false
+            var onProgress  = (typeof options.onProgress === "function") ? options.onProgress : null;
+            var clean = [];
+            for (var v = 0; v < items.length; v++) {
+                var it = items[v];
+                if (!it || !it.table || !it.sysId) {
+                    gs.warn("⚠ migrateMixedRecords: skipping invalid item at index " + v);
+                    continue;
+                }
+                clean.push({
+                    table: String(it.table).trim(),
+                    sysId: String(it.sysId).trim()
+                });
+            }
+            if (clean.length === 0) {
+                return { total: 0, success: 0, failed: 0, durationMs: 0,
+                         durationText: "0.00 seconds", byTable: {}, results: [] };
+            }
+            if (sortByTable) {
+                clean.sort(function(a, b) {
+                    if (a.table < b.table) return -1;
+                    if (a.table > b.table) return  1;
+                    return 0;
+                });
+            }
+            var batchStart = new Date().getTime();
+            var prevFlag   = this.KEEP_CACHES_ACROSS_CALLS;
+            this.KEEP_CACHES_ACROSS_CALLS = true;
+            if (!this._cacheSourceRecord)      this._cacheSourceRecord      = {};
+            if (!this._cacheTableExists)       this._cacheTableExists       = {};
+            if (!this._cacheGuessTableField)   this._cacheGuessTableField   = {};
+            if (!this._cacheHierarchy)         this._cacheHierarchy         = {};
+            if (!this._cacheRefFields)         this._cacheRefFields         = {};
+            if (!this._cacheNaturalKey)        this._cacheNaturalKey        = {};
+            if (!this._cacheUserNameExists)    this._cacheUserNameExists    = {};
+            if (!this._cacheM2MDiscovery)      this._cacheM2MDiscovery      = {};
+            if (!this._cacheTaskRelDiscovery)  this._cacheTaskRelDiscovery  = {};
+            if (!this._cacheTablesReferencing) this._cacheTablesReferencing = {};
+            if (!this._sysIdLookup)            this._sysIdLookup            = {};
+            if (!this._migratedRecords)        this._migratedRecords        = {};
+            if (!this._visited)                this._visited                = {};
+            var results = [];
+            var success = 0;
+            var failed  = 0;
+            var byTable = {};        
+            var compStr = (function(arr) {
+                var counts = {};
+                for (var i = 0; i < arr.length; i++) counts[arr[i].table] = (counts[arr[i].table] || 0) + 1;
+                var parts = [];
+                for (var k in counts) parts.push(k + ":" + counts[k]);
+                return parts.join(", ");
+            })(clean);
+            gs.info("]]>📦<![CDATA[ MIXED BATCH MIGRATION START — " + clean.length +
+                    " record(s) across multiple tables: " + compStr);
+            for (var i = 0; i < clean.length; i++) {
+                var item = clean[i];
+                if (!byTable[item.table]) byTable[item.table] = { ok: 0, fail: 0 };
+                var recStart = new Date().getTime();
+                var tgt      = '';
+                var ok       = false;
+                var errMsg   = '';
+                try {
+                    tgt = this.migrateRecord(sourceUrl, username, password,
+                                              item.table, item.sysId);
+                    if (tgt) { ok = true; success++; byTable[item.table].ok++; }
+                    else     { failed++;  byTable[item.table].fail++; errMsg = "migrateRecord returned empty"; }
+                } catch (e) {
+                    gs.error("Mixed batch item failed: " + item.table + "/" +
+                              item.sysId + " — " + e);
+                    failed++;
+                    byTable[item.table].fail++;
+                    errMsg = String(e);
+                }
+                var recMs = new Date().getTime() - recStart;
+                var resultEntry = {
+                    table:        item.table,
+                    sourceId:     item.sysId,
+                    targetId:     tgt,
+                    success:      ok,
+                    error:        errMsg,
+                    durationMs:   recMs,
+                    durationText: (recMs / 1000).toFixed(2) + "s"
+                };
+                results.push(resultEntry);
+                gs.info("  [" + (i + 1) + "/" + clean.length + "] " +
+                         (ok ? "✔" : "✗") + " " + item.table + "/" + item.sysId +
+                         " — " + (recMs / 1000).toFixed(2) + "s" +
+                         " (running: ok=" + success + " fail=" + failed + ")");
+                if (onProgress) {
+                    try { onProgress(i + 1, clean.length, item, resultEntry); }
+                    catch (eP) { gs.warn("onProgress callback threw: " + eP); }
+                }
+                if (stopOnError && !ok) {
+                    gs.warn("⚠ stopOnError = true — aborting batch after first failure");
+                    break;
+                }
+            }
+            this.KEEP_CACHES_ACROSS_CALLS = prevFlag;
+            var batchMs = new Date().getTime() - batchStart;
+            var avgMs   = batchMs / clean.length;
+            var summary = {
+                total:        clean.length,
+                success:      success,
+                failed:       failed,
+                durationMs:   batchMs,
+                durationText: (batchMs / 1000).toFixed(2) + " seconds",
+                avgPerRecord: (avgMs / 1000).toFixed(2) + " seconds",
+                byTable:      byTable,
+                results:      results
+            };
+            gs.info("]]>📦<![CDATA[ MIXED BATCH COMPLETE — " + success + "/" + clean.length +
+                     " succeeded in " + summary.durationText +
+                     " (avg " + summary.avgPerRecord + " per record)");
+            for (var t in byTable) {
+                gs.info("    " + t + ": ok=" + byTable[t].ok + " fail=" + byTable[t].fail);
+            }
+            return summary;
+        },
+    _getQueueTable: function() {
+            if (this._resolvedQueueTable) return this._resolvedQueueTable;
+            if (this.discovery._tableExists(this.QUEUE_TABLE)) {
+                this._resolvedQueueTable = { name: this.QUEUE_TABLE, custom: true };
+            } else {
+                this._resolvedQueueTable = { name: this.QUEUE_FALLBACK_TABLE, custom: false };
+                this.logStep("ℹ Queue: using " + this.QUEUE_FALLBACK_TABLE +
+                              " (custom table " + this.QUEUE_TABLE + " not present)");
+            }
+            return this._resolvedQueueTable;
+        },
+    queueMigration: function(table, sysIds) {
+            if (!sysIds || sysIds.length === 0) return 0;
+            var q = this._getQueueTable();
+            var added = 0;
+            for (var i = 0; i < sysIds.length; i++) {
+                var sid = String(sysIds[i] || "").trim();
+                if (!sid) continue;
+                try {
+                    if (q.custom) {
+                        var dup = new GlideRecordSecure(q.name);
+                        dup.addQuery("source_table",  table);
+                        dup.addQuery("source_sys_id", sid);
+                        dup.setLimit(1);
+                        dup.query();
+                        if (dup.next()) continue;
+                        var gr = new GlideRecordSecure(q.name);
+                        gr.initialize();
+                        gr.setValue("source_table",  table);
+                        gr.setValue("source_sys_id", sid);
+                        gr.setValue("status",        "pending");
+                        if (gr.insert()) added++;
+    
+                    } else {
+                        var prefName = this.QUEUE_FALLBACK_PREFIX + table + "." + sid;
+                        var dup2 = new GlideRecordSecure(q.name);
+                        dup2.addQuery("name", prefName);
+                        dup2.setLimit(1);
+                        dup2.query();
+                        if (dup2.next()) continue;
+                        var pr = new GlideRecordSecure(q.name);
+                        pr.initialize();
+                        pr.setValue("name",  prefName);
+                        pr.setValue("value", "pending");
+                        pr.setValue("type",  "string");
+                        if (pr.insert()) added++;
+                    }
+                } catch (eQ) {
+                    gs.warn("Queue insert failed for " + sid + ": " + eQ);
+                }
+            }
+            gs.info("]]>📋<![CDATA[ Queued " + added + " of " + sysIds.length + " for " + table);
+            return added;
+        },
+    queueMixedMigration: function(items) {
+            if (!items || items.length === 0) return 0;
+            var grouped = {};
+            for (var i = 0; i < items.length; i++) {
+                var it = items[i];
+                if (!it || !it.table || !it.sysId) continue;
+                if (!grouped[it.table]) grouped[it.table] = [];
+                grouped[it.table].push(it.sysId);
+            }
+            var total = 0;
+            for (var t in grouped) {
+                total += this.queueMigration(t, grouped[t]);
+            }
+            gs.info("]]>📋<![CDATA[ Total queued across all tables: " + total);
+            return total;
+        },
+    processMigrationQueue: function(sourceUrl, username, password, batchSize) {
+            batchSize = batchSize || 50;
+            var q       = this._getQueueTable();
+            var pending = [];
+            if (q.custom) {
+                var gr = new GlideRecordSecure(q.name);
+                gr.addQuery("status", "pending");
+                gr.orderBy("sys_created_on");
+                gr.setLimit(batchSize);
+                gr.query();
+                while (gr.next()) {
+                    pending.push({
+                        queueId: gr.getUniqueValue(),
+                        table:   gr.getValue("source_table"),
+                        sysId:   gr.getValue("source_sys_id")
+                    });
+                }
+            } else {
+                var pr = new GlideRecordSecure(q.name);
+                pr.addQuery("name", "STARTSWITH", this.QUEUE_FALLBACK_PREFIX);
+                pr.addQuery("value", "pending");
+                pr.orderBy("sys_created_on");
+                pr.setLimit(batchSize);
+                pr.query();
+                while (pr.next()) {
+                    var n = pr.getValue("name") || "";
+                    var rest = n.substring(this.QUEUE_FALLBACK_PREFIX.length);
+                    var dot  = rest.indexOf(".");
+                    if (dot === -1) continue;
+                    pending.push({
+                        queueId: pr.getUniqueValue(),
+                        table:   rest.substring(0, dot),
+                        sysId:   rest.substring(dot + 1)
+                    });
+                }
+            }
+            if (pending.length === 0) {
+                gs.info("]]>📋<![CDATA[ Queue empty");
+                return { processed: 0, success: 0, failed: 0 };
+            }
+            gs.info("]]>📋<![CDATA[ Processing " + pending.length + " queued migration(s)");
+            for (var m = 0; m < pending.length; m++) {
+                this._updateQueueStatus(q, pending[m].queueId, "running");
+            }
+            var byTable = {};
+            for (var p = 0; p < pending.length; p++) {
+                var t = pending[p].table;
+                if (!byTable[t]) byTable[t] = [];
+                byTable[t].push(pending[p]);
+            }
+            var success = 0;
+            var failed  = 0;
+            this.KEEP_CACHES_ACROSS_CALLS = true;
+            for (var tbl in byTable) {
+                var group = byTable[tbl];
+                for (var g = 0; g < group.length; g++) {
+                    var item = group[g];
+                    var ok   = false;
+                    try {
+                        var tgt = this.migrateRecord(sourceUrl, username, password,
+                                                      item.table, item.sysId);
+                        if (tgt) ok = true;
+                    } catch (e) {
+                        gs.error("Queue item failed: " + item.sysId + " — " + e);
+                    }
+                    this._updateQueueStatus(q, item.queueId, ok ? "done" : "failed");
+                    if (ok) success++; else failed++;
+                }
+            }
+            gs.info("]]>📋<![CDATA[ Queue batch complete — success:" + success + " failed:" + failed);
+            return {
+                processed: pending.length,
+                success:   success,
+                failed:    failed
+            };
+        },
+    _updateQueueStatus: function(q, queueId, status) {
+            try {
+                var gr = new GlideRecordSecure(q.name);
+                if (!gr.get(queueId)) return;
+                if (q.custom) {
+                    gr.setValue("status", status);
+                } else {
+                    gr.setValue("value", status);
+                }
+                gr.update();
+            } catch (e) {
+                gs.warn("Queue status update failed: " + e);
+            }
+        },
+    getQueueStatus: function() {
+            var q = this._getQueueTable();
+            var stats = { pending: 0, running: 0, done: 0, failed: 0, total: 0 };
+            var gr = new GlideRecordSecure(q.name);
+            if (q.custom) {
+                gr.query();
+            } else {
+                gr.addQuery("name", "STARTSWITH", this.QUEUE_FALLBACK_PREFIX);
+                gr.query();
+            }
+            while (gr.next()) {
+                var status = q.custom ? gr.getValue("status") : gr.getValue("value");
+                if (stats.hasOwnProperty(status)) stats[status]++;
+                stats.total++;
+            }
+            gs.info("]]>📊<![CDATA[ Queue: pending=" + stats.pending + " running=" + stats.running +
+                     " done=" + stats.done + " failed=" + stats.failed +
+                     " total=" + stats.total);
+            return stats;
+        },
+    requeueStuckItems: function(olderThanMinutes) {
+            olderThanMinutes = olderThanMinutes || 30;
+            var q = this._getQueueTable();
+            var gr = new GlideRecordSecure(q.name);
+            if (q.custom) {
+                gr.addQuery("status", "running");
+                gr.addQuery("sys_updated_on", "<", gs.minutesAgo(olderThanMinutes));
+            } else {
+                gr.addQuery("name", "STARTSWITH", this.QUEUE_FALLBACK_PREFIX);
+                gr.addQuery("value", "running");
+                gr.addQuery("sys_updated_on", "<", gs.minutesAgo(olderThanMinutes));
+            }
+            gr.query();
+            var reset = 0;
+            while (gr.next()) {
+                this._updateQueueStatus(q, gr.getUniqueValue(), "pending");
+                reset++;
+            }
+            gs.info("]]>🔁<![CDATA[ Requeued " + reset + " stuck item(s) older than " + olderThanMinutes + " min");
+            return reset;
+        },
+    _incrementProgress: function() {
+            this.progress.processed++;
+            if (this.progress.total > 0) {
+                this.progress.percent =
+                    Math.round((this.progress.processed / this.progress.total) * 100);
+            }
+        },
+    _ensureRecordLog: function() {
+            if (!this.currentRecordLog) {
+                this.currentRecordLog = {
+                    references_migrated: 0, references_failed: 0,
+                    related_migrated:    0, related_failed:    0,
+                    audit_migrated:      0, audit_failed:      0,
+                    journal_migrated:    0, journal_failed:    0,
+                    email_migrated:      0, email_failed:      0,
+                    attachments_copied:  0,
+                    errors:              []
+                };
+            }
+        },
+    _postMigrationFixup: function(table, targetId) {
+            return;
+        },
+    logStep: function(msg) {
+            this.executionLogs.push(msg);
+            gs.info(msg);
+        },
+    type: 'DM_MigrationCore'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-05-26 07:42:55</sys_created_on>
+        <sys_id>21271cd693cd83500af5f4e9b903d6db</sys_id>
+        <sys_mod_count>9</sys_mod_count>
+        <sys_name>DM_MigrationCore</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_script_include_21271cd693cd83500af5f4e9b903d6db</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-03 10:10:13</sys_updated_on>
+    </sys_script_include>
+</record_update>

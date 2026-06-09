@@ -1,0 +1,542 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller = function($location){
+
+  var c = this;
+  c.browsingTables = false;
+  c.cid = sessionStorage.getItem('currentId');
+
+  c.isActive = function(page){
+    return $location.search().id === page;
+  };
+
+  c.getCartCount = function(){
+    var cart = JSON.parse(sessionStorage.getItem("migration_cart") || "[]");
+    return cart.length;
+  };
+
+	/* =========================
+       BROWSE TABLES LOADER
+    ========================== */
+c.startBrowse = function() {
+    c.browsingTables = true;
+};
+
+};]]></client_script>
+        <controller_as>c</controller_as>
+        <css>*{&#13;
+  outline-style:none!important;&#13;
+}&#13;
+.dm-sidebar{&#13;
+  width:100%;&#13;
+  height:calc(100vh - 64px);&#13;
+  background:#fff;&#13;
+  border-right:1px solid #edf0f5;&#13;
+  padding:22px 14px;&#13;
+}&#13;
+.dm-menu{&#13;
+  list-style:none;&#13;
+  padding:0;&#13;
+  margin:0;&#13;
+  display:flex;&#13;
+  flex-direction:column;&#13;
+  gap:8px;&#13;
+}&#13;
+.dm-menu a{&#13;
+  display:flex;&#13;
+  align-items:center;&#13;
+  padding:10px 12px;&#13;
+  border-radius:16px;&#13;
+  text-decoration:none;&#13;
+  font-size:15px;&#13;
+  font-weight:500;&#13;
+  color:#3b4455;&#13;
+  transition:all .25s ease;&#13;
+}&#13;
+.dm-menu a:focus,&#13;
+.dm-menu a:active,&#13;
+.dm-menu a:focus-visible {&#13;
+  outline: none !important;&#13;
+  box-shadow: none !important;&#13;
+}&#13;
+.dm-icon-box{&#13;
+  width:36px;&#13;
+  height:36px;&#13;
+  border-radius:11px;&#13;
+  background:#f5f7fb;&#13;
+  display:flex;&#13;
+  align-items:center;&#13;
+  justify-content:center;&#13;
+  margin-right:13px;&#13;
+  flex-shrink:0;&#13;
+}&#13;
+.dm-icon-box svg{&#13;
+  width:17px;&#13;
+  height:17px;&#13;
+  stroke:#116AF8;&#13;
+  stroke-width:1.7;&#13;
+  stroke-linecap:round;&#13;
+  stroke-linejoin:round;&#13;
+}&#13;
+.dm-text{&#13;
+  flex:1;&#13;
+  line-height:1.25;&#13;
+}&#13;
+.dm-right{&#13;
+  display:flex;&#13;
+  align-items:center;&#13;
+  gap:10px;&#13;
+}&#13;
+.dm-arrow{&#13;
+  width:16px;&#13;
+  height:16px;&#13;
+  stroke:#116AF8;&#13;
+  stroke-width:2;&#13;
+  opacity:0;&#13;
+  visibility:hidden;&#13;
+  flex-shrink:0;&#13;
+  transition:all .2s ease;&#13;
+}&#13;
+.cart-badge{&#13;
+  background:#116AF8;&#13;
+  color:#fff;&#13;
+  font-size:11px;&#13;
+  min-width:20px;&#13;
+  height:20px;&#13;
+  border-radius:4px;&#13;
+  display:flex;&#13;
+  align-items:center;&#13;
+  justify-content:center;&#13;
+  padding:0 6px;&#13;
+}&#13;
+.cart-li.active .cart-badge{&#13;
+  background:#9BC0FC;&#13;
+  color:#000;&#13;
+}&#13;
+.cart-li:hover .cart-badge{&#13;
+  background:#9BC0FC;&#13;
+  color:#000;&#13;
+}&#13;
+.dm-menu li:not(.active) a:hover{&#13;
+  background:#116AF8;&#13;
+  color:#fff;&#13;
+}&#13;
+.dm-menu li.active a{&#13;
+  background: linear-gradient(to right, #116AF8, #0A50F5);&#13;
+  transition: all 2s ease-out;&#13;
+  color:#fff;&#13;
+  box-shadow:0 8px 22px rgba(17,106,248,.22);&#13;
+}&#13;
+.dm-menu li.active .dm-icon-box{&#13;
+  background:rgba(255,255,255,.15);&#13;
+}&#13;
+.dm-menu li.active .dm-icon-box svg{&#13;
+  stroke:#fff;&#13;
+}&#13;
+.dm-menu li.active .dm-arrow{&#13;
+  opacity:1;&#13;
+  visibility:visible;&#13;
+  stroke:#fff;&#13;
+}&#13;
+&#13;
+/* ================================&#13;
+   FULL-PAGE LOADER OVERLAY&#13;
+================================ */&#13;
+.dm-page-loader-overlay {&#13;
+    position: fixed;&#13;
+    inset: 0;&#13;
+&#13;
+    /* Blurry transparent gradient using your colors */&#13;
+    background: linear-gradient(&#13;
+        135deg,&#13;
+        rgba(17, 106, 248, 0.08),&#13;
+        rgba(10, 80, 245, 0.10),&#13;
+        rgba(155, 192, 252, 0.08)&#13;
+    );&#13;
+&#13;
+    backdrop-filter: blur(14px);&#13;
+    -webkit-backdrop-filter: blur(14px);&#13;
+&#13;
+    z-index: 9999;&#13;
+    display: flex;&#13;
+    align-items: center;&#13;
+    justify-content: center;&#13;
+&#13;
+    animation: dm-fade-in 0.3s ease;&#13;
+}&#13;
+&#13;
+@keyframes dm-fade-in {&#13;
+    from { opacity: 0; }&#13;
+    to   { opacity: 1; }&#13;
+}&#13;
+&#13;
+/* Subtle glow background */&#13;
+.dm-page-loader-overlay::before {&#13;
+    content: "";&#13;
+    position: absolute;&#13;
+    width: 400px;&#13;
+    height: 400px;&#13;
+    background: radial-gradient(&#13;
+        circle,&#13;
+        rgba(17, 106, 248, 0.25),&#13;
+        transparent 70%&#13;
+    );&#13;
+    filter: blur(60px);&#13;
+    z-index: -1;&#13;
+}&#13;
+&#13;
+/* ================================&#13;
+   LOADER CARD&#13;
+================================ */&#13;
+.dm-page-loader-box {&#13;
+    display: flex;&#13;
+    flex-direction: column;&#13;
+    align-items: center;&#13;
+    gap: 16px;&#13;
+&#13;
+    /* Glass effect card */&#13;
+    background: rgba(255, 255, 255, 0.65);&#13;
+    backdrop-filter: blur(18px);&#13;
+    -webkit-backdrop-filter: blur(18px);&#13;
+&#13;
+    padding: 50px 60px;&#13;
+    border-radius: 22px;&#13;
+&#13;
+    border: 1px solid rgba(155, 192, 252, 0.35);&#13;
+&#13;
+    box-shadow:&#13;
+        0 12px 50px rgba(17, 106, 248, 0.25),&#13;
+        0 0 0 1px rgba(17, 106, 248, 0.08),&#13;
+        inset 0 1px 0 rgba(255,255,255,0.6);&#13;
+&#13;
+    min-width: 340px;&#13;
+&#13;
+    animation: dm-slide-up 0.35s ease;&#13;
+}&#13;
+&#13;
+@keyframes dm-slide-up {&#13;
+    from { transform: translateY(20px); opacity: 0; }&#13;
+    to   { transform: translateY(0);    opacity: 1; }&#13;
+}&#13;
+&#13;
+/* ================================&#13;
+   LOGO&#13;
+================================ */&#13;
+.dm-loader-logo {&#13;
+    width: 78px;&#13;
+    height: 78px;&#13;
+    border-radius: 0 !important;&#13;
+    background: transparent !important;&#13;
+    display: flex;&#13;
+    align-items: center;&#13;
+    justify-content: center;&#13;
+    box-shadow:none !important;&#13;
+    margin-bottom: 6px;&#13;
+    animation: dm-pulse-logo 1.8s ease-in-out infinite;&#13;
+}&#13;
+&#13;
+@keyframes dm-pulse-logo {&#13;
+    0%, 100% { box-shadow: 0 8px 30px rgba(17, 106, 248, 0.45); }&#13;
+    50%       { box-shadow: 0 8px 45px rgba(17, 106, 248, 0.7);  }&#13;
+}&#13;
+&#13;
+/* ================================&#13;
+   TEXT&#13;
+================================ */&#13;
+.dm-loader-title {&#13;
+    font-size: 18px;&#13;
+    font-weight: 700;&#13;
+    color: #0A50F5;&#13;
+    letter-spacing: -0.3px;&#13;
+    margin-top: 4px;&#13;
+}&#13;
+&#13;
+.dm-loader-subtitle {&#13;
+    font-size: 13px;&#13;
+    color: #6b7280;&#13;
+    text-align: center;&#13;
+    max-width: 240px;&#13;
+    line-height: 1.5;&#13;
+}&#13;
+&#13;
+/* ================================&#13;
+   PROGRESS BAR&#13;
+================================ */&#13;
+.dm-progress-track {&#13;
+    width: 100%;&#13;
+    height: 6px;&#13;
+    background: #e8f0fe;&#13;
+    border-radius: 99px;&#13;
+    overflow: hidden;&#13;
+    margin-top: 6px;&#13;
+}&#13;
+&#13;
+.dm-progress-bar {&#13;
+    height: 100%;&#13;
+    width: 40%;&#13;
+    border-radius: 99px;&#13;
+&#13;
+    background: linear-gradient(&#13;
+        90deg,&#13;
+        #116AF8,&#13;
+        #9BC0FC,&#13;
+        #0A50F5,&#13;
+        #116AF8&#13;
+    );&#13;
+&#13;
+    background-size: 300% 100%;&#13;
+&#13;
+    animation: dm-progress-slide 1.3s ease-in-out infinite;&#13;
+}&#13;
+&#13;
+@keyframes dm-progress-slide {&#13;
+    0%   { background-position: 100% 0; width: 30%; margin-left: 0%;   }&#13;
+    50%  { background-position: 0% 0;   width: 55%; margin-left: 20%;  }&#13;
+    100% { background-position: 100% 0; width: 30%; margin-left: 70%;  }&#13;
+}&#13;
+&#13;
+/* ================================&#13;
+   DOTS&#13;
+================================ */&#13;
+.dm-loader-dots {&#13;
+    display: flex;&#13;
+    gap: 7px;&#13;
+    margin-top: 4px;&#13;
+}&#13;
+&#13;
+.dm-loader-dots span {&#13;
+    width: 8px;&#13;
+    height: 8px;&#13;
+    border-radius: 50%;&#13;
+    background: #9BC0FC;&#13;
+    animation: dm-dot-bounce 1.2s ease-in-out infinite;&#13;
+}&#13;
+&#13;
+.dm-loader-dots span:nth-child(1) { animation-delay: 0s;    background: #116AF8; }&#13;
+.dm-loader-dots span:nth-child(2) { animation-delay: 0.2s;  background: #0A50F5; }&#13;
+.dm-loader-dots span:nth-child(3) { animation-delay: 0.4s;  background: #9BC0FC; }&#13;
+&#13;
+@keyframes dm-dot-bounce {&#13;
+    0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }&#13;
+    40%            { transform: scale(1.3); opacity: 1;   }&#13;
+}</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>false</has_preview>
+        <id>tracenow_sidebar</id>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link>
+        <name>tracenow_sidebar</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function() {
+  /* populate the 'data' object */
+  /* e.g., data.table = $sp.getValue('table'); */
+
+})();]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>irfan.wani</sys_created_by>
+        <sys_created_on>2026-05-20 11:03:56</sys_created_on>
+        <sys_id>60ab4adc3bcd4b10092273c5e4e45aee</sys_id>
+        <sys_mod_count>15</sys_mod_count>
+        <sys_name>tracenow_sidebar</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_widget_60ab4adc3bcd4b10092273c5e4e45aee</sys_update_name>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-06-03 08:00:07</sys_updated_on>
+        <template><![CDATA[<div class="dm-sidebar">
+
+  <ul class="dm-menu">
+
+    <li ng-class="{active: c.isActive('tracennow_dashboard')}">
+      <a href="/_tracenow?id=tracennow_dashboard">
+        <span class="dm-icon-box">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+            <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+            <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+            <rect width="7" height="5" x="3" y="16" rx="1"></rect>
+          </svg>
+        </span>
+        <span class="dm-text">Dashboard</span>
+        <div class="dm-right">
+          <svg class="dm-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </div>
+      </a>
+    </li>
+
+    <li ng-class="{active: c.isActive('tracenow_coonection_list')}">
+      <a href="/_tracenow?id=tracenow_connection_list">
+        <span class="dm-icon-box">
+          <svg xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-unplug-icon lucide-unplug"><path d="m19 5 3-3"/><path d="m2 22 3-3"/><path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"/><path d="M7.5 13.5 10 11"/><path d="M10.5 16.5 13 14"/><path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z"/></svg>
+        </span>
+        <span class="dm-text">Connections</span>
+        <div class="dm-right">
+          <svg class="dm-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </div>
+      </a>
+    </li>
+
+    <li ng-class="{active: c.isActive('tracenow_browse_table')}">
+      <a href="/_tracenow?id=tracenow_browse_table&sys_id={{c.cid}}"
+  ng-click="c.startBrowse()">
+        <span class="dm-icon-box">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m21 21-4.34-4.34"></path>
+            <circle cx="11" cy="11" r="8"></circle>
+          </svg>
+        </span>
+        <span class="dm-text">Browse Tables</span>
+        <div class="dm-right">
+          <svg class="dm-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </div>
+      </a>
+    </li>
+
+    <li ng-class="{active: c.isActive('tracenow_queue')}" class="cart-li">
+      <a href="/_tracenow?id=tracenow_queue">
+        <span class="dm-icon-box">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="8" cy="21" r="1"></circle>
+            <circle cx="19" cy="21" r="1"></circle>
+            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+          </svg>
+        </span>
+        <span class="dm-text">Queue</span>
+        <div class="dm-right">
+          <span class="cart-badge" ng-if="c.getCartCount() > 0">{{c.getCartCount()}}</span>
+          <svg class="dm-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </div>
+      </a>
+    </li>
+
+    <li ng-class="{active: c.isActive('tracenow_reports')}">
+      <a href="/_tracenow?id=tracenow_reports">
+        <span class="dm-icon-box">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3v16a2 2 0 0 0 2 2h16"></path>
+            <path d="M18 17V9"></path>
+            <path d="M13 17V5"></path>
+            <path d="M8 17v-3"></path>
+          </svg>
+        </span>
+        <span class="dm-text">Reports</span>
+        <div class="dm-right">
+          <svg class="dm-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </div>
+      </a>
+    </li>
+
+  <li ng-class="{active: c.isActive('tracenow_analytics')}">
+      <a href="/_tracenow?id=tracenow_analytics">
+        <span class="dm-icon-box">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+            <path d="M12 7v5l4 2"></path>
+          </svg>
+        </span>
+        <span class="dm-text">Analytics</span>
+        <div class="dm-right">
+          <svg class="dm-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </div>
+      </a>
+    </li>
+    
+   <li ng-class="{active: c.isActive('tracenow_contact')}">
+      <a href="/_tracenow?id=tracenow_contact">
+        <span class="dm-icon-box">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-contact-round-icon lucide-contact-round"><path d="M16 2v2"/><path d="M17.915 22a6 6 0 0 0-12 0"/><path d="M8 2v2"/><circle cx="12" cy="12" r="4"/><rect x="3" y="4" width="18" height="18" rx="2"/></svg>
+        </span>
+        <span class="dm-text">Contact</span>
+        <div class="dm-right">
+          <svg class="dm-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </div>
+      </a>
+    </li>  
+
+<!-- <li ng-class="{active: c.isActive('dm_setting')}">
+      <a href="/datamigration?id=dm_setting">
+        <span class="dm-icon-box">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </span>
+        <span class="dm-text">Settings</span>
+        <div class="dm-right">
+          <svg class="dm-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </div>
+      </a>
+    </li> -->
+
+  </ul>
+
+</div>
+<!-- ========================
+     BROWSE TABLES FULL-PAGE LOADER
+========================= -->
+<div class="dm-page-loader-overlay" ng-if="c.browsingTables">
+    <div class="dm-page-loader-box">
+
+        <!-- Logo / Icon -->
+        <div class="dm-loader-logo">
+            <svg width="133" height="98" viewBox="0 0 133 98" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M93.4217 0H10.2803L37.2925 28.7662H65.3571V57.5325L93.4217 85.5971V0Z" fill="#116AF8"/>
+<path d="M101.584 0H132.422L101.584 33.8613V0Z" fill="#116AF8"/>
+<g opacity="0.42" style="mix-blend-mode:multiply">
+<path d="M83.1415 12.0938L0 12.0938L27.0122 40.86L55.0768 40.86L55.0768 69.6262L83.1415 97.6909L83.1415 12.0938Z" fill="#116AF8"/>
+</g>
+</svg>
+
+        </div>
+
+        <!-- Title -->
+        <div class="dm-loader-title">Loading Tables</div>
+        <div class="dm-loader-subtitle">Fetching data from your instance, please wait…</div>
+
+        <!-- Progress Bar -->
+        <div class="dm-progress-track">
+            <div class="dm-progress-bar"></div>
+        </div>
+
+        <!-- Animated dots -->
+        <div class="dm-loader-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+    </div>
+</div>
+
+
+]]></template>
+    </sp_widget>
+</record_update>

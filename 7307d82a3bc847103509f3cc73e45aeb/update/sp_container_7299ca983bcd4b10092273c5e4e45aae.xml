@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_container">
+    <sp_container action="INSERT_OR_UPDATE">
+        <background_color/>
+        <background_image/>
+        <background_style>default</background_style>
+        <bootstrap_alt>false</bootstrap_alt>
+        <class_name/>
+        <container_class_name/>
+        <name>Connection List - Container 1</name>
+        <order>1</order>
+        <semantic_tag/>
+        <sp_page display_value="tracenow_connection_list">be79c6983bcd4b10092273c5e4e45a26</sp_page>
+        <subheader>false</subheader>
+        <sys_class_name>sp_container</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-05-20 10:54:46</sys_created_on>
+        <sys_id>7299ca983bcd4b10092273c5e4e45aae</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name>Connection List - Container 1</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_container_7299ca983bcd4b10092273c5e4e45aae</sys_update_name>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-05-20 10:55:02</sys_updated_on>
+        <title/>
+        <width>container-fluid</width>
+    </sp_container>
+</record_update>

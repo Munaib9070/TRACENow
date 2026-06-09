@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_instance">
+    <sp_instance action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <class_name/>
+        <color>default</color>
+        <css/>
+        <glyph/>
+        <id/>
+        <order>1</order>
+        <roles/>
+        <short_description/>
+        <size>md</size>
+        <sp_column display_value="1">03bfd4013b81cf10092273c5e4e45a6b</sp_column>
+        <sp_widget display_value="tracenow_contact">ddd7dc4d3b01cf10092273c5e4e45a25</sp_widget>
+        <sys_class_name>sp_instance</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-05-22 11:07:59</sys_created_on>
+        <sys_id>37cf98013b81cf10092273c5e4e45a15</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name/>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_instance_37cf98013b81cf10092273c5e4e45a15</sys_update_name>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-05-22 11:07:59</sys_updated_on>
+        <title/>
+        <url/>
+        <widget_parameters/>
+    </sp_instance>
+    <sys_translated_text action="delete_multiple" query="documentkey=37cf98013b81cf10092273c5e4e45a15"/>
+</record_update>

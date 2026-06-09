@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_page">
+    <sp_page action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <css>@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&amp;display=swap');&#13;
+ &#13;
+body, .col-md-12, .padding-top {&#13;
+  padding:0px;&#13;
+  margin:0px;&#13;
+font-family:'Rubik', sans-serif;&#13;
+}</css>
+        <draft>false</draft>
+        <dynamic_title_structure/>
+        <human_readable_url_structure/>
+        <id>tracenow_connection_list</id>
+        <internal>false</internal>
+        <omit_watcher>false</omit_watcher>
+        <public>false</public>
+        <roles/>
+        <seo_script/>
+        <short_description/>
+        <sys_class_name>sp_page</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-05-20 10:54:38</sys_created_on>
+        <sys_id>be79c6983bcd4b10092273c5e4e45a26</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>tracenow_connection_list</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_page_be79c6983bcd4b10092273c5e4e45a26</sys_update_name>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-06-03 07:00:18</sys_updated_on>
+        <title>Connection List</title>
+        <use_seo_script>false</use_seo_script>
+    </sp_page>
+    <sys_translated_text action="delete_multiple" query="documentkey=be79c6983bcd4b10092273c5e4e45a26"/>
+</record_update>

@@ -1,0 +1,777 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_sysus_tracenow.DM_ReferenceResolver</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <mobile_callable>false</mobile_callable>
+        <name>DM_ReferenceResolver</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[/* =============================================================================
+   DM_ReferenceResolver
+   ----------------------------------------------------------------------------
+   Reference-mapping, natural-key resolution, and user-chain module for the
+   TraceNow migration framework. Extracted verbatim from dm_test_v36.js with
+   this.X rewritten to this.core.X for shared state, and cross-module calls
+   routed through this.core.{discovery,related}.
+
+   ----------------------------------------------------------------------------
+   RESPONSIBILITIES
+   ----------------------------------------------------------------------------
+   1. Source sys_id → target sys_id mapping (_setMigrated, _findMigratedKey)
+   2. Remap any reference fields in a row from source IDs to target IDs
+      (_remapAllSysIdFieldsInRow, _remapStringRef, _remapChildRefs)
+   3. Resolve a reference to its target sys_id — migrate the referenced
+      record if needed (_resolveRefForRelated)
+   4. Natural-key resolution: look up sys_user by user_name, sys_user_group
+      by name, etc., and create missing records using NATURAL_KEY_CREATE_FIELDS
+      (_resolveByNaturalKey, _createNaturalKeyRecord)
+   5. User chain walking: opener → manager → groups → roles, bounded by
+      USER_CHAIN policy (_processUserChain, _migrateUserGroupMemberships,
+      _migrateUserRoles)
+   6. Pre-resolve identity fields before parent upsert so the parent's
+      caller_id, opened_by, etc. point at target users (_preResolveIdentityFields)
+   7. Generic name-or-create for cmdb_ci, service_offering, etc., driven
+      by M2M_RESOLVER_CONFIG (_resolveByNameOrCreate)
+   8. User existence batch checks (_ensureUserExists, _ensureUserExistsBatch,
+      _batchPrefetchUsers)
+
+   Owned caches: _cacheNaturalKey, _cacheUserNameExists.
+   All other caches and cross-engine state live on this.core.
+   ============================================================================= */
+
+var DM_ReferenceResolver = Class.create();
+
+DM_ReferenceResolver.prototype = {
+
+    initialize: function(core) {
+
+        this.core = core || {};
+
+        /* Caches local to this module */
+        this._cacheNaturalKey     = {};
+        this._cacheUserNameExists = {};
+    },
+
+    _setMigrated: function(table, sourceSysId, targetSysId) {
+            if (!table || !sourceSysId || !targetSysId) return;
+            var key = table + "_" + sourceSysId;
+            this.core._migratedRecords[key] = targetSysId;
+            this.core._sysIdLookup[sourceSysId] = targetSysId;
+        },
+
+    _findMigratedKey: function(sourceSysId) {
+            if (!sourceSysId) return null;
+            return this.core._sysIdLookup.hasOwnProperty(sourceSysId) ? sourceSysId : null;
+        },
+
+    _remapStringRef: function(maybeSysId) {
+            if (!maybeSysId) return maybeSysId;
+            var s = String(maybeSysId).trim();
+            if (!/^[0-9a-f]{32}$/i.test(s)) return maybeSysId;
+            return this.core._sysIdLookup[s] || maybeSysId;
+        },
+
+    _remapAllSysIdFieldsInRow: function(row, skipFields) {
+    
+            skipFields = skipFields || {};
+            var remapped = 0;
+    
+            for (var f in row) {
+    
+                if (!row.hasOwnProperty(f))   continue;
+                if (skipFields[f])             continue;
+                if (f === "sys_id"          ||
+                    f === "sys_created_by"  ||
+                    f === "sys_updated_by"  ||
+                    f === "sys_created_on"  ||
+                    f === "sys_updated_on") continue;
+    
+                var v = row[f];
+                if (v && typeof v === "object" && v.value !== undefined) v = v.value;
+                if (typeof v !== "string") continue;
+    
+                v = v.trim();
+                if (!/^[0-9a-f]{32}$/i.test(v)) continue;
+    
+                if (this.core._sysIdLookup[v]) {
+                    row[f] = this.core._sysIdLookup[v];
+                    remapped++;
+                }
+            }
+            return remapped;
+        },
+
+    _resolveRefForRelated: function(refTable, sourceSysId, depth) {
+    
+            if (!refTable || !sourceSysId) return '';
+            depth = depth || 1;
+    
+            if (this.core._sysIdLookup[sourceSysId]) return this.core._sysIdLookup[sourceSysId];
+    
+            var key = refTable + "_" + sourceSysId;
+            if (this.core._migratedRecords[key]) return this.core._migratedRecords[key];
+    
+            if (this.core.SKIP_TABLES && this.core.SKIP_TABLES[refTable]) {
+    
+                var grLocal = new GlideRecordSecure(refTable);
+                if (grLocal.get(sourceSysId)) {
+                    this._setMigrated(refTable, sourceSysId, sourceSysId);
+                    return sourceSysId;
+                }
+    
+                if (this.core.NATURAL_KEY_TABLES.hasOwnProperty(refTable)) {
+                    var nk = this._resolveByNaturalKey(refTable, sourceSysId);
+                    if (nk) return nk;
+                    /* ★ v37 — backstop auto-create. If _resolveByNaturalKey's
+                       internal auto-create failed silently (e.g. cross-scope
+                       refused the insert), try once more from this layer. */
+                    if (this.core.AUTO_CREATE_NATURAL_KEY) {
+                        var srcNK = this.core.fetchSourceRecord(refTable, sourceSysId);
+                        if (srcNK) {
+                            var madeId = this._createNaturalKeyRecord(refTable, srcNK);
+                            if (madeId) {
+                                if (this.core.DEBUG) {
+                                    this.core.logStep('  ★ v37 backstop auto-created ' + refTable + ' for ' + sourceSysId + ' → ' + madeId);
+                                }
+                                return madeId;
+                            }
+                        }
+                    }
+                    /* ★ v37 — do NOT return sourceSysId for natural-key tables.
+                       Source sys_id is meaningless on target; setValue will
+                       silently fail validation and the field stays empty. Be
+                       honest about it and return '' so the field is null. */
+                    if (this.core.DEBUG) {
+                        this.core.logStep('  ⚠ v37: could not resolve ' + refTable + '/' + sourceSysId + ' on target. Field will be empty.');
+                    }
+                    return '';
+                }
+
+                return sourceSysId;
+            }
+    
+            if (this.core.NATURAL_KEY_TABLES.hasOwnProperty(refTable)) {
+                var nkResolved = this._resolveByNaturalKey(refTable, sourceSysId);
+                return nkResolved || sourceSysId;
+            }
+    
+            if (refTable === "sys_choice" || refTable === "sys_dictionary") return sourceSysId;
+    
+            if (depth < this.core.MAX_RECURSION) {
+                var migrated = this.core.migrateWithDependencies(refTable, sourceSysId, depth);
+                return migrated || sourceSysId;
+            }
+    
+            return sourceSysId;
+        },
+
+    _resolveByNaturalKey: function(table, sourceSysId) {
+    
+            var cacheKey = table + "_" + sourceSysId;
+    
+            if (this._cacheNaturalKey.hasOwnProperty(cacheKey) &&
+                this._cacheNaturalKey[cacheKey]) {
+                return this._cacheNaturalKey[cacheKey];
+            }
+    
+            var lookupField = this.core.NATURAL_KEY_TABLES[table];
+            if (!lookupField) {
+                this._cacheNaturalKey[cacheKey] = '';
+                return '';
+            }
+    
+            var srcRecord = this.core.fetchSourceRecord(table, sourceSysId);
+            if (!srcRecord) return '';
+    
+            var lookupValue = this.core.discovery.normalizeRef(srcRecord[lookupField]);
+            if (!lookupValue) return '';
+    
+            var gr = new GlideRecordSecure(table);
+            gr.addQuery(lookupField, lookupValue);
+            gr.setLimit(1);
+            gr.query();
+    
+            if (gr.next()) {
+                var existingId = gr.getUniqueValue();
+                this._cacheNaturalKey[cacheKey] = existingId;
+                this._setMigrated(table, sourceSysId, existingId);
+                this.core.logStep("Resolved " + table + " by " + lookupField + "='" + lookupValue + "'");
+    
+                /* Fire user-chain on sys_user resolutions (manager + opt-in extras) */
+                if (table === "sys_user") {
+                    try { this._processUserChain(sourceSysId, existingId, 0); }
+                    catch (eUC) { gs.warn("User chain failed: " + eUC); }
+                }
+    
+                return existingId;
+            }
+    
+            if (!this.core.AUTO_CREATE_NATURAL_KEY) {
+                this._cacheNaturalKey[cacheKey] = '';
+                return '';
+            }
+    
+            var createdId = this._createNaturalKeyRecord(table, srcRecord);
+            if (createdId) this._cacheNaturalKey[cacheKey] = createdId;
+    
+            /* Fire user-chain on freshly-created users too */
+            if (createdId && table === "sys_user") {
+                try { this._processUserChain(sourceSysId, createdId, 0); }
+                catch (eUC2) { gs.warn("User chain failed: " + eUC2); }
+            }
+    
+            return createdId;
+        },
+
+    _createNaturalKeyRecord: function(table, srcRecord) {
+    
+            var allowedFields = this.core.NATURAL_KEY_CREATE_FIELDS[table];
+            if (!allowedFields || allowedFields.length === 0) return '';
+    
+            var srcSysId = this.core.discovery.normalizeRef(srcRecord.sys_id);
+    
+            var newGr = new GlideRecordSecure(table);
+            newGr.initialize();
+            for (var i = 0; i < allowedFields.length; i++) {
+    
+                var f = allowedFields[i];
+                if (!newGr.isValidField(f)) continue;
+    
+                var v = srcRecord[f];
+                if (v && typeof v === "object" && v.value !== undefined) v = v.value;
+                if (Array.isArray(v) || v === undefined || v === null) continue;
+    
+                if (f === "manager") {
+                    if (v) {
+                        var resolvedMgr = this._resolveByNaturalKey("sys_user", v);
+                        if (resolvedMgr) newGr.setValue("manager", resolvedMgr);
+                    }
+                    continue;
+                }
+    
+                if (f === "parent") {
+                    if (v) {
+                        var resolvedParent = this._resolveByNaturalKey("sys_user_group", v);
+                        if (resolvedParent) newGr.setValue("parent", resolvedParent);
+                    }
+                    continue;
+                }
+    
+                try { newGr.setValue(f, v); }
+                catch (eSet) { gs.warn("Auto-create field failed: " + table + "." + f); }
+            }
+    
+            try {
+                var newId = newGr.insert();
+    
+                if (newId && srcSysId) {
+                    this._setMigrated(table, srcSysId, newId);
+                    this._cacheNaturalKey[table + "_" + srcSysId] = newId;
+                }
+    
+                if (newId && table === "sys_user") {
+                    try {
+                        var fix = new GlideRecordSecure("sys_user");
+                        if (fix.get(newId)) {
+                            var first = srcRecord.first_name;
+                            var last  = srcRecord.last_name;
+                            var name  = srcRecord.name;
+                            if (first && typeof first === "object") first = first.value;
+                            if (last  && typeof last  === "object") last  = last.value;
+                            if (name  && typeof name  === "object") name  = name.value;
+                            if (!name) name = (first || "") + " " + (last || "");
+                            if (first) fix.setValue("first_name", first);
+                            if (last)  fix.setValue("last_name",  last);
+                            if (name)  fix.setValue("name",       name.trim());
+                            fix.setValue("active", true);
+                            fix.update();
+                        }
+                    } catch (ignore) {}
+                }
+    
+                return newId || '';
+    
+            } catch (eInsert) {
+                gs.warn("Auto-create failed for " + table);
+                return '';
+            }
+        },
+
+    _processUserChain: function(srcUserId, targetUserId, depth) {
+    
+            if (!srcUserId || !targetUserId) return;
+    
+            depth = depth || 0;
+    
+            var chainKey = "userchain_" + srcUserId;
+            if (this.core._visited[chainKey]) return;
+            this.core._visited[chainKey] = true;
+    
+            /* ---------- Manager chain (depth-capped) ---------- */
+            if (this.core.USER_CHAIN.managerChainDepth > depth) {
+    
+                try {
+                    var srcUser = this.core.fetchSourceRecord("sys_user", srcUserId);
+                    if (srcUser) {
+                        var srcMgr = this.core.discovery.normalizeRef(srcUser.manager);
+                        if (srcMgr && srcMgr !== srcUserId) {
+                            var newMgr = this._resolveByNaturalKey("sys_user", srcMgr);
+                            if (newMgr) {
+                                /* Re-assert manager link on the migrated user */
+                                var fix = new GlideRecordSecure("sys_user");
+                                if (fix.get(targetUserId) &&
+                                    this.core.discovery.normalizeRef(fix.getValue("manager")) !== newMgr) {
+                                    fix.setValue("manager", newMgr);
+                                    fix.update();
+                                }
+                                /* Recurse if depth allows */
+                                this._processUserChain(srcMgr, newMgr, depth + 1);
+                            }
+                        }
+                    }
+                } catch (eM) {
+                    gs.warn("Manager chain failed for user " + srcUserId + ": " + eM);
+                }
+            }
+    
+            /* ---------- Group memberships (OPT-IN, dangerous) ---------- */
+            if (this.core.USER_CHAIN.migrateGroupMemberships) {
+                this._migrateUserGroupMemberships(srcUserId, targetUserId);
+            }
+    
+            /* ---------- Role grants (OPT-IN, very dangerous) ---------- */
+            if (this.core.USER_CHAIN.migrateRoles) {
+                this._migrateUserRoles(srcUserId, targetUserId);
+            }
+        },
+
+    _migrateUserGroupMemberships: function(srcUserId, targetUserId) {
+    
+            var rows = this.core.discovery.fetchChildren("sys_user_grmember", "user", "", srcUserId);
+            if (rows.length === 0) return;
+    
+            this.core.logStep("  → User group memberships: " + rows.length + " row(s) for user " + srcUserId);
+    
+            var migrated = 0;
+            for (var i = 0; i < rows.length; i++) {
+    
+                var row = rows[i];
+    
+                try {
+                    var srcGroup = this.core.discovery.normalizeRef(row.group);
+                    if (!srcGroup) continue;
+    
+                    var newGroup = this._resolveByNaturalKey("sys_user_group", srcGroup);
+                    if (!newGroup) continue;
+    
+                    /* Dedup */
+                    var dup = new GlideRecordSecure("sys_user_grmember");
+                    dup.addQuery("user",  targetUserId);
+                    dup.addQuery("group", newGroup);
+                    dup.setLimit(1);
+                    dup.query();
+                    if (dup.next()) continue;
+    
+                    var newGr = new GlideRecordSecure("sys_user_grmember");
+                    newGr.initialize();
+                    newGr.setValue("user",  targetUserId);
+                    newGr.setValue("group", newGroup);
+    
+                    if (newGr.insert()) migrated++;
+    
+                } catch (e) {
+                    gs.warn("Group membership migration failed: " + e);
+                }
+            }
+    
+            this.core.logStep("  Group memberships migrated: " + migrated);
+        },
+
+    _migrateUserRoles: function(srcUserId, targetUserId) {
+    
+            var rows = this.core.discovery.fetchChildren("sys_user_has_role", "user", "", srcUserId);
+            if (rows.length === 0) return;
+    
+            this.core.logStep("  → User role grants: " + rows.length + " row(s) for user " + srcUserId);
+    
+            var migrated = 0;
+            for (var i = 0; i < rows.length; i++) {
+    
+                var row = rows[i];
+    
+                try {
+                    var srcRole = this.core.discovery.normalizeRef(row.role);
+                    if (!srcRole) continue;
+    
+                    /* Resolve role by NAME on target — sys_id matching is unreliable
+                       across instances and would silently grant the wrong role. */
+                    var srcRoleRec = this.core.fetchSourceRecord("sys_user_role", srcRole);
+                    if (!srcRoleRec) continue;
+                    var roleName = this.core.discovery.normalizeRef(srcRoleRec.name);
+                    if (!roleName) continue;
+    
+                    var roleQuery = new GlideRecordSecure("sys_user_role");
+                    roleQuery.addQuery("name", roleName);
+                    roleQuery.setLimit(1);
+                    roleQuery.query();
+                    if (!roleQuery.next()) {
+                        gs.warn("⚠ Role not found on target: " + roleName + " — skipping grant");
+                        continue;
+                    }
+                    var newRole = roleQuery.getUniqueValue();
+    
+                    /* Dedup */
+                    var dup = new GlideRecordSecure("sys_user_has_role");
+                    dup.addQuery("user", targetUserId);
+                    dup.addQuery("role", newRole);
+                    dup.setLimit(1);
+                    dup.query();
+                    if (dup.next()) continue;
+    
+                    var newGr = new GlideRecordSecure("sys_user_has_role");
+                    newGr.initialize();
+                    newGr.setValue("user", targetUserId);
+                    newGr.setValue("role", newRole);
+                    newGr.setValue("granted_by", targetUserId);   // attribute the grant
+                    newGr.setValue("inherited",  false);
+    
+                    if (newGr.insert()) migrated++;
+    
+                } catch (e) {
+                    gs.warn("Role migration failed: " + e);
+                }
+            }
+    
+            this.core.logStep("  Role grants migrated: " + migrated);
+        },
+
+    _preResolveIdentityFields: function(child) {
+    
+            for (var field in this.core.IDENTITY_FIELDS) {
+    
+                if (!child.hasOwnProperty(field)) continue;
+    
+                var src = this.core.discovery.normalizeRef(child[field]);
+                if (!src) continue;
+                if (src.indexOf(',') !== -1) continue;
+                if (!/^[0-9a-f]{32}$/i.test(src)) continue;
+    
+                var refTable = this.core.IDENTITY_FIELDS[field];
+                var resolved = this._resolveRefForRelated(refTable, src, 1);
+    
+                if (resolved) child[field] = resolved;
+            }
+    
+            return child;
+        },
+
+    _resolveByNameOrCreate: function(refTable, srcSysId) {
+    
+            if (!srcSysId || !refTable) return '';
+    
+            if (this.core._sysIdLookup[srcSysId]) {
+                if (this.core.DEBUG) this.core.logStep("    " + refTable + " cache hit: " +
+                                              srcSysId + " → " + this.core._sysIdLookup[srcSysId]);
+                return this.core._sysIdLookup[srcSysId];
+            }
+    
+            var config       = this.core.M2M_RESOLVER_CONFIG[refTable] || this.core.M2M_RESOLVER_CONFIG._default;
+            var lookupField  = config.lookupField || "name";
+            var safeFields   = config.safeFields  || [];
+    
+            // 1. Same sys_id on target?
+            if (this.core.discovery._tableExists(refTable)) {
+                var grTarget = new GlideRecordSecure(refTable);
+                if (grTarget.get(srcSysId)) {
+                    this._setMigrated(refTable, srcSysId, srcSysId);
+                    if (this.core.DEBUG) this.core.logStep("    " + refTable + " matched by sys_id: " + srcSysId);
+                    return srcSysId;
+                }
+            } else {
+                this.core.logStep("    ⚠ Target table missing: " + refTable);
+                return '';
+            }
+    
+            // 2. Fetch source for name lookup
+            var srcRec = this.core.fetchSourceRecord(refTable, srcSysId);
+            if (!srcRec) {
+                this.core.logStep("    ⚠ " + refTable + " not fetchable from source: " + srcSysId);
+                return '';
+            }
+    
+            var name = this.core.discovery.normalizeRef(srcRec[lookupField]);
+            if (!name) {
+                this.core.logStep("    ⚠ Source " + refTable + " has no " + lookupField + ": " + srcSysId);
+                return '';
+            }
+    
+            // 3. Lookup on target by configured field
+            var grByName = new GlideRecordSecure(refTable);
+            grByName.addQuery(lookupField, name);
+            grByName.setLimit(1);
+            grByName.query();
+    
+            if (grByName.next()) {
+                var existingId = grByName.getUniqueValue();
+                this._setMigrated(refTable, srcSysId, existingId);
+                if (this.core.DEBUG) this.core.logStep("    " + refTable + " matched by " +
+                                              lookupField + ": '" + name + "' → " + existingId);
+                return existingId;
+            }
+    
+            // 4. Create minimal stub. Honour sys_class_name where present.
+            var sysClass   = this.core.discovery.normalizeRef(srcRec.sys_class_name);
+            var classToUse = refTable;
+            if (sysClass && sysClass !== refTable && this.core.discovery._tableExists(sysClass)) {
+                classToUse = sysClass;
+            }
+    
+            try {
+                var newRec = new GlideRecordSecure(classToUse);
+                newRec.initialize();
+                newRec.setValue(lookupField, name);
+                if (sysClass && newRec.isValidField("sys_class_name")) {
+                    newRec.setValue("sys_class_name", sysClass);
+                }
+    
+                for (var i = 0; i < safeFields.length; i++) {
+                    var f = safeFields[i];
+                    if (!newRec.isValidField(f)) continue;
+                    var v = srcRec[f];
+                    if (v && typeof v === "object" && v.value !== undefined) v = v.value;
+                    if (v === undefined || v === null || v === "") continue;
+                    try { newRec.setValue(f, v); } catch (eSet) {}
+                }
+    
+                var newId = newRec.insert();
+    
+                if (newId) {
+                    this._setMigrated(refTable, srcSysId, newId);
+                    this.core.logStep("    ✔ " + classToUse + " created: '" + name + "' → " + newId);
+                    return newId;
+                }
+    
+                this.core.logStep("    ⚠ " + classToUse + " insert returned empty for '" + name + "'");
+                return '';
+    
+            } catch (eIns) {
+                this.core.logStep("    ⚠ " + classToUse + " create threw: " + eIns);
+                return '';
+            }
+        },
+
+    _remapChildRefs: function(child, table, depth, skipFields) {
+    
+            depth      = depth || 1;
+            skipFields = skipFields || {};
+    
+            var refFields = this.core.discovery._getCachedRefFields(table);
+    
+            for (var i = 0; i < refFields.length; i++) {
+    
+                var rf = refFields[i];
+                if (!rf.refTable) continue;
+                if (skipFields[rf.field]) continue;
+    
+                var src = this.core.discovery.normalizeRef(child[rf.field]);
+                if (!src) continue;
+    
+                var mapped = this._resolveRefForRelated(rf.refTable, src, depth);
+                child[rf.field] = mapped || '';
+            }
+    
+            return child;
+        },
+
+    _ensureUserExists: function(username) {
+    
+            if (!username) return "";
+            if (!this._cacheUserNameExists) this._cacheUserNameExists = {};
+            if (this._cacheUserNameExists[username]) return this._cacheUserNameExists[username];
+    
+            var gr = new GlideRecordSecure("sys_user");
+            gr.addQuery("user_name", username);
+            gr.setLimit(1);
+            gr.query();
+    
+            if (gr.next()) {
+                var id = gr.getUniqueValue();
+                this._cacheUserNameExists[username] = id;
+                return id;
+            }
+    
+            var user = new GlideRecordSecure("sys_user");
+            user.initialize();
+            user.setValue("user_name", username);
+            user.setValue("name",      username);
+            user.setValue("active",    true);
+    
+            var newId = user.insert();
+            this._cacheUserNameExists[username] = newId;
+            return newId;
+        },
+
+    _ensureUserExistsBatch: function(usernameSet) {
+    
+            if (!this._cacheUserNameExists) this._cacheUserNameExists = {};
+    
+            var toCheck = [];
+            for (var un in usernameSet) {
+                if (!usernameSet.hasOwnProperty(un)) continue;
+                if (this._cacheUserNameExists[un]) continue;
+                toCheck.push(un);
+            }
+            if (toCheck.length === 0) return;
+    
+            var gr = new GlideRecordSecure("sys_user");
+            gr.addQuery("user_name", "IN", toCheck.join(","));
+            gr.setLimit(toCheck.length);
+            gr.query();
+    
+            var found = {};
+            while (gr.next()) {
+                var un2 = gr.getValue("user_name");
+                this._cacheUserNameExists[un2] = gr.getUniqueValue();
+                found[un2] = true;
+            }
+    
+            /* Create missing users with minimal fields */
+            for (var i = 0; i < toCheck.length; i++) {
+                var name = toCheck[i];
+                if (found[name]) continue;
+                var user = new GlideRecordSecure("sys_user");
+                user.initialize();
+                user.setValue("user_name", name);
+                user.setValue("name",      name);
+                user.setValue("active",    true);
+                var newId = user.insert();
+                if (newId) this._cacheUserNameExists[name] = newId;
+            }
+        },
+
+    _batchPrefetchUsers: function(rows) {
+    
+            if (!rows || rows.length === 0) return;
+    
+            /* Collect unique source user sys_ids that aren't already cached */
+            var needFetch = {};
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                var u = r && r.user;
+                if (u && typeof u === "object" && u.value !== undefined) u = u.value;
+                if (!u) continue;
+                u = String(u).trim();
+                if (!/^[0-9a-f]{32}$/i.test(u)) continue;
+                if (this.core._sysIdLookup[u]) continue;            // already resolved
+                if (this._cacheNaturalKey["sys_user_" + u]) continue;
+                needFetch[u] = true;
+            }
+    
+            var uniqueIds = [];
+            for (var sid in needFetch) {
+                if (needFetch.hasOwnProperty(sid)) uniqueIds.push(sid);
+            }
+            if (uniqueIds.length === 0) return;
+    
+            if (this.core.DEBUG) {
+                this.core.logStep("  Batch pre-fetch " + uniqueIds.length + " users from source");
+            }
+    
+            /* Single REST: get all these users with user_name field */
+            var baseUrl = this.core.SOURCE_URL.replace(/\/+$/, '');
+            /* Source URLs have a length limit; chunk to 50 at a time */
+            var chunkSize = 50;
+            for (var c = 0; c < uniqueIds.length; c += chunkSize) {
+    
+                var chunk = uniqueIds.slice(c, c + chunkSize);
+                var query = "sys_idIN" + chunk.join(",");
+    
+                var api = new sn_ws.RESTMessageV2();
+                api.setEndpoint(
+                    baseUrl +
+                    "/api/now/table/sys_user" +
+                    "?sysparm_query=" + encodeURIComponent(query) +
+                    "&sysparm_fields=sys_id,user_name,first_name,last_name,name,email,active" +
+                    "&sysparm_limit=" + chunkSize +
+                    "&sysparm_display_value=false"
+                );
+                api.setHttpMethod("GET");
+                api.setBasicAuth(this.core.SOURCE_USER, this.core.SOURCE_PSWD);
+    
+                var resp = api.execute();
+                if (resp.getStatusCode() != 200) continue;
+    
+                var users = JSON.parse(resp.getBody()).result || [];
+    
+                /* Populate source-record cache to short-circuit later
+                   fetchSourceRecord calls in _resolveByNaturalKey */
+                if (!this._cacheSourceRecord) this._cacheSourceRecord = {};
+                for (var u = 0; u < users.length; u++) {
+                    var rec = users[u];
+                    var rid = this.core.discovery.normalizeRef(rec.sys_id);
+                    if (rid) {
+                        this._cacheSourceRecord["sys_user::" + rid] = rec;
+                    }
+                }
+            }
+    
+            /* Now batch-resolve each on TARGET in one query per chunk by user_name */
+            for (var c2 = 0; c2 < uniqueIds.length; c2 += chunkSize) {
+    
+                var chunk2 = uniqueIds.slice(c2, c2 + chunkSize);
+                var unames = [];
+                var srcBySid = {};
+    
+                for (var k = 0; k < chunk2.length; k++) {
+                    var srcRec = this._cacheSourceRecord["sys_user::" + chunk2[k]];
+                    if (!srcRec) continue;
+                    var un = this.core.discovery.normalizeRef(srcRec.user_name);
+                    if (!un) continue;
+                    unames.push(un);
+                    srcBySid[chunk2[k]] = srcRec;
+                }
+    
+                if (unames.length === 0) continue;
+    
+                /* Single GlideRecord query for all matching user_names on target */
+                var grBatch = new GlideRecordSecure("sys_user");
+                grBatch.addQuery("user_name", "IN", unames.join(","));
+                grBatch.setLimit(unames.length);
+                grBatch.query();
+    
+                var foundByName = {};
+                while (grBatch.next()) {
+                    foundByName[grBatch.getValue("user_name")] = grBatch.getUniqueValue();
+                }
+    
+                /* Populate _sysIdLookup and _migratedRecords for cache hits */
+                for (var sid2 in srcBySid) {
+                    var rec2 = srcBySid[sid2];
+                    var un2 = this.core.discovery.normalizeRef(rec2.user_name);
+                    if (foundByName[un2]) {
+                        this._setMigrated("sys_user", sid2, foundByName[un2]);
+                        this._cacheNaturalKey["sys_user_" + sid2] = foundByName[un2];
+                    }
+                }
+            }
+        },
+
+    type: 'DM_ReferenceResolver'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-05-26 07:43:32</sys_created_on>
+        <sys_id>eb47dcd693cd83500af5f4e9b903d6ad</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>DM_ReferenceResolver</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_script_include_eb47dcd693cd83500af5f4e9b903d6ad</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-01 07:45:21</sys_updated_on>
+    </sys_script_include>
+</record_update>

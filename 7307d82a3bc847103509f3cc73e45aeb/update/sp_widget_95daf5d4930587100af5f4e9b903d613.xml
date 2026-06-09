@@ -1,0 +1,672 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller = function($scope, $window, $timeout) {
+    var c = this;
+
+    c.data = {};
+    c.loading = false;
+
+    // Snackbar state
+    c.showSnackbar = false;
+    c.snackbarMessage = '';
+    c.snackbarType = 'success';
+
+    /* SHOW SNACKBAR */
+    c.showToast = function(message, type) {
+        c.snackbarMessage = message;
+        c.snackbarType = type;
+        c.showSnackbar = true;
+
+        $timeout(function() {
+            c.showSnackbar = false;
+        }, 2500);
+    };
+
+    /* CONNECT */
+    c.connect = function() {
+
+        if (!c.data.connection_name || !c.data.url || !c.data.username || !c.data.password) {
+            c.showToast('Please fill all required fields', 'error');
+            return;
+        }
+
+        c.loading = true;
+        c.data.action = "saveConnection";
+
+        c.server.update().then(function(response) {
+            c.loading = false;
+
+            if (response.success) {
+
+                // ✅ Show success snackbar
+                c.showToast('Connection saved successfully', 'success');
+
+                // ✅ Redirect after delay
+                $timeout(function() {
+                    $window.location.href = '?id=tracenow_browse_table';
+                }, 1500);
+
+            } else {
+                c.showToast(response.error || 'Connection failed', 'error');
+            }
+        });
+    };
+
+    c.goBack = function() {
+        $window.location.href = '?id=tracenow_coonection_list';
+    };
+
+};]]></client_script>
+        <controller_as>c</controller_as>
+        <css>.sp-layout {&#13;
+  display: flex;&#13;
+  max-height: calc(100vh - 64px);&#13;
+  position: relative;&#13;
+  background: linear-gradient(&#13;
+    to bottom right,&#13;
+    #ffffff 0%,&#13;
+    rgba(155, 192, 252, 0.08) 50%,&#13;
+    rgba(17, 106, 248, 0.12) 100%&#13;
+  );&#13;
+}&#13;
+/* SIDEBAR */&#13;
+.sidebar-area {&#13;
+  flex-basis: 260px;&#13;
+  flex-shrink: 0;&#13;
+  height: 100%;&#13;
+}&#13;
+/* CONTENT */&#13;
+.content-area {&#13;
+  position: relative;&#13;
+  display: flex;&#13;
+  flex-direction: column;&#13;
+  justify-content: flex-start;&#13;
+  height: 100%;&#13;
+  gap: 30px;&#13;
+  margin: 0px auto;&#13;
+  overflow-y: auto;&#13;
+  height: calc(100vh - 64px);&#13;
+  width: 100%;&#13;
+  padding: 30px 15%;&#13;
+}&#13;
+@media(max-width:1600px){&#13;
+  .content-area{&#13;
+    padding: 30px;&#13;
+  }&#13;
+}&#13;
+/* BACK */&#13;
+.back-link {&#13;
+  color: #6b7280;&#13;
+  text-decoration: none;&#13;
+  font-size: 14px;&#13;
+  transition: color 0.2s ease;&#13;
+}&#13;
+.back-link:hover {&#13;
+  color: #116AF8;&#13;
+}&#13;
+a.back-link:focus,&#13;
+a.back-link:active,&#13;
+a.back-link:focus-visible {&#13;
+  outline: none !important;&#13;
+  box-shadow: none !important;&#13;
+}&#13;
+/* HERO */&#13;
+.hero-section {&#13;
+  text-align: center;&#13;
+}&#13;
+.hero-section h1 {&#13;
+  font-size: 26px;&#13;
+  font-weight: 600;&#13;
+  background: linear-gradient(135deg, #116AF8, #0A50F5);&#13;
+  -webkit-background-clip: text;&#13;
+  -webkit-text-fill-color: transparent;&#13;
+  background-clip: text;&#13;
+}&#13;
+.hero-section p {&#13;
+  color: #6b7280;&#13;
+}&#13;
+/* INFO */&#13;
+.info-banner {&#13;
+  max-width: 520px;&#13;
+  margin: 0px auto;&#13;
+  padding: 12px 16px;&#13;
+  border-radius: 10px;&#13;
+  background: linear-gradient(135deg, #E8F1FE, #F0F6FE);&#13;
+  color: #0A50F5;&#13;
+  border: 2px solid #9BC0FC;&#13;
+  box-shadow: 0 2px 8px rgba(17, 106, 248, 0.1);&#13;
+}&#13;
+/* CARD */&#13;
+.form-card {&#13;
+  width: 520px;&#13;
+  margin: 0px auto;&#13;
+  background: #fff;&#13;
+  padding: 30px;&#13;
+  border-radius: 14px;&#13;
+  border: 1px solid #e5e7eb;&#13;
+  box-shadow: 0 8px 20px rgba(17, 106, 248, 0.08);&#13;
+  transition: all 0.3s ease;&#13;
+}&#13;
+.form-card:hover {&#13;
+  box-shadow: 0 12px 30px rgba(17, 106, 248, 0.15);&#13;
+  border-color: #9BC0FC;&#13;
+}&#13;
+/* HEADER */&#13;
+.card-header {&#13;
+  display: flex;&#13;
+  gap: 10px;&#13;
+  margin-bottom: 20px;&#13;
+}&#13;
+.card-header h3 {&#13;
+  margin: 0;&#13;
+  font-size: 18px;&#13;
+  color: #0A50F5;&#13;
+}&#13;
+.card-header p {&#13;
+  margin: 0;&#13;
+  font-size: 13px;&#13;
+  color: #6b7280;&#13;
+}&#13;
+/* FORM */&#13;
+.form-group {&#13;
+  margin-bottom: 18px;&#13;
+}&#13;
+.form-group label {&#13;
+  font-size: 13px;&#13;
+  font-weight: 600;&#13;
+  color: #1e293b;&#13;
+}&#13;
+input, select {&#13;
+  width: 100%;&#13;
+  padding: 10px;&#13;
+  border-radius: 8px;&#13;
+  border: 1px solid #e5e7eb;&#13;
+  background: #f9fafb;&#13;
+  transition: all 0.2s ease;&#13;
+}&#13;
+input:focus, select:focus {&#13;
+  border-color: #116AF8;&#13;
+  background: #fff;&#13;
+  outline: none;&#13;
+  box-shadow: 0 0 0 3px rgba(17, 106, 248, 0.1);&#13;
+}&#13;
+/* BUTTONS */&#13;
+.form-actions {&#13;
+  display: flex;&#13;
+  justify-content: space-between;&#13;
+  margin-top: 20px;&#13;
+  gap: 10px;&#13;
+}&#13;
+.btn-secondary {&#13;
+  background: #f3f4f6;&#13;
+  border: none;&#13;
+  padding: 10px 18px;&#13;
+  border-radius: 8px;&#13;
+  color: #374151;&#13;
+  font-weight: 500;&#13;
+  cursor: pointer;&#13;
+  transition: all 0.2s ease;&#13;
+}&#13;
+.btn-secondary:hover {&#13;
+  background: #e5e7eb;&#13;
+}&#13;
+.btn-light {&#13;
+  background: linear-gradient(135deg, #E8F1FE, #D4E4FD);&#13;
+  border: 1px solid #9BC0FC;&#13;
+  padding: 10px 18px;&#13;
+  border-radius: 8px;&#13;
+  color: #0A50F5;&#13;
+  font-weight: 500;&#13;
+  cursor: pointer;&#13;
+  transition: all 0.2s ease;&#13;
+}&#13;
+.btn-light:hover {&#13;
+  background: linear-gradient(135deg, #D4E4FD, #9BC0FC);&#13;
+  transform: translateY(-1px);&#13;
+}&#13;
+.btn-primary {&#13;
+  background: linear-gradient(135deg, #116AF8, #0A50F5);&#13;
+  box-shadow: 0 8px 20px rgba(17, 106, 248, 0.3);&#13;
+  color: #fff;&#13;
+  border: none;&#13;
+  padding: 11px 18px;&#13;
+  border-radius: 10px;&#13;
+  font-weight: 600;&#13;
+  cursor: pointer;&#13;
+  transition: all 0.2s ease;&#13;
+}&#13;
+.btn-primary:hover {&#13;
+  transform: translateY(-2px);&#13;
+  box-shadow: 0 12px 25px rgba(10, 80, 245, 0.4);&#13;
+  background: linear-gradient(135deg, #0A50F5, #116AF8);&#13;
+}&#13;
+button:disabled {&#13;
+  opacity: 0.6;&#13;
+  cursor: not-allowed;&#13;
+}&#13;
+.dm-snackbar {&#13;
+  position: fixed;&#13;
+  bottom: 30px;&#13;
+  right: 30px;&#13;
+  min-width: 280px;&#13;
+  max-width: 350px;&#13;
+  padding: 16px 20px;&#13;
+  border-radius: 12px;&#13;
+  background: #1f2937;&#13;
+  color: #fff;&#13;
+  font-size: 14px;&#13;
+  display: flex;&#13;
+  align-items: center;&#13;
+  gap: 10px;&#13;
+  opacity: 0;&#13;
+  transform: translateY(20px);&#13;
+  transition: all 0.3s ease;&#13;
+  z-index: 9999;&#13;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);&#13;
+}&#13;
+.dm-snackbar.show {&#13;
+  opacity: 1;&#13;
+  transform: translateY(0);&#13;
+}&#13;
+.dm-snackbar.success {&#13;
+  background: linear-gradient(135deg, #116AF8, #0A50F5);&#13;
+  box-shadow: 0 8px 20px rgba(17, 106, 248, 0.4);&#13;
+}&#13;
+.dm-snackbar.error {&#13;
+  background: linear-gradient(to right, #ef4444, #f87171);&#13;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);&#13;
+}&#13;
+.snackbar-content {&#13;
+  display: flex;&#13;
+  align-items: center;&#13;
+  gap: 10px;&#13;
+}&#13;
+.snackbar-content i {&#13;
+  font-size: 18px;&#13;
+}</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>false</has_preview>
+        <id/>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link>
+        <name>tracenow_create_connection</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function() {
+
+data.side = $sp.getWidget('tracenow_sidebar');
+
+
+if (input && input.action === "saveConnection") {
+    var dup = new GlideRecord('x_sysus_tracenow_connection');
+	
+    dup.addQuery('url', input.url);
+    dup.addQuery('sys_created_by', gs.getUserName());
+    dup.query();
+
+    if (dup.next()) {
+
+        data.success = false;
+        data.error = "A connection with this URL already exists.";
+
+        return; // stop execution
+    }
+    /* ================= VALIDATE CONNECTION ================= */
+
+    var connectionResult = validateAndFetchData(
+        input.url,
+        input.username,
+        input.password
+    );
+
+
+    /* ================= SUCCESS CASE ================= */
+
+    if (connectionResult.isValid) {
+
+        var gr = new GlideRecord(
+            'x_sysus_tracenow_connection'
+        );
+
+        gr.initialize();
+
+        gr.name = input.connection_name;
+        gr.url = input.url;
+        gr.username = input.username;
+        gr.password = input.password;
+        gr.state = false;
+
+        var sys_id = gr.insert();
+
+
+        if (sys_id) {
+
+            /* ================= SUCCESS NOTIFICATION ================= */
+
+            var successNotif =
+                new GlideRecord(
+                    "x_sysus_tracenow_notifications"
+                );
+
+            successNotif.initialize();
+
+            successNotif.user = gs.getUserID();
+
+            successNotif.title =
+                "Connection Created Successfully";
+
+            successNotif.message =
+                "Connection \"" +
+                input.connection_name +
+                "\" was verified and saved.";
+
+            successNotif.priority = "success";
+
+            successNotif.read = false;
+
+            successNotif.insert();
+
+
+            /* ================= RESPONSE ================= */
+
+            data.success = true;
+
+            data.new_sys_id = sys_id;
+
+            data.message =
+                "Connection successful and data verified.";
+
+        }
+
+        else {
+
+            /* ================= SAVE FAILED NOTIFICATION ================= */
+
+            var saveFailNotif =
+                new GlideRecord(
+                    "x_sysus_tracenow_notifications"
+                );
+
+            saveFailNotif.initialize();
+
+            saveFailNotif.user = gs.getUserID();
+
+            saveFailNotif.title =
+                "Connection Save Failed";
+
+            saveFailNotif.message =
+                "Connection verified but failed to save locally.";
+
+            saveFailNotif.priority = "error";
+
+            saveFailNotif.read = false;
+
+            saveFailNotif.insert();
+
+
+            data.success = false;
+
+            data.error =
+                "Connection verified, but failed to save record.";
+
+        }
+
+    }
+
+
+    /* ================= VALIDATION FAILURE CASE ================= */
+
+    else {
+
+        var failNotif =
+            new GlideRecord(
+                "x_sysus_tracenow_notifications"
+            );
+
+        failNotif.initialize();
+
+        failNotif.user = gs.getUserID();
+
+        failNotif.title =
+            "Connection Failed";
+
+        failNotif.message =
+            "Connection \"" +
+            input.connection_name +
+            "\" could not be verified. " +
+            connectionResult.errorMessage;
+
+        failNotif.priority = "error";
+
+        failNotif.read = false;
+
+        failNotif.insert();
+
+
+        data.success = false;
+
+        data.error =
+            connectionResult.errorMessage;
+
+    }
+
+}
+
+
+
+/* ================= VALIDATION FUNCTION ================= */
+
+function validateAndFetchData(
+    instanceUrl,
+    username,
+    password
+) {
+
+    var result = {
+        isValid: false,
+        errorMessage: ""
+    };
+
+    try {
+
+        var r = new sn_ws.RESTMessageV2();
+
+        r.setEndpoint(
+            instanceUrl +
+            '/api/now/table/sys_user?sysparm_limit=1'
+        );
+
+        r.setHttpMethod('GET');
+
+        r.setBasicAuth(
+            username,
+            password
+        );
+
+        r.setRequestHeader(
+            'Accept',
+            'application/json'
+        );
+
+        var response = r.execute();
+
+        var responseBody =
+            response.getBody();
+
+        var statusCode =
+            response.getStatusCode();
+
+
+        if (statusCode === 200) {
+
+            var parsedData =
+                JSON.parse(responseBody);
+
+            if (
+                parsedData.result &&
+                parsedData.result.length > 0
+            ) {
+
+                result.isValid = true;
+
+            }
+
+            else {
+
+                result.errorMessage =
+                    "Connected but no records returned.";
+
+            }
+
+        }
+
+        else if (statusCode === 401) {
+
+            result.errorMessage =
+                "Authentication failed: Invalid username or password.";
+
+        }
+
+        else {
+
+            result.errorMessage =
+                "Connection failed with status code: " +
+                statusCode;
+
+        }
+
+    }
+
+    catch (ex) {
+
+        result.errorMessage =
+            "Network error: " +
+            ex.message;
+
+    }
+
+    return result;
+
+}
+
+})();]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>irfan.wani</sys_created_by>
+        <sys_created_on>2026-05-20 09:52:59</sys_created_on>
+        <sys_id>95daf5d4930587100af5f4e9b903d613</sys_id>
+        <sys_mod_count>6</sys_mod_count>
+        <sys_name>tracenow_create_connection</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_widget_95daf5d4930587100af5f4e9b903d613</sys_update_name>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-06-03 07:13:51</sys_updated_on>
+        <template><![CDATA[<div class="sp-layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar-area">
+    <sp-widget widget="data.side"></sp-widget>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content-area">
+
+    <!-- BACK -->
+    <a href="/_tracenow?id=tracenow_connection_list" class="back-link">
+      <i class="fa fa-arrow-left"></i> Back to Connections
+    </a>
+
+    <!-- HERO -->
+    <div class="hero-section">
+      <h1>New Source Connection</h1>
+      <p>Connect a ServiceNow instance to use for migrations</p>
+    </div>
+
+    <!-- INFO BANNER -->
+    <div class="info-banner">
+      <i class="fa fa-info-circle"></i>
+Connections are validated before saving. Ensure your credentials are accurate.
+    </div>
+
+    <!-- FORM CARD -->
+    <div class="form-card">
+
+      <!-- HEADER -->
+      <div class="card-header">
+        <i class="fa fa-database"></i>
+        <div>
+          <h3>Connection Details</h3>
+          <p>Enter the credentials for your ServiceNow instance</p>
+        </div>
+      </div>
+
+      <form name="connectionForm" novalidate>
+
+        <!-- NAME -->
+        <div class="form-group">
+          <label>Connection Name *</label>
+          <input type="text" ng-model="c.data.connection_name" required>
+        </div>
+
+        <!-- URL -->
+        <div class="form-group">
+          <label>Instance URL *</label>
+          <input type="url" ng-model="c.data.url" required>
+        </div>
+
+        <!-- USERNAME -->
+        <div class="form-group">
+          <label>Username *</label>
+          <input type="text" ng-model="c.data.username" required>
+        </div>
+
+        <!-- PASSWORD -->
+        <div class="form-group">
+          <label>Password *</label>
+          <input type="password" ng-model="c.data.password" required>
+        </div>
+        <!-- ACTIONS -->
+   <div class="form-actions">
+<button type="button" class="btn-primary"
+        ng-click="c.connect()"
+        ng-disabled="c.loading">
+
+  <span ng-if="!c.loading">
+    Save Connection
+  </span>
+
+  <span ng-if="c.loading">
+    <i class="fa fa-spinner fa-spin"></i> Verifying...
+  </span>
+
+</button>
+</div>
+
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<div class="dm-snackbar" ng-class="{'show': c.showSnackbar, 'success': c.snackbarType === 'success', 'error': c.snackbarType === 'error'}">
+  <div class="snackbar-content">
+    <i class="fa" ng-class="{
+      'fa-check-circle': c.snackbarType === 'success',
+      'fa-times-circle': c.snackbarType === 'error'
+    }"></i>
+
+    <span>{{c.snackbarMessage}}</span>
+  </div>
+</div>]]></template>
+    </sp_widget>
+</record_update>

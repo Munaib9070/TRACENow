@@ -1,0 +1,848 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_sysus_tracenow.DM_DiscoveryEngine</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <mobile_callable>false</mobile_callable>
+        <name>DM_DiscoveryEngine</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[/* =============================================================================
+   DM_DiscoveryEngine
+   ----------------------------------------------------------------------------
+   Schema-introspection module for the TraceNow migration framework.
+
+   Pure-read helpers that talk to the SOURCE instance's sys_dictionary and
+   sys_db_object via REST and answer questions like:
+
+       • What is the class hierarchy of `incident`?            (_getTableHierarchy)
+       • Which tables hold reference fields pointing to `task`? (_fetchTablesReferencing)
+       • What are the M2M join tables that link to `incident`?  (_discoverM2MTables)
+       • What document_id polymorphic relations exist?          (_discoverDocumentIdRelations)
+       • Does table `rm_defect` exist on this instance?         (_tableExists)
+       • What related lists hang off `incident`?                (discoverRelatedLists)
+       • Fetch the rows of `task_sla` where `task = X`          (fetchChildren)
+
+   ----------------------------------------------------------------------------
+   ARCHITECTURE
+   ----------------------------------------------------------------------------
+   Instantiated by DM_MigrationCore as:
+       this.discovery = new DM_DiscoveryEngine(this);
+
+   The `core` argument is the parent DM_MigrationCore — this module reaches
+   back into it for shared state (SOURCE_URL, auth credentials, SKIP_TABLES,
+   M2M config, DEBUG flag, logStep). Caches that are local to discovery
+   (table hierarchies, ref-field lookups, etc.) live ON this engine instance,
+   not on core.
+
+   ----------------------------------------------------------------------------
+   v37 — extracted verbatim from dm_test_v36.js (lines 575, 1359-2090, 2112,
+   3003, 3914-3935 of v36). Logic is unchanged. Only `this.X` for shared
+   state was rewritten to `this.core.X`.
+   ============================================================================= */
+
+var DM_DiscoveryEngine = Class.create();
+
+DM_DiscoveryEngine.prototype = {
+
+    initialize: function(core) {
+
+        this.core = core || {};
+
+this._cacheIsNoise            = {};
+        this._cacheHierarchy          = {};
+        this._cacheTablesReferencing  = {};
+        this._cacheDocIdRelations     = null;     
+        this._cacheGuessTableField    = {};
+        this._cacheM2MDiscovery       = {};
+        this._cacheTaskRelDiscovery   = {};
+        this._cacheTableExists        = {};
+        this._cacheFetchChildren      = {};
+        this._cacheRelatedLists       = {};   // ★ V39 PERF — per-table related-list set
+        this._cacheRefFields          = {};
+    },
+
+_log: function(msg) {
+        if (this.core && typeof this.core.logStep === "function") {
+            this.core.logStep(msg);
+        } else {
+            gs.info(msg);
+        }
+    },
+
+normalizeRef: function(val) {
+        if (!val) return "";
+        if (typeof val === "object" && val.value !== undefined)
+            return String(val.value).trim();
+        return String(val).trim();
+    },
+
+_isNoiseTable: function(tableName) {
+
+        if (!tableName) return true;
+        if (this._cacheIsNoise.hasOwnProperty(tableName))
+            return this._cacheIsNoise[tableName];
+
+        var t = String(tableName).toLowerCase();
+
+var isNoise =
+            t.indexOf("var__m_")              === 0 ||
+            t.indexOf("sys_hub_")             === 0 ||
+            t.indexOf("sys_flow_")            === 0 ||
+            t.indexOf("ts_")                  === 0 ||
+            t.indexOf("v_")                   === 0 ||
+            t.indexOf("ecc_")                 === 0 ||
+            t.indexOf("sn_doc_task_")         === 0 ||
+            t.indexOf("sys_notification")     === 0 ||
+            t.indexOf("ui_notification")      === 0 ||
+            t.indexOf("sys_email_")           === 0 ||
+            t.indexOf("sys_outbound_")        === 0 ||
+            t.indexOf("sys_trigger")          === 0 ||
+            t.indexOf("sys_metric_")          === 0 ||
+            t.indexOf("sys_watermark")        === 0 ||
+            t.indexOf("sys_event")            === 0 ||
+            t.indexOf("sysauto")              === 0 ||
+            t.indexOf("text_search")          === 0 ||
+            t.indexOf("sys_translated")       === 0 ||
+            t.indexOf("sys_template_")        === 0 ||
+            t.indexOf("sys_metadata_")        === 0 ||
+
+            t.indexOf("sn_action_status")     === 0 ||
+            t.indexOf("sn_plng_att_core")     === 0 ||
+            t.indexOf("sla_breakdown")        === 0 ||
+            t.indexOf("ml_predictor")         === 0 ||
+            t.indexOf("interaction_related")  === 0 ||
+
+            /^ecc_event\d/.test(t)            ||
+
+            t.indexOf("sys_app_")                === 0 ||
+            t.indexOf("sn_actsub_")              === 0 ||
+            t.indexOf("sys_generative_ai_")      === 0 ||
+            t.indexOf("sys_gen_ai_")             === 0 ||
+            t.indexOf("sys_geocoding_")          === 0 ||
+            t.indexOf("sys_unreferenced_")       === 0 ||
+            t.indexOf("auth_server_")            === 0 ||
+            t === "sys_activity"                          ||
+            t.indexOf("syslog_app_")             === 0 ||
+            t.indexOf("sn_rf_recommendation_")   === 0 ||
+            t.indexOf("sys_processing_framework_") === 0 ||
+            t.indexOf("sn_vsc_security_policy_") === 0 ||
+            t === "sys_mapplication"                      ||
+            t.indexOf("sys_orchestrator_")       === 0 ||
+            t.indexOf("sys_package_dependency_") === 0 ||
+            t.indexOf("one_api_")                === 0 ||
+            t.indexOf("sys_upgrade_history_")    === 0 ||
+            t === "sys_trace_context"                     ||
+
+            /* ★ V39 PERF ★ Observed-in-logs always-empty related lists.
+               These get discovered as task-referencing tables but never hold
+               migratable data for incident/change/problem records, so each one
+               costs a wasted fetchChildren REST round-trip on EVERY record in
+               the tree. Dropping them here removes them before the fetch. */
+            t.indexOf("resource_allocation")  === 0 ||   // PPM resource mgmt
+            t.indexOf("resource_aggregate")   === 0 ||   // PPM rollups (daily/weekly/monthly)
+            t.indexOf("sla_repair_log")       === 0 ||   // sla_repair_log_entry0000..0007
+            t.indexOf("sn_grc_")              === 0 ||   // GRC indicators/issues
+            t.indexOf("pa_")                  === 0 ||   // Performance Analytics cubes
+            t === "benefit_plan"                          ||   // PPM cost planning
+            t === "cost_plan"                             ||
+            t === "imp_cost_plan"                         ||
+            t === "vtb_card"                              ||   // Visual Task Board cards
+            false;
+
+        this._cacheIsNoise[tableName] = isNoise;
+        return isNoise;
+    },
+
+_tableExists: function(tableName) {
+        if (!tableName) return false;
+        if (this._cacheTableExists.hasOwnProperty(tableName)) {
+            return this._cacheTableExists[tableName];
+        }
+        try {
+            var gr = new GlideRecordSecure(tableName);
+            gr.setLimit(1);
+            gr.query();
+            this._cacheTableExists[tableName] = true;
+            return true;
+        } catch (e) {
+            this._cacheTableExists[tableName] = false;
+            return false;
+        }
+    },
+
+_isTaskDerived: function(table) {
+        if (!table) return false;
+        if (table === "task") return true;
+        var chain = this._getTableHierarchy(table);
+        return chain.indexOf("task") !== -1;
+    },
+
+_getTableHierarchy: function(table) {
+
+        if (this._cacheHierarchy[table]) return this._cacheHierarchy[table];
+
+        var chain   = [table];
+        var current = table;
+        var safety  = 0;
+
+        while (current && safety++ < 20) {
+
+            var api     = new sn_ws.RESTMessageV2();
+            var baseUrl = String(this.core.SOURCE_URL || "").replace(/\/+$/, '');
+
+            api.setEndpoint(
+                baseUrl +
+                "/api/now/table/sys_db_object" +
+                "?sysparm_query=" + encodeURIComponent("name=" + current) +
+                "&sysparm_fields=name,super_class" +
+                "&sysparm_limit=1" +
+                "&sysparm_display_value=false"
+            );
+            api.setHttpMethod("GET");
+            api.setBasicAuth(this.core.SOURCE_USER, this.core.SOURCE_PSWD);
+
+            var resp = api.execute();
+            if (resp.getStatusCode() != 200) break;
+
+            var data = JSON.parse(resp.getBody());
+            if (!data.result || data.result.length === 0) break;
+
+            var superClassId = this.normalizeRef(data.result[0].super_class);
+            if (!superClassId) break;
+
+            var lookup = new sn_ws.RESTMessageV2();
+            lookup.setEndpoint(
+                baseUrl +
+                "/api/now/table/sys_db_object/" + superClassId +
+                "?sysparm_fields=name&sysparm_display_value=false"
+            );
+            lookup.setHttpMethod("GET");
+            lookup.setBasicAuth(this.core.SOURCE_USER, this.core.SOURCE_PSWD);
+
+            var lookupResp = lookup.execute();
+            if (lookupResp.getStatusCode() != 200) break;
+
+            var lookupData = JSON.parse(lookupResp.getBody());
+            if (!lookupData.result || !lookupData.result.name) break;
+
+            current = String(lookupData.result.name).trim();
+            if (!current || chain.indexOf(current) !== -1) break;
+            chain.push(current);
+        }
+
+        this._cacheHierarchy[table] = chain;
+        return chain;
+    },
+
+getReferenceFields: function(table) {
+
+        var baseUrl       = String(this.core.SOURCE_URL || "").replace(/\/+$/, '');
+        var refs          = [];
+        var seen          = {};
+        var tablesToCheck = this._getTableHierarchy(table);
+
+        for (var t = 0; t < tablesToCheck.length; t++) {
+
+            var tbl = tablesToCheck[t];
+            var api = new sn_ws.RESTMessageV2();
+
+            api.setEndpoint(
+                baseUrl +
+                "/api/now/table/sys_dictionary" +
+                "?sysparm_query=" + encodeURIComponent("name=" + tbl + "^internal_type=reference") +
+                "&sysparm_fields=element,reference&sysparm_display_value=false"
+            );
+            api.setHttpMethod("GET");
+            api.setBasicAuth(this.core.SOURCE_USER, this.core.SOURCE_PSWD);
+
+            var res = api.execute();
+            if (res.getStatusCode() != 200) continue;
+
+            var data = JSON.parse(res.getBody());
+
+            for (var i = 0; i < data.result.length; i++) {
+                var field    = data.result[i].element;
+                var ref      = data.result[i].reference;
+                var refTable = (typeof ref === "object") ? ref.value : ref;
+
+                if (!field || !refTable) continue;
+                if (seen[field]) continue;
+
+                seen[field] = true;
+                refs.push({ field: field, refTable: refTable });
+            }
+        }
+
+        return refs;
+    },
+
+_getCachedRefFields: function(table) {
+
+        if (!table) return [];
+        if (this._cacheRefFields[table]) return this._cacheRefFields[table];
+
+        var refs = this.getReferenceFields(table) || [];
+        this._cacheRefFields[table] = refs;
+        return refs;
+    },
+
+_fetchTablesReferencing: function(targetTable) {
+
+        if (this._cacheTablesReferencing[targetTable])
+            return this._cacheTablesReferencing[targetTable];
+
+        var baseUrl = String(this.core.SOURCE_URL || "").replace(/\/+$/, '');
+        var api     = new sn_ws.RESTMessageV2();
+
+        api.setEndpoint(
+            baseUrl +
+            "/api/now/table/sys_dictionary" +
+            "?sysparm_query=" + encodeURIComponent("internal_type=reference^reference=" + targetTable) +
+            "&sysparm_fields=name,element&sysparm_display_value=false"
+        );
+        api.setHttpMethod("GET");
+        api.setBasicAuth(this.core.SOURCE_USER, this.core.SOURCE_PSWD);
+
+        var response = api.execute();
+        if (response.getStatusCode() != 200) {
+            this._cacheTablesReferencing[targetTable] = [];
+            return [];
+        }
+
+        var rows = JSON.parse(response.getBody()).result || [];
+        var out  = [];
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i].name && rows[i].element) {
+                out.push({ name: rows[i].name, element: rows[i].element });
+            }
+        }
+
+        this._cacheTablesReferencing[targetTable] = out;
+        return out;
+    },
+
+_discoverDocumentIdRelations: function() {
+
+        if (this._cacheDocIdRelations) return this._cacheDocIdRelations;
+
+        var baseUrl = String(this.core.SOURCE_URL || "").replace(/\/+$/, '');
+        var api     = new sn_ws.RESTMessageV2();
+
+        api.setEndpoint(
+            baseUrl +
+            "/api/now/table/sys_dictionary" +
+            "?sysparm_query=" + encodeURIComponent("internal_type=document_id") +
+            "&sysparm_fields=name,element" +
+            "&sysparm_limit=10000" +
+            "&sysparm_display_value=false"
+        );
+        api.setHttpMethod("GET");
+        api.setBasicAuth(this.core.SOURCE_USER, this.core.SOURCE_PSWD);
+
+        var response = api.execute();
+        if (response.getStatusCode() != 200) {
+            this._cacheDocIdRelations = [];
+            return [];
+        }
+
+        var rows = JSON.parse(response.getBody()).result || [];
+
+var excludedTables = {
+            sys_audit:                  true,
+            sys_audit_relation:         true,
+            sys_attachment:             true,
+            sys_attachment_doc:         true,
+            sys_journal_field:          true,
+            sys_history_set:            true,
+            sys_history_line:           true,
+            sys_email:                  true,
+            sys_metadata:               true,
+            sys_template:               true,
+            sys_relationship:           true,
+            metric_instance:            true,
+            sys_translated:             true,
+            sys_choice:                 true,
+            sys_dictionary:             true,
+            sys_db_object:              true,
+
+            sys_notification:           true,
+            sys_notification_execution: true,
+            ui_notification_inbox:      true,
+            sys_notification_route:     true,
+            sys_watermark:              true,
+            sys_event:                  true,
+            sys_outbound_message:       true,
+            sys_email_outbound:         true,
+            sys_trigger:                true,
+            sysauto_script:             true,
+            sysauto:                    true,
+            ts_index_2:                 true,
+            ts_query:                   true,
+            text_search_group:          true,
+            v_event:                    true,
+            sys_metric:                 true,
+            sys_metric_event:           true,
+            sysrule_view:               true
+        };
+
+var filtered    = [];
+        var tableSet    = {};
+        var elementSet  = {};
+        var skipTables  = this.core.SKIP_TABLES || {};
+
+        for (var i = 0; i < rows.length; i++) {
+
+            var tableName = rows[i].name;
+            var fieldName = rows[i].element;
+
+            if (!tableName || !fieldName)        continue;
+            if (excludedTables[tableName])       continue;
+            if (skipTables[tableName])           continue;
+            if (this._isNoiseTable(tableName))   continue;
+
+var candidates = [
+                fieldName + "_table",
+                fieldName + "_name",
+                "table_name",
+                "tablename",
+                "parent_table",
+                "target_table",
+                "document_table"
+            ];
+            if (fieldName === "documentkey")    candidates.unshift("tablename");
+            if (fieldName === "table_sys_id")   candidates.unshift("table_name");
+            if (fieldName === "element_id")     candidates.unshift("name");
+            if (fieldName === "parent_record")  candidates.unshift("parent_table");
+            if (fieldName === "target")         candidates.unshift("target_table");
+
+            filtered.push({
+                tableName:  tableName,
+                fieldName:  fieldName,
+                candidates: candidates
+            });
+            tableSet[tableName] = true;
+            for (var cI = 0; cI < candidates.length; cI++) {
+                elementSet[candidates[cI]] = true;
+            }
+        }
+
+var tableList = [];
+        for (var tk in tableSet) if (tableSet.hasOwnProperty(tk)) tableList.push(tk);
+
+        var elementList = [];
+        for (var el in elementSet) if (elementSet.hasOwnProperty(el)) elementList.push(el);
+
+        var foundKeys = {};
+        var chunkSize = 80;
+
+        if (tableList.length > 0 && elementList.length > 0) {
+
+            var elementInClause = "elementIN" + elementList.join(",");
+
+            for (var cs = 0; cs < tableList.length; cs += chunkSize) {
+
+                var tableChunk = tableList.slice(cs, cs + chunkSize);
+                var tableInClause = "nameIN" + tableChunk.join(",");
+
+                var probeApi = new sn_ws.RESTMessageV2();
+                probeApi.setEndpoint(
+                    baseUrl +
+                    "/api/now/table/sys_dictionary" +
+                    "?sysparm_query=" + encodeURIComponent(tableInClause + "^" + elementInClause) +
+                    "&sysparm_fields=name,element" +
+                    "&sysparm_limit=50000" +
+                    "&sysparm_display_value=false"
+                );
+                probeApi.setHttpMethod("GET");
+                probeApi.setBasicAuth(this.core.SOURCE_USER, this.core.SOURCE_PSWD);
+
+                var probeResp = probeApi.execute();
+                if (probeResp.getStatusCode() != 200) continue;
+
+                var probeRows = JSON.parse(probeResp.getBody()).result || [];
+                for (var pr = 0; pr < probeRows.length; pr++) {
+                    foundKeys[probeRows[pr].name + "::" + probeRows[pr].element] = true;
+                }
+            }
+        }
+
+        var out = [];
+
+        for (var f = 0; f < filtered.length; f++) {
+
+            var ent = filtered[f];
+            var tableNameField = "";
+
+for (var cc = 0; cc < ent.candidates.length; cc++) {
+                if (foundKeys[ent.tableName + "::" + ent.candidates[cc]]) {
+                    tableNameField = ent.candidates[cc];
+                    break;
+                }
+            }
+
+            out.push({
+                childTable:     ent.tableName,
+                refField:       ent.fieldName,
+                tableNameField: tableNameField
+            });
+
+this._cacheGuessTableField[ent.tableName + "::" + ent.fieldName] = tableNameField;
+        }
+
+        this._cacheDocIdRelations = out;
+
+        if (this.core.DEBUG) {
+            this._log("Document_id relations discovered: " + out.length);
+        }
+
+        return out;
+    },
+
+_guessTableNameField: function(tableName, docIdField) {
+
+        var ck = tableName + "::" + docIdField;
+        if (this._cacheGuessTableField.hasOwnProperty(ck)) {
+            return this._cacheGuessTableField[ck];
+        }
+
+        var candidates = [
+            docIdField + "_table",
+            docIdField + "_name",
+            "table_name",
+            "tablename",
+            "parent_table",
+            "target_table",
+            "document_table"
+        ];
+
+        if (docIdField === "documentkey")    candidates.unshift("tablename");
+        if (docIdField === "table_sys_id")   candidates.unshift("table_name");
+        if (docIdField === "element_id")     candidates.unshift("name");
+        if (docIdField === "parent_record")  candidates.unshift("parent_table");
+        if (docIdField === "target")         candidates.unshift("target_table");
+
+        var baseUrl = String(this.core.SOURCE_URL || "").replace(/\/+$/, '');
+        var clauses = [];
+        for (var i = 0; i < candidates.length; i++) {
+            clauses.push("element=" + candidates[i]);
+        }
+
+        var api = new sn_ws.RESTMessageV2();
+        api.setEndpoint(
+            baseUrl +
+            "/api/now/table/sys_dictionary" +
+            "?sysparm_query=" + encodeURIComponent(
+                "name=" + tableName + "^(" + clauses.join("^OR") + ")"
+            ) +
+            "&sysparm_fields=element,internal_type" +
+            "&sysparm_display_value=false"
+        );
+        api.setHttpMethod("GET");
+        api.setBasicAuth(this.core.SOURCE_USER, this.core.SOURCE_PSWD);
+
+        var resp = api.execute();
+        if (resp.getStatusCode() != 200) {
+            this._cacheGuessTableField[ck] = '';
+            return '';
+        }
+
+        var found = JSON.parse(resp.getBody()).result || [];
+
+        for (var c = 0; c < candidates.length; c++) {
+            for (var ff = 0; ff < found.length; ff++) {
+                if (found[ff].element === candidates[c]) {
+                    this._cacheGuessTableField[ck] = candidates[c];
+                    return candidates[c];
+                }
+            }
+        }
+
+        this._cacheGuessTableField[ck] = '';
+        return '';
+    },
+
+_discoverM2MTables: function(parentTable) {
+
+        var m2mDiscovery = this.core.M2M_DISCOVERY || { enabled: true,
+                                                         excludeTables: {},
+                                                         excludeRefTables: {} };
+        if (!m2mDiscovery.enabled) return [].concat(this.core.M2M_OVERRIDES || []);
+
+        var cacheKey = "m2m_" + parentTable;
+        if (this._cacheM2MDiscovery[cacheKey])
+            return this._cacheM2MDiscovery[cacheKey];
+
+        var parentChain    = this._getTableHierarchy(parentTable);
+        var inParentChain  = {};
+        for (var p = 0; p < parentChain.length; p++) inParentChain[parentChain[p]] = true;
+
+        var discovered = [];
+        var seenKey    = {};
+        var skipTables = this.core.SKIP_TABLES || {};
+
+        for (var ch = 0; ch < parentChain.length; ch++) {
+
+            var parent     = parentChain[ch];
+            var candidates = this._fetchTablesReferencing(parent);
+
+var byTable = {};
+            for (var i = 0; i < candidates.length; i++) {
+                var t = candidates[i].name;
+                if (!byTable[t]) byTable[t] = [];
+                byTable[t].push({ field: candidates[i].element, refTable: parent });
+            }
+
+            for (var tableName in byTable) {
+
+                if (m2mDiscovery.excludeTables && m2mDiscovery.excludeTables[tableName]) continue;
+                if (skipTables[tableName])                                                continue;
+                if (this._isNoiseTable(tableName))                                        continue;
+
+if (this._isTaskDerived(tableName)) continue;
+
+var allRefs = this.getReferenceFields(tableName);
+                if (allRefs.length < 2) continue;
+
+if (allRefs.length > 4) continue;
+
+                var taskFieldDef = byTable[tableName][0];
+                var taskField    = taskFieldDef.field;
+
+                for (var k = 0; k < allRefs.length; k++) {
+
+                    var ref = allRefs[k];
+                    if (ref.field === taskField)                                continue;
+                    if (inParentChain[ref.refTable])                            continue;
+                    if (m2mDiscovery.excludeRefTables &&
+                        m2mDiscovery.excludeRefTables[ref.refTable])            continue;
+                    if (skipTables[ref.refTable])                               continue;
+
+                    var dedupKey = tableName + "::" + taskField + "::" + ref.field;
+                    if (seenKey[dedupKey]) continue;
+                    seenKey[dedupKey] = true;
+
+                    discovered.push({
+                        name:         tableName + "/" + ref.field,
+                        table:        tableName,
+                        taskField:    taskField,
+                        refField:     ref.field,
+                        refTable:     ref.refTable,
+                        primaryField: this._guessPrimaryFieldOnParent(parentTable, ref.refTable)
+                    });
+                }
+            }
+        }
+
+var overrides = this.core.M2M_OVERRIDES || [];
+        for (var o = 0; o < overrides.length; o++) {
+            var ov = overrides[o];
+            if (!ov.table || !ov.taskField || !ov.refField) continue;
+            var ovKey = ov.table + "::" + ov.taskField + "::" + ov.refField;
+            if (!seenKey[ovKey]) {
+                seenKey[ovKey] = true;
+                discovered.push({
+                    name:         ov.name || ov.table + "/" + ov.refField,
+                    table:        ov.table,
+                    taskField:    ov.taskField,
+                    refField:     ov.refField,
+                    refTable:     ov.refTable,
+                    primaryField: ov.primaryField || ''
+                });
+            }
+        }
+
+        this._cacheM2MDiscovery[cacheKey] = discovered;
+
+        if (this.core.DEBUG) {
+            this._log("M2M discovery for " + parentTable + " found " + discovered.length + " entries:");
+            for (var d = 0; d < discovered.length; d++) {
+                this._log("  • " + discovered[d].table +
+                          " (" + discovered[d].taskField + " → " +
+                          discovered[d].refField + " → " + discovered[d].refTable + ")");
+            }
+        }
+
+        return discovered;
+    },
+
+_guessPrimaryFieldOnParent: function(parentTable, refTable) {
+
+        var refs = this._getCachedRefFields(parentTable);
+        for (var i = 0; i < refs.length; i++) {
+            if (refs[i].refTable === refTable) return refs[i].field;
+        }
+
+        if (refTable === "cmdb_ci")          return "cmdb_ci";
+        if (refTable === "service_offering") return "service_offering";
+
+        return '';
+    },
+
+_discoverTaskRelationships: function(parentTable) {
+
+        if (this._cacheTaskRelDiscovery[parentTable])
+            return this._cacheTaskRelDiscovery[parentTable];
+
+        var allRefs = this._getCachedRefFields(parentTable);
+        var taskRels = [];
+
+        for (var i = 0; i < allRefs.length; i++) {
+            var ref = allRefs[i];
+            if (!ref.refTable) continue;
+            if (ref.refTable === "task" || this._isTaskDerived(ref.refTable)) {
+                taskRels.push({ field: ref.field, table: ref.refTable });
+            }
+        }
+
+        this._cacheTaskRelDiscovery[parentTable] = taskRels;
+        return taskRels;
+    },
+
+discoverRelatedLists: function(parentTable) {
+
+        /* ★ V39 PERF ★ The related-list SET for a given parent table is
+           identical for every record of that table. Memoize it so we don't
+           rebuild the list (and re-run _discoverM2MTables) once per migrated
+           record. fetchChildren is still called per-record (different sys_id),
+           but the discovery scaffolding now runs once per table. */
+        if (this._cacheRelatedLists && this._cacheRelatedLists[parentTable]) {
+            return this._cacheRelatedLists[parentTable];
+        }
+
+        var rel  = [];
+        var seen = {};
+
+        var allRefs   = [];
+        var parentChain = this._getTableHierarchy(parentTable);
+        for (var ch = 0; ch < parentChain.length; ch++) {
+            var hits = this._fetchTablesReferencing(parentChain[ch]);
+            for (var hh = 0; hh < hits.length; hh++) {
+                allRefs.push(hits[hh]);
+            }
+        }
+
+var m2mTables = {};
+        var discovered = this._discoverM2MTables(parentTable);
+        for (var d = 0; d < discovered.length; d++) m2mTables[discovered[d].table] = true;
+
+        var m2mDefs = this.core.M2M_DEFINITIONS || [];
+
+        for (var i = 0; i < allRefs.length; i++) {
+
+            var childTable = allRefs[i].name;
+            var refField   = allRefs[i].element;
+
+            if (!childTable || !refField) continue;
+
+            if (childTable === "sys_dictionary" ||
+                childTable === "sys_db_object"  ||
+                childTable === "sys_choice")    continue;
+
+            if (this._isNoiseTable(childTable)) continue;
+
+            var isM2M = false;
+            for (var m = 0; m < m2mDefs.length; m++) {
+                if (m2mDefs[m].table === childTable) { isM2M = true; break; }
+            }
+            if (isM2M) continue;
+
+            if (m2mTables[childTable]) continue;
+
+            var key = childTable + "_" + refField;
+            if (seen[key]) continue;
+            seen[key] = true;
+
+            rel.push({ childTable: childTable, refField: refField });
+        }
+
+        this._addRelatedList(rel, seen, "sys_audit",         "documentkey");
+        this._addRelatedList(rel, seen, "sys_journal_field", "element_id");
+        this._addRelatedList(rel, seen, "task_sla",          "task");
+        this._addRelatedList(rel, seen, "metric_instance",   "id");
+
+        if (this.core.DEBUG) {
+            this._log("Related lists discovered for " + parentTable + ": " + rel.length);
+            for (var r2 = 0; r2 < rel.length; r2++) {
+                this._log("  • " + rel[r2].childTable + " (via " + rel[r2].refField + ")");
+            }
+        }
+
+        if (!this._cacheRelatedLists) this._cacheRelatedLists = {};
+        this._cacheRelatedLists[parentTable] = rel;
+
+        return rel;
+    },
+
+_addRelatedList: function(rel, seen, table, field) {
+        var key = table + "_" + field;
+        if (seen[key]) return;
+        seen[key] = true;
+        rel.push({ childTable: table, refField: field });
+    },
+
+fetchChildren: function(childTable, refField, parentTable, parentSysId) {
+
+        if (!childTable || !parentSysId) return [];
+
+        var fck = childTable + "::" + refField + "::" + parentTable + "::" + parentSysId;
+        if (this._cacheFetchChildren.hasOwnProperty(fck)) {
+            return this._cacheFetchChildren[fck];
+        }
+
+        var api     = new sn_ws.RESTMessageV2();
+        var baseUrl = String(this.core.SOURCE_URL || "").replace(/\/+$/, '');
+        var query   = "";
+
+        if      (childTable === "sys_attachment")     query = "table_sys_id=" + parentSysId + "^table_name=" + parentTable;
+        else if (childTable === "sys_journal_field")  query = "element_id="   + parentSysId + "^name="       + parentTable;
+        else if (childTable === "task_sla")           query = "task="         + parentSysId;
+        else if (childTable === "sys_audit")          query = "documentkey="  + parentSysId + "^tablename="  + parentTable;
+        else if (childTable === "sys_audit_relation") query = "documentkey="  + parentSysId;
+        else if (childTable === "metric_instance")    query = "id="           + parentSysId + "^table="      + parentTable;
+        else if (refField)                            query = refField + "=" + parentSysId;
+        else                                          { this._cacheFetchChildren[fck] = []; return []; }
+
+        api.setEndpoint(
+            baseUrl +
+            "/api/now/table/" + childTable +
+            "?sysparm_query=" + encodeURIComponent(query) +
+            "&sysparm_limit=10000" +
+            "&sysparm_display_value=false"
+        );
+        api.setHttpMethod("GET");
+        api.setBasicAuth(this.core.SOURCE_USER, this.core.SOURCE_PSWD);
+
+        var response = api.execute();
+        if (response.getStatusCode() != 200) {
+            if (this.core.DEBUG) {
+                gs.warn("⚠ fetchChildren " + childTable + " HTTP " +
+                        response.getStatusCode() + " query=" + query);
+            }
+            this._cacheFetchChildren[fck] = [];
+            return [];
+        }
+
+        var rows = JSON.parse(response.getBody()).result || [];
+        this._cacheFetchChildren[fck] = rows;
+        return rows;
+    },
+
+    type: 'DM_DiscoveryEngine'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-05-26 07:44:19</sys_created_on>
+        <sys_id>c677141a93cd83500af5f4e9b903d664</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>DM_DiscoveryEngine</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_script_include_c677141a93cd83500af5f4e9b903d664</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-03 07:21:54</sys_updated_on>
+    </sys_script_include>
+</record_update>

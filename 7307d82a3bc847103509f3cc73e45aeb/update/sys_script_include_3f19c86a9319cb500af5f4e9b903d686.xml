@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_sysus_tracenow.DM_GlobalNumberSetter</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <mobile_callable>false</mobile_callable>
+        <name>DM_GlobalNumberSetter</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[/* =============================================================================
+   DM_GlobalNumberSetter  —  GLOBAL SCOPE Script Include
+   ----------------------------------------------------------------------------
+   PURPOSE
+     Writes the `number` field on Global tables (incident, change_request,
+     problem, change_task, …). The TraceNow scoped app CANNOT do this — every
+     setValue('<table>.number') from x_sysus_tracenow is refused by the platform
+     cross-scope access policy ("executing Scope was TRACENow, Table's Scope was
+     Global"). A Global Script Include's body executes IN GLOBAL SCOPE, so here
+     the same setValue is permitted, and setWorkflow(false) is available to stop
+     the dictionary default / number maintenance from regenerating it.
+
+   INSTALL (Global scope — NOT TraceNow)
+     System Definition ▸ Script Includes ▸ New
+       Application      : Global
+       Name             : DM_GlobalNumberSetter
+       API Name         : global.DM_GlobalNumberSetter
+       Client callable  : false
+       Accessible from  : All application scopes      ← REQUIRED so TraceNow can call it
+       Active           : true
+     Paste this whole file as the script.
+
+   USAGE (from the TraceNow migrator)
+     var ok = new global.DM_GlobalNumberSetter().setNumber('incident', targetSid, 'INC0010542');
+
+   SECURITY NOTE
+     This lets any scope set arbitrary numbers on these records. That is
+     appropriate for a migration utility on a controlled instance. If you want
+     to lock it down, restrict ALLOWED_TABLES below.
+   ============================================================================= */
+
+var DM_GlobalNumberSetter = Class.create();
+DM_GlobalNumberSetter.prototype = {
+
+    initialize: function() {
+        /* Optional allowlist. Leave empty [] to allow any table that has a
+           `number` field. Populate to restrict, e.g.
+           ['incident','change_request','problem','change_task']. */
+        this.ALLOWED_TABLES = [];
+    },
+
+    /* -------------------------------------------------------------------------
+       setNumber(table, sysId, number)
+       Returns true if, after the write, the record's number equals `number`.
+       ------------------------------------------------------------------------- */
+    setNumber: function(table, sysId, number) {
+
+        try {
+            if (!table || !sysId || number === null || number === undefined || number === '') {
+                gs.warn('[GNS] setNumber: missing arg (table=' + table +
+                        ' sysId=' + sysId + ' number=' + number + ')');
+                return false;
+            }
+
+            if (this.ALLOWED_TABLES.length &&
+                this.ALLOWED_TABLES.indexOf(String(table)) === -1) {
+                gs.warn('[GNS] setNumber: table ' + table + ' not in ALLOWED_TABLES — skipped');
+                return false;
+            }
+
+            var gr = new GlideRecord(String(table));
+            if (!gr.get(String(sysId))) {
+                gs.warn('[GNS] setNumber: ' + table + '/' + sysId + ' not found');
+                return false;
+            }
+            if (!gr.isValidField('number')) {
+                gs.warn('[GNS] setNumber: ' + table + ' has no number field');
+                return false;
+            }
+
+            if (String(gr.getValue('number')) === String(number)) {
+                return true;   // already correct
+            }
+
+            /* These are the calls refused in the scoped app but allowed here
+               because this SI executes in Global scope. */
+            gr.setWorkflow(false);      // stop BRs / number maintenance from re-running
+            gr.autoSysFields(false);    // don't bump sys_updated_on/by for a number fix
+            gr.setValue('number', String(number));
+            gr.update();
+
+            /* Verify with a fresh read */
+            var v = new GlideRecord(String(table));
+            if (v.get(String(sysId)) && String(v.getValue('number')) === String(number)) {
+                gs.info('[GNS] ✔ ' + table + '/' + sysId + ' number → ' + number);
+                return true;
+            }
+
+            gs.warn('[GNS] ✗ ' + table + '/' + sysId + ' number is "' +
+                    (v.isValidRecord() ? v.getValue('number') : '?') +
+                    '" after write (wanted ' + number + ') — check for an after-update rule');
+            return false;
+
+        } catch (e) {
+            gs.error('[GNS] setNumber threw for ' + table + '/' + sysId + ': ' + e);
+            return false;
+        }
+    },
+
+    /* -------------------------------------------------------------------------
+       setNumbers(items)  — batch convenience
+       items = [{ table:'incident', sysId:'...', number:'INC0010542' }, ...]
+       Returns { total, ok, failed }.
+       ------------------------------------------------------------------------- */
+    setNumbers: function(items) {
+        var res = { total: 0, ok: 0, failed: 0 };
+        if (!items || !items.length) return res;
+        for (var i = 0; i < items.length; i++) {
+            var it = items[i] || {};
+            res.total++;
+            if (this.setNumber(it.table, it.sysId, it.number)) res.ok++;
+            else res.failed++;
+        }
+        gs.info('[GNS] batch complete — ok:' + res.ok + ' failed:' + res.failed +
+                ' of ' + res.total);
+        return res;
+    },
+
+    type: 'DM_GlobalNumberSetter'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-08 11:35:40</sys_created_on>
+        <sys_id>3f19c86a9319cb500af5f4e9b903d686</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>DM_GlobalNumberSetter</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_script_include_3f19c86a9319cb500af5f4e9b903d686</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-08 11:35:40</sys_updated_on>
+    </sys_script_include>
+</record_update>

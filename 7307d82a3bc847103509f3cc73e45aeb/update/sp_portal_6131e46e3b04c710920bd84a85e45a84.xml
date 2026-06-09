@@ -5,20 +5,17 @@
         <css_variables/>
         <dark_theme/>
         <default>false</default>
-        <embeddable_macroponents/>
         <enable_ais>true</enable_ais>
         <enable_certificate_based_authentication>false</enable_certificate_based_authentication>
-        <enable_embeddables>false</enable_embeddables>
         <enable_favorites>false</enable_favorites>
         <hide_portal_name>false</hide_portal_name>
-        <homepage/>
-        <icon/>
+        <homepage display_value="tracennow_dashboard">ca20ed98934187100af5f4e9b903d6f0</homepage>
+        <icon>3025c618934587100af5f4e9b903d6f2</icon>
         <inactive>false</inactive>
         <kb_knowledge_base/>
         <kb_knowledge_page/>
         <login_page display_value="login">6995a144cb11120000f8d856634c9c25</login_page>
-        <logo/>
-        <logo_alt_text>TRACENow</logo_alt_text>
+        <logo>a1158618934587100af5f4e9b903d622</logo>
         <notfound_page/>
         <quick_start_config/>
         <rtl_enabled>false</rtl_enabled>
@@ -33,18 +30,98 @@
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-04-07 10:02:50</sys_created_on>
         <sys_id>6131e46e3b04c710920bd84a85e45a84</sys_id>
-        <sys_mod_count>2</sys_mod_count>
+        <sys_mod_count>6</sys_mod_count>
         <sys_name>TRACENow</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_portal_6131e46e3b04c710920bd84a85e45a84</sys_update_name>
-        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
-        <sys_updated_on>2026-04-07 10:12:04</sys_updated_on>
-        <theme display_value="TRACENow">1a9124ae3b04c710920bd84a85e45acf</theme>
+        <sys_updated_by>irfan.wani</sys_updated_by>
+        <sys_updated_on>2026-05-20 10:35:15</sys_updated_on>
+        <theme display_value="TraceNow">1a9124ae3b04c710920bd84a85e45acf</theme>
         <title>TRACENow</title>
         <ts_index_group/>
-        <url_suffix>_tn</url_suffix>
+        <url_suffix>_tracenow</url_suffix>
     </sp_portal>
     <sys_translated_text action="delete_multiple" query="documentkey=6131e46e3b04c710920bd84a85e45a84"/>
+    <sys_attachment action="INSERT_OR_UPDATE">
+        <average_image_color/>
+        <chunk_size_bytes>700000</chunk_size_bytes>
+        <compressed>true</compressed>
+        <content_type>image/svg+xml</content_type>
+        <encryption_context/>
+        <file_name>icon</file_name>
+        <hash>8fa72fd5a520cd2fb8d18c443c8a601f051a41d50e9f1b59acca9ecefb42e418</hash>
+        <image_height/>
+        <image_width/>
+        <size_bytes>454</size_bytes>
+        <size_compressed>293</size_compressed>
+        <state>available</state>
+        <sys_created_by>irfan.wani</sys_created_by>
+        <sys_created_on>2026-05-20 10:35:14</sys_created_on>
+        <sys_id>3025c618934587100af5f4e9b903d6f2</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_updated_by>system</sys_updated_by>
+        <sys_updated_on>2026-05-20 10:35:15</sys_updated_on>
+        <table_name>ZZ_YYsp_portal</table_name>
+        <table_sys_id>6131e46e3b04c710920bd84a85e45a84</table_sys_id>
+    </sys_attachment>
+    <sys_attachment_doc action="INSERT_OR_UPDATE">
+        <data>H4sIAAAAAAAA/w==</data>
+        <length>16</length>
+        <position>0</position>
+        <sys_attachment display_value="icon" sys_id="3025c618934587100af5f4e9b903d6f2">3025c618934587100af5f4e9b903d6f2</sys_attachment>
+        <sys_created_by>irfan.wani</sys_created_by>
+        <sys_created_on>2026-05-20 10:35:14</sys_created_on>
+        <sys_id>7025c618934587100af5f4e9b903d6f2</sys_id>
+    </sys_attachment_doc>
+    <sys_attachment_doc action="INSERT_OR_UPDATE">
+        <data>dVC7bsMwDNzzFYI6h6Yo6xVEAdqhyKCuHbqltWsbkB9o1Dj5+yqDizZoF4I84u543B5PDZu7KrWeCyk5a+uuaZPnznJ26ur5YTx7jgxZ3rIr+N7F6PkwDjVn5z4OR8/blKZNUczzDLOE8aMpCBGLLM13q+10SC2rPH9yEkoShuFeIJBFGaQBcqQYWTBa014rkMqIZ2VASVJhYVgFymUcXxb/OyH0/aPlxU8DgQKULa8GkjKTwoJICVYL+Y9Aw8bp8NalS06aaZwd0yXWnvfdef0a66Fa92NVb/rPmLopXn6FshJEKRQTBOikDfjdkQEURKzE7B2UAjTa3kzagSZNYVFxBrRDF25U/7y6aK4lP3m3+gIH7lSxxgEAAA==</data>
+        <length>380</length>
+        <position>1</position>
+        <sys_attachment display_value="icon" sys_id="3025c618934587100af5f4e9b903d6f2">3025c618934587100af5f4e9b903d6f2</sys_attachment>
+        <sys_created_by>irfan.wani</sys_created_by>
+        <sys_created_on>2026-05-20 10:35:14</sys_created_on>
+        <sys_id>bc254a18934587100af5f4e9b903d603</sys_id>
+    </sys_attachment_doc>
+    <sys_attachment action="INSERT_OR_UPDATE">
+        <average_image_color/>
+        <chunk_size_bytes>700000</chunk_size_bytes>
+        <compressed>true</compressed>
+        <content_type>image/svg+xml</content_type>
+        <encryption_context/>
+        <file_name>logo</file_name>
+        <hash>e59009ac120a2dbab067af776c73066a73801002843122bf02738e74481de9b9</hash>
+        <image_height/>
+        <image_width/>
+        <size_bytes>6042</size_bytes>
+        <size_compressed>2823</size_compressed>
+        <state>available</state>
+        <sys_created_by>irfan.wani</sys_created_by>
+        <sys_created_on>2026-05-20 10:35:01</sys_created_on>
+        <sys_id>a1158618934587100af5f4e9b903d622</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_updated_by>system</sys_updated_by>
+        <sys_updated_on>2026-05-20 10:35:01</sys_updated_on>
+        <table_name>ZZ_YYsp_portal</table_name>
+        <table_sys_id>6131e46e3b04c710920bd84a85e45a84</table_sys_id>
+    </sys_attachment>
+    <sys_attachment_doc action="INSERT_OR_UPDATE">
+        <data>H4sIAAAAAAAA/w==</data>
+        <length>16</length>
+        <position>0</position>
+        <sys_attachment display_value="logo" sys_id="a1158618934587100af5f4e9b903d622">a1158618934587100af5f4e9b903d622</sys_attachment>
+        <sys_created_by>irfan.wani</sys_created_by>
+        <sys_created_on>2026-05-20 10:35:01</sys_created_on>
+        <sys_id>e1158618934587100af5f4e9b903d622</sys_id>
+    </sys_attachment_doc>
+    <sys_attachment_doc action="INSERT_OR_UPDATE">
+        <data>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</data>
+        <length>3752</length>
+        <position>1</position>
+        <sys_attachment display_value="logo" sys_id="a1158618934587100af5f4e9b903d622">a1158618934587100af5f4e9b903d622</sys_attachment>
+        <sys_created_by>irfan.wani</sys_created_by>
+        <sys_created_on>2026-05-20 10:35:01</sys_created_on>
+        <sys_id>a5158618934587100af5f4e9b903d622</sys_id>
+    </sys_attachment_doc>
 </record_update>

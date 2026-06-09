@@ -1,0 +1,743 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller = function($location) {
+  var c = this;
+
+  c.searchText = "";
+
+  // ]]>🔍<![CDATA[ Custom search filter
+  c.searchFilter = function(run) {
+    if (!c.searchText) return true;
+
+    var text = c.searchText.toLowerCase();
+
+    return (
+      (run.id && run.id.toLowerCase().includes(text)) ||
+      (run.user && run.user.toLowerCase().includes(text)) ||
+      (run.source && run.source.toLowerCase().includes(text)) ||
+      (run.target && run.target.toLowerCase().includes(text))
+    );
+  };
+
+  c.refreshData = function() {
+    c.server.update();
+  };
+	sessionStorage.setItem('status', c.data.status);
+
+  c.goBack = function() {
+    $location.search({ id: "your_main_dashboard_page" });
+  };
+};
+]]></client_script>
+        <controller_as>c</controller_as>
+        <css>.layout {
+  display: flex;
+  max-height: calc(100vh - 64px);
+  position: relative;
+  background: linear-gradient(
+    to bottom right,
+    #ffffff 0%,
+    rgba(17, 106, 248, 0.05) 50%,
+    rgba(10, 80, 245, 0.10) 100%
+  );
+}
+
+/* SIDEBAR */
+.sidebar-area {
+  flex-basis: 260px;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+/* MAIN */
+.content-area {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 30px;
+  margin: 0 auto;
+  overflow-y: auto;
+  height: calc(100vh - 64px);
+  width: 100%;
+  padding: 30px 15%;
+}
+
+@media(max-width:1600px) {
+  .content-area {
+    padding: 30px;
+  }
+}
+
+
+/* ===== HERO ===== */
+.hero {
+  position: relative;
+  border-radius: 26px;
+  padding: 44px;
+  display: flex;
+  justify-content: space-between;
+  overflow: hidden;
+
+  background: linear-gradient(135deg, #f8fafc 0%, #dbeafe 100%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+}
+
+/* SOFT GLOW EFFECTS */
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(17, 106, 248, 0.22), transparent 70%);
+  filter: blur(60px);
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  bottom: -60px;
+  left: -60px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(155, 192, 252, 0.28), transparent 70%);
+  filter: blur(60px);
+}
+
+/* LEFT */
+.hero-left {
+  max-width: 620px;
+  position: relative;
+  z-index: 2;
+}
+
+/* BADGE */
+.mic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(17, 106, 248, 0.10);
+  color: #116AF8;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+/* TITLE */
+.hero h1 {
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.hero h1 span {
+  color: #116AF8;
+}
+
+/* SUBTEXT */
+.hero p {
+  margin-top: 14px;
+  color: #475569;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+/* BREADCRUMB */
+.breadcrumb {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+/* INACTIVE */
+.breadcrumb .inactive a {
+  color: #64748b;
+  text-decoration: none;
+  transition: 0.2s;
+}
+
+.breadcrumb .inactive a:hover {
+  color: #0f172a;
+}
+
+/* ACTIVE */
+.breadcrumb .active {
+  color: #116AF8;
+  font-weight: 500;
+}
+
+/* SEPARATOR */
+.breadcrumb .sep {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* ACTIONS */
+.hero-actions {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  z-index: 2;
+}
+
+/* BUTTON BASE */
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: 14px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+/* GHOST BUTTON */
+.btn.ghost {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+}
+
+.btn.ghost:hover {
+  background: #f1f5f9;
+  transform: translateY(-2px);
+}
+
+/* PRIMARY BUTTON */
+.btn.primary {
+  background: linear-gradient(135deg, #116AF8, #0A50F5);
+  color: #fff;
+  border: none;
+  box-shadow: 0 10px 25px rgba(17, 106, 248, 0.35);
+}
+
+.btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 35px rgba(17, 106, 248, 0.45);
+}
+
+/* BACK BUTTON */
+.back-btn {
+  background: #e2e8f0;
+  border: none;
+}
+
+/* ===== TOP BAR ===== */
+.top-bar {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* SEARCH */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  width: 60%;
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+}
+
+/* META */
+.meta-row {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.clear {
+  color: #116AF8;
+  cursor: pointer;
+}
+
+/* ===== RUN CARD ===== */
+.run-card {
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 22px;
+  margin-top: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* HEADER */
+.run-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* HEADER RIGHT */
+.run-header .right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+/* VIEW BUTTON (hidden by default) */
+.view-btn {
+  opacity: 0;
+  transform: translateX(10px);
+  pointer-events: none;
+
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+
+  background: linear-gradient(90deg, #116AF8, #0A50F5);
+  color: #fff;
+  text-decoration: none;
+
+  transition: all 0.25s ease;
+}
+
+/* SHOW ON CARD HOVER */
+.run-card:hover .view-btn {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+/* subtle shift for badges */
+.run-card:hover .badge.type {
+  transform: translateX(-4px);
+  transition: 0.2s ease;
+}
+
+.left {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.status-icon {
+  width: 46px;
+  height: 46px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.status-icon.success {
+  color: green;
+}
+.status-icon.failed {
+  background: red;
+  color: white;
+}
+
+.run-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.date {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* BADGES */
+.badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.badge.success {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.badge.failed {
+  background: #ef4444;
+}
+
+.badge.partial {
+  background: #f59e0b;
+}
+
+.badge.type {
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+/* ===== STATS ===== */
+.stats-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.stat-box {
+  flex: 1;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.stat-box span {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.stat-box h4 {
+  margin-top: 6px;
+  font-size: 18px;
+}
+
+/* COLORS */
+.stat-box.success {
+  background: #dcfce7;
+}
+
+.stat-box.failed {
+  background: #fee2e2;
+}
+
+.stat-box.duration {
+  background: #eff6ff;
+}
+
+/* ===== FOOTER ===== */
+.run-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 18px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 14px;
+}
+
+.info {
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: #475569;
+}
+
+/* CHIPS */
+.chip {
+  background: #e2e8f0;
+  padding: 4px 10px;
+  border-radius: 999px; 
+  margin-left: 6px;
+  font-size: 12px;
+}
+
+.chip.blue {
+  background: rgba(155, 192, 252, 0.25);
+  color: #0A50F5;
+}
+</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>false</has_preview>
+        <id/>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link>
+        <name>tracenow_migration_details</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function() {
+
+  data.side = $sp.getWidget('tracenow_sidebar');
+
+  // ]]>🔥<![CDATA[ GET STATUS FROM URL
+  var status = $sp.getParameter('status'); // Success / Failed / Partial
+
+  data.status = status; // send to UI
+
+  data.runs = [];
+
+  var gr = new GlideRecord("x_sysus_tracenow_migration_details");
+  gr.addQuery('sys_created_by', gs.getUserName());
+
+  //  APPLY FILTER BASED ON CLICK
+  if (status == "Success") {
+    gr.addQuery('success_rate', 100);
+  } 
+  else if (status == "Failed") {
+    gr.addQuery('success_rate', 0);
+  } 
+  else if (status == "Partial") {
+    gr.addQuery('success_rate', '>', 0);
+    gr.addQuery('success_rate', '<', 100);
+  }
+
+  gr.orderByDesc('sys_created_on');
+  gr.query();
+
+  while (gr.next()) {
+
+    var total = parseInt(gr.getValue('records_fetched')) || 0;
+    var successRate = parseFloat(gr.getValue('success_rate')) || 0;
+
+    var successCount = parseInt(gr.getValue('records_inserted')) + parseInt(gr.getValue('records_updated'))//Math.round((successRate / 100) * total);
+    var failedCount = gr.getValue('records_failed');
+
+    data.runs.push({
+      id: gr.getValue('number') || gr.getUniqueValue(),
+      date: gr.getDisplayValue('sys_created_on'),
+      total: total,
+      success: successCount,
+      failed: failedCount,
+      duration: gr.getValue('duration') || "N/A",
+      source: gr.getValue('instance_url') || "N/A",
+      target: gr.getValue('target_instance') || "N/A",
+      user: gr.getDisplayValue('sys_created_by'),
+			success_rate: successRate
+    });
+  }
+
+})();
+]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-05-20 10:09:54</sys_created_on>
+        <sys_id>4d4fb9543b8d4b10092273c5e4e45ac1</sys_id>
+        <sys_mod_count>9</sys_mod_count>
+        <sys_name>tracenow_migration_details</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_widget_4d4fb9543b8d4b10092273c5e4e45ac1</sys_update_name>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-06-09 10:17:38</sys_updated_on>
+        <template><![CDATA[<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar-area">
+    <sp-widget widget="::c.data.side"></sp-widget>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="content-area">
+
+    <div class="runs-wrap">
+
+      <!-- HERO -->
+<div class="hero">
+
+  <div class="hero-left">
+
+    <div class="mic-badge">
+      ✨ Migration Intelligence Center
+    </div>
+
+    <h1>
+      Advanced Analytics &
+      <span>Drill-Down</span>
+    </h1>
+
+    <p>
+      Deep dive into migration performance with interactive visualizations and
+      granular record-level insights across instances.
+    </p>
+
+    <div class="breadcrumb">
+      <span class="inactive">
+        <a href="/_tracenow?id=tracenow_analytics">
+          <i class="fa fa-bar-chart"></i> Analytics Overview
+        </a>
+      </span>
+
+      <i class="fa fa-angle-right sep"></i>
+
+      <span class="active">
+        <i class="fa fa-line-chart"></i> Migration Runs
+      </span>
+    </div>
+
+  </div>
+
+  <!--<div class="hero-actions">
+
+    <button class="btn ghost">
+      <i class="fa fa-download"></i>
+      
+      Report
+    </button>
+
+    <button class="btn primary" ng-click="c.refreshData()">
+      <i class="fa fa-refresh"></i>
+      Refresh Data
+    </button>
+
+  </div>-->
+
+</div>
+
+      <!-- SEARCH + ACTION -->
+      <div class="top-bar">
+
+        <div class="search-box">
+          <i class="fa fa-search"></i>
+          <input type="text" ng-model="c.searchText" placeholder="Search by Run ID or User..." />
+        </div>
+
+        <button class="btn back-btn">
+          <a href="/_tracenow?id=tracenow_analytics"><i class="fa fa-angle-left"></i>
+            Back to Overview</a>
+        </button>
+
+      </div>
+
+      <!-- META -->
+     <!-- <div class="meta-row"> <span>Showing <b>{{c.data.runs.length}}</b> migration runs
+        </span> <span class="clear">Clear Filters ✕</span> </div>-->
+      <!-- RUN CARD -->
+     <div class="run-card" ng-repeat="run in c.data.runs | filter:c.searchFilter">
+
+  <!-- HEADER -->
+  <div class="run-header">
+
+    <div class="left">
+     <div class="status-icon"
+     ng-class="{
+       'success': run.success_rate == 100,
+       'failed': run.success_rate == 0,
+       'partial': run.success_rate > 0 && run.success_rate < 100
+     }">
+  <i class="fa"
+     ng-class="{
+       'fa-check': run.success_rate == 100,
+       'fa-times': run.success_rate == 0,
+       'fa-exclamation': run.success_rate > 0 && run.success_rate < 100
+     }"></i>
+</div>
+
+      <div>
+        <h3>{{run.id}}</h3>
+        <span class="date">
+          <i class="fa fa-calendar"></i>
+          {{run.date}}
+        </span>
+      </div>
+    </div>
+
+    <div class="right">
+
+      <!-- STATUS BADGE -->
+     <span class="badge"
+      ng-class="{
+        'success': run.success_rate == 100,
+        'failed': run.success_rate == 0,
+        'partial': run.success_rate > 0 && run.success_rate < 100
+      }">
+
+  <i class="fa"
+     ng-class="{
+       'fa-check-circle': run.success_rate == 100,
+       'fa-times-circle': run.success_rate == 0,
+       'fa-exclamation-circle': run.success_rate > 0 && run.success_rate < 100
+     }"></i>
+
+  {{ run.success_rate == 100 ? 'Success' :
+     (run.success_rate == 0 ? 'Failed' : 'Partial') }}
+</span>
+
+      <span class="badge type">Migration</span>
+
+      <a href="?id=tracenow_deep_down&migration_id={{run.id}}"n class="view-btn">
+        View Details <i class="fa fa-angle-right"></i>
+      </a>
+
+    </div>
+
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row" >
+
+    <div class="stat-box">
+      <span>Total Records</span>
+      <h4>{{run.total}}</h4>
+    </div>
+
+    <div class="stat-box success">
+      <span>Successful</span>
+      <h4>{{run.success}}</h4>
+    </div>
+
+    <div class="stat-box failed">
+      <span>Failed</span>
+      <h4>{{run.failed}}</h4>
+    </div>
+
+    <div class="stat-box duration">
+      <span>Duration</span>
+      <h4>{{run.duration}}</h4>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="run-footer">
+
+    <div class="footer-left">
+
+      <div class="info">
+        <i class="fa fa-server"></i>
+        Source:
+        <span class="chip">{{run.source}}</span>
+      </div>
+
+    </div>
+
+    <div class="footer-right">
+
+      <div class="info">
+        <i class="fa fa-database"></i>
+        Target:
+        <span class="chip">{{run.target}}</span>
+      </div>
+
+      <div class="info">
+        <i class="fa fa-user"></i>
+        Triggered by:
+        <b>{{run.user}}</b>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>	
+
+    </div>
+
+  </div>
+
+</div>
+]]></template>
+    </sp_widget>
+</record_update>

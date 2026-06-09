@@ -27,9 +27,9 @@
         <formula/>
         <function_definition/>
         <function_field>false</function_field>
-        <internal_type display_value="">simple_name_values</internal_type>
+        <internal_type display_value="String">string</internal_type>
         <mandatory>false</mandatory>
-        <max_length>40</max_length>
+        <max_length>500</max_length>
         <name>x_sysus_tracenow_migration_details</name>
         <next_element/>
         <primary>false</primary>
@@ -52,8 +52,8 @@
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sys_dictionary_x_sysus_tracenow_migration_details_table</sys_update_name>
-        <sys_updated_by>admin</sys_updated_by>
-        <sys_updated_on>2026-04-07 09:31:57</sys_updated_on>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-06-08 08:50:42</sys_updated_on>
         <table_reference>false</table_reference>
         <text_index>false</text_index>
         <unique>false</unique>

@@ -1,0 +1,2567 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller = function ($scope, $timeout) {
+  var c = this;
+
+  var lineChart;
+  var donutChart;
+  var barChart;
+  var instanceDistributionChart;
+  var statusTrendChart;
+
+  /* ================= INIT ================= */
+
+  c.$onInit = function () {
+    c.statusFilter   = 'all';
+    c.instanceFilter = 'all';
+    c.dateFilter     = 'all';
+    c.tableSearch    = '';       // NEW: table name search
+
+    c.pageSize       = 5;
+    c.currentPage    = 1;
+    c.totalPages     = 1;
+    c.paginatedTables  = [];
+    c.tablePerformance = [];
+
+    $timeout(function () {
+      if (!window.Chart) {
+        console.error('ChartJS not loaded');
+        return;
+      }
+      c.refreshDashboard();
+    }, 900);
+  };
+
+  c.refreshDashboard = function () {
+    buildCharts();
+    c.getTablePerformance();
+    c.updatePagination();
+  };
+
+  /* ================= ACTIVE FILTER COUNT ================= */
+
+  c.activeFilterCount = function () {
+    var count = 0;
+    if (c.dateFilter     !== 'all') count++;
+    if (c.statusFilter   !== 'all') count++;
+    if (c.instanceFilter !== 'all') count++;
+    if (c.tableSearch && c.tableSearch.trim()) count++;
+    return count;
+  };
+
+  /* ================= CLEAR ALL FILTERS ================= */
+
+  c.clearFilters = function () {
+    c.dateFilter     = 'all';
+    c.statusFilter   = 'all';
+    c.instanceFilter = 'all';
+    c.tableSearch    = '';
+  };
+
+  /* ================= FILTERED RUNS ================= */
+
+  c.filteredRuns = function () {
+    var runs = c.data.runs || [];
+
+    return runs.filter(function (run) {
+
+      /* STATUS FILTER */
+      if (c.statusFilter !== 'all' && run.status !== c.statusFilter)
+        return false;
+
+      /* INSTANCE FILTER — both sides already normalized on server */
+      if (c.instanceFilter !== 'all') {
+        var runURL    = String(run.instance    || '').trim().replace(/\/$/, '').toLowerCase();
+        var filterURL = String(c.instanceFilter || '').trim().replace(/\/$/, '').toLowerCase();
+        if (runURL !== filterURL) return false;
+      }
+
+      /* TABLE SEARCH FILTER */
+      if (c.tableSearch && c.tableSearch.trim()) {
+        var needle   = c.tableSearch.trim().toLowerCase();
+        var haystack = (run.tables || []).join(' ').toLowerCase();
+        if (haystack.indexOf(needle) === -1) return false;
+      }
+
+      /* DATE FILTER — use created_raw (ISO) for reliable cross-browser parsing */
+      if (c.dateFilter !== 'all') {
+        var rawStr = run.created_raw || run.created || '';
+
+        /* Normalize: replace space separator with T so Safari/Firefox parse correctly */
+        var isoStr  = rawStr.replace(' ', 'T');
+        var created = new Date(isoStr);
+
+        /* If date can't be parsed, include the record rather than silently dropping it */
+        if (isNaN(created.getTime())) return true;
+
+        var now = new Date();
+
+        if (c.dateFilter === 'today') {
+          var dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          var dayEnd   = new Date(dayStart.getTime() + 86400000);
+          if (created < dayStart || created >= dayEnd) return false;
+        }
+
+        if (c.dateFilter === 'last7') {
+          var cutoff7 = new Date(now.getTime() - 7 * 86400000);
+          if (created < cutoff7) return false;
+        }
+
+        if (c.dateFilter === 'lastMonth') {
+          var cutoffMonth = new Date(now.getTime() - 30 * 86400000);
+          if (created < cutoffMonth) return false;
+        }
+      }
+
+      return true;
+    });
+  };
+
+  /* ================= FILTERED KPI STATS ================= */
+
+  c.filteredStats = function () {
+    var runs = c.filteredRuns();
+
+    var totalRuns           = runs.length;
+    var successRuns         = 0;
+    var failedRuns          = 0;
+    var totalRecords        = 0;
+    var totalDurationSeconds = 0;
+
+    runs.forEach(function (run) {
+      if (run.status === 'success') successRuns++;
+      if (run.status === 'failed')  failedRuns++;
+
+      totalRecords += parseInt(run.records || 0, 10);
+
+      if (run.duration) {
+        var match = run.duration.match(/(\d+)\s*min\s*(\d+)\s*sec/i);
+        if (match) {
+          totalDurationSeconds +=
+            (parseInt(match[1], 10) * 60) + parseInt(match[2], 10);
+        }
+      }
+    });
+
+    var avgSeconds       = totalRuns ? Math.round(totalDurationSeconds / totalRuns) : 0;
+    var avgMinutes       = Math.floor(avgSeconds / 60);
+    var remainingSeconds = avgSeconds % 60;
+
+    return {
+      total:        totalRuns,
+      success:      successRuns,
+      failed:       failedRuns,
+      records:      totalRecords,
+      avg_duration: avgMinutes + ' min ' + remainingSeconds + ' sec',
+      avg_seconds:  avgSeconds   // raw seconds used by kpiTrend
+    };
+  };
+
+  /* ================= CSV EXPORT ================= */
+
+  c.exportCSV = function () {
+    var runs = c.filteredRuns();
+    var csv  = [];
+
+    csv.push(['Run ID', 'Tables', 'Records', 'Status', 'Duration', 'Created'].join(','));
+
+    runs.forEach(function (run) {
+      csv.push([
+        run.number   || run.run_id || '',
+        (run.tables  || []).join(' | '),
+        run.records  || 0,
+        run.status   || '',
+        run.duration || '',
+        run.created  || ''
+      ].join(','));
+    });
+
+    var blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'migration-report.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  /* ================= PDF EXPORT ================= */
+
+  c.exportPDF = function () {
+    var wrapper  = document.querySelector('.ra-wrapper');
+    var canvases = wrapper.querySelectorAll('canvas');
+    var replacements = [];
+
+    canvases.forEach(function (cv) {
+      var img    = document.createElement('img');
+      img.src    = cv.toDataURL('image/png');
+      img.style.width  = '100%';
+      img.style.height = '295.5px';
+
+      replacements.push({ canvas: cv, img: img });
+
+      cv.parentNode.insertBefore(img, cv);
+      cv.style.display = 'none';
+    });
+
+    requestAnimationFrame(function () {
+      html2pdf()
+        .set({
+          margin:     15,
+          filename:   'migration-report.pdf',
+          image:      { type: 'jpeg', quality: 1 },
+          html2canvas: { scale: 9, useCORS: true },
+          jsPDF:      { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        })
+        .from(wrapper)
+        .save()
+        .then(function () {
+          replacements.forEach(function (r) {
+            r.canvas.style.display = 'block';
+            if (r.img && r.img.parentNode) {
+              r.img.parentNode.removeChild(r.img);
+            }
+          });
+        });
+    });
+  };
+
+  /* ================= BUILD CHARTS ================= */
+
+  function buildCharts() {
+    var runs = c.filteredRuns();
+
+    if (lineChart)                 lineChart.destroy();
+    if (donutChart)                donutChart.destroy();
+    if (barChart)                  barChart.destroy();
+    if (instanceDistributionChart) instanceDistributionChart.destroy();
+    if (statusTrendChart)          statusTrendChart.destroy();
+
+   var primary = '#116AF8';
+var success = '#116AF8';
+    var danger  = '#ef4444';
+    var partial = '#FFFF00';
+
+    if (!runs.length) {
+      renderEmptyCharts(primary, success, danger);
+      return;
+    }
+
+    /* ================= LINE CHART DATA ================= */
+
+    var recordsByDate  = {};
+    var successByDate  = {};
+
+    runs.forEach(function (run) {
+      if (!run.created) return;
+
+      var safeDate = String(run.created_raw || run.created).substring(0, 10).replace(/\//g, '-');
+
+      recordsByDate[safeDate] = (recordsByDate[safeDate] || 0) + Number(run.records || 0);
+
+      if (run.status === 'success') {
+        successByDate[safeDate] = (successByDate[safeDate] || 0) + Number(run.records || 0);
+      }
+    });
+
+    var dates = Object.keys(recordsByDate).sort();
+
+    if (!dates.length) {
+      renderEmptyCharts(primary, success, danger);
+      return;
+    }
+
+    var startDate = new Date(dates[0]);
+    var endDate   = new Date(dates[dates.length - 1]);
+
+    var labels        = [];
+    var recordValues  = [];
+    var successValues = [];
+
+    var current = new Date(startDate);
+    while (current <= endDate) {
+      var isoDate =
+        current.getFullYear() + '-' +
+        String(current.getMonth() + 1).padStart(2, '0') + '-' +
+        String(current.getDate()).padStart(2, '0');
+
+      var displayLabel =
+        current.toLocaleString('default', { month: 'short' }) + ' ' + current.getDate();
+
+      labels.push(displayLabel);
+      recordValues.push(recordsByDate[isoDate] || 0);
+      successValues.push(successByDate[isoDate] || 0);
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    var ctxLine = document.getElementById('recordsLineChart').getContext('2d');
+    lineChart = new Chart(ctxLine, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'records',
+            data:  recordValues,
+           borderColor:'#116AF8',
+backgroundColor:'rgba(17,106,248,0.18)',
+            borderWidth: 3,
+            fill:        true,
+            tension:     0.45,
+            pointRadius: 4
+          },
+          {
+            label: 'successful',
+            data:  successValues,
+            borderColor:     '#22c55e',
+            backgroundColor: 'rgba(34,197,94,0.12)',
+            borderWidth: 3,
+            fill:        false,
+            tension:     0.45,
+            pointRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive:          true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'bottom', labels: { usePointStyle: true } }
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#e5e7eb' } },
+          x: { grid: { display: false } }
+        },
+        animation: { duration: 1600 }
+      }
+    });
+
+    /* ================= SUCCESS DISTRIBUTION DONUT — FIX: use run.status consistently ================= */
+
+    var successRuns = 0;
+    var partialRuns = 0;
+    var failedRuns  = 0;
+
+    runs.forEach(function (r) {
+      if (r.status === 'success') successRuns++;
+      else if (r.status === 'partial') partialRuns++;
+      else if (r.status === 'failed')  failedRuns++;
+    });
+
+    donutChart = new Chart(document.getElementById('successDonutChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Success', 'Partial', 'Failed'],
+        datasets: [{
+          data:            [successRuns, partialRuns, failedRuns],
+          backgroundColor: [success, '#f59e0b', danger],
+          borderWidth:     0
+        }]
+      },
+      options: {
+        responsive:          true,
+        maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: {
+            display:  true,
+            position: 'bottom',
+            labels:   { usePointStyle: true, padding: 18 }
+          },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                var total   = successRuns + partialRuns + failedRuns;
+                var value   = context.raw || 0;
+                var percent = total ? ((value / total) * 100).toFixed(1) : 0;
+                return context.label + ': ' + value + ' runs (' + percent + '%)';
+              }
+            }
+          }
+        },
+        animation: { duration: 1600, easing: 'easeOutQuart' }
+      }
+    });
+
+    /* ================= INSTANCE DISTRIBUTION ================= */
+
+    var connectionCounts = {};
+
+    (c.data.connections || []).forEach(function (conn) {
+      if (!connectionCounts[conn.name]) connectionCounts[conn.name] = 0;
+      connectionCounts[conn.name]++;
+    });
+
+    var instanceLabels = Object.keys(connectionCounts);
+    var instanceValues = Object.values(connectionCounts);
+
+    if (!instanceLabels.length) {
+      instanceLabels = ['No Data'];
+      instanceValues = [1];
+    }
+
+    instanceDistributionChart = new Chart(
+      document.getElementById('instanceDistributionChart'),
+      {
+        type: 'pie',
+        data: {
+          labels: instanceLabels,
+          datasets: [{
+            data:            instanceValues,
+backgroundColor: [
+'#116AF8',  // primary
+'#BDD6FE',  // secondary
+'#3D82FA',
+'#5A97FB',
+'#7AACFC',
+'#9BC0FC',  // accent
+'#0A50F5'
+],
+            borderColor:     '#ffffff',
+            borderWidth:     2,
+            hoverOffset:     10
+          }]
+        },
+        options: {
+          responsive:          true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          animation: { duration: 1600 }
+        }
+      }
+    );
+
+    /* ================= MIGRATIONS ACROSS TABLES OVER TIME ================= */
+
+    var recordsByDateAndTable = {};
+    var allDates  = {};
+    var allTables = {};
+
+    runs.forEach(function (run) {
+      if (!run.created) return;
+
+      var dateKey = String(run.created_raw || run.created).substring(0, 10).replace(/\//g, '-');
+
+      allDates[dateKey] = true;
+
+      (run.tables || []).forEach(function (tbl) {
+        allTables[tbl] = true;
+
+        if (!recordsByDateAndTable[tbl])
+          recordsByDateAndTable[tbl] = {};
+
+        recordsByDateAndTable[tbl][dateKey] =
+          (recordsByDateAndTable[tbl][dateKey] || 0) + Number(run.records || 0);
+      });
+    });
+
+    var sortedDates   = Object.keys(allDates).sort();
+    var displayLabels = sortedDates.map(function (d) {
+      var dt = new Date(d);
+      return dt.toLocaleString('default', { month: 'short' }) + ' ' + dt.getDate();
+    });
+
+    var lineShadowPlugin = {
+      id: 'lineShadow',
+      beforeDatasetDraw: function (chart) {
+        var ctx = chart.ctx;
+        ctx.save();
+        ctx.shadowColor   = 'rgba(0,0,0,0.25)';
+        ctx.shadowBlur    = 10;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 4;
+      },
+      afterDatasetDraw: function (chart) {
+        chart.ctx.restore();
+      }
+    };
+
+    var datasets = [];
+
+    Object.keys(allTables).forEach(function (tbl, index) {
+      var values = sortedDates.map(function (d) {
+        return (recordsByDateAndTable[tbl] && recordsByDateAndTable[tbl][d]) || 0;
+      });
+
+      var hue = (index * 60) % 360;
+
+      datasets.push({
+        label:           tbl,
+        data:            values,
+        borderColor:     'hsl(' + hue + ',65%,45%)',
+        backgroundColor: 'hsla(' + hue + ',65%,45%,0.12)',
+        fill:            true,
+        tension:         0.4,
+        pointRadius:     4,
+        pointHoverRadius:7,
+        borderWidth:     3
+      });
+    });
+
+    var ctxTrend = document.getElementById('statusTrendChart').getContext('2d');
+
+    statusTrendChart = new Chart(ctxTrend, {
+      type: 'line',
+      data: { labels: displayLabels, datasets: datasets },
+      plugins: [lineShadowPlugin],
+      options: {
+        responsive:          true,
+        maintainAspectRatio: false,
+        interaction:         { mode: 'nearest', intersect: false },
+        animation:           { duration: 1800, easing: 'easeOutQuart' },
+        plugins: {
+          legend:  { position: 'top', labels: { usePointStyle: true, padding: 18 } },
+          tooltip: { mode: 'index', intersect: false }
+        },
+        elements: {
+          line:  { borderWidth: 3 },
+          point: { radius: 4, hoverRadius: 7 }
+        },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#e5e7eb' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    /* ================= TOP 5 MIGRATED TABLES ================= */
+
+    var tableCounts = {};
+
+    runs.forEach(function (r) {
+      (r.tables || []).forEach(function (tbl) {
+        if (!tableCounts[tbl]) tableCounts[tbl] = 0;
+        tableCounts[tbl] += Number(r.records || 0);
+      });
+    });
+
+    var sortedTables = Object.keys(tableCounts).sort(function (a, b) {
+      return tableCounts[b] - tableCounts[a];
+    });
+
+    var top5Tables  = sortedTables.slice(0, 5);
+    var barLabels   = top5Tables;
+    var barValues   = top5Tables.map(function (tbl) { return tableCounts[tbl]; });
+
+    barChart = new Chart(document.getElementById('tablesBarChart'), {
+      type: 'bar',
+      data: {
+        labels:   barLabels,
+        datasets: [{ data: barValues, backgroundColor: primary, borderRadius: 10 }]
+      },
+      options: {
+        indexAxis:           'y',
+        responsive:          true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        animation: { duration: 1600 }
+      }
+    });
+  }
+
+  /* ================= EMPTY CHARTS ================= */
+
+  function renderEmptyCharts(primary, success, danger) {
+    var ctxLine = document.getElementById('recordsLineChart').getContext('2d');
+    lineChart = new Chart(ctxLine, {
+      type: 'line',
+      data: {
+        labels:   ['No Data'],
+        datasets: [{ label: 'records', data: [0], borderColor: primary, backgroundColor: 'rgba(31,140,149,0.18)', fill: true, tension: 0.4, pointRadius: 4 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    donutChart = new Chart(document.getElementById('successDonutChart'), {
+      type: 'doughnut',
+      data: {
+        labels:   ['Success', 'Failed'],
+        datasets: [{ data: [0, 0], backgroundColor: [success, danger] }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '68%' }
+    });
+
+    instanceDistributionChart = new Chart(document.getElementById('instanceDistributionChart'), {
+      type: 'pie',
+      data: {
+        labels:   ['No Data'],
+        datasets: [{ data: [1], backgroundColor: ['#94A6A8'] }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    var ctxTrend = document.getElementById('statusTrendChart').getContext('2d');
+    statusTrendChart = new Chart(ctxTrend, {
+      type: 'line',
+      data: {
+        labels:   ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        datasets: [
+          { label: 'Success', data: [0,0,0,0], borderColor: success, fill: true },
+          { label: 'Failed',  data: [0,0,0,0], borderColor: danger,  fill: true }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    barChart = new Chart(document.getElementById('tablesBarChart'), {
+      type: 'bar',
+      data: {
+        labels:   ['No Data'],
+        datasets: [{ data: [0], backgroundColor: primary, borderRadius: 10 }]
+      },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  }
+
+  /* ================= TABLE PERFORMANCE ================= */
+
+  c.getTablePerformance = function () {
+    var runs       = c.filteredRuns();
+    var tableStats = {};
+		runs.forEach(function (run) {
+      (run.tables || []).forEach(function (tbl) {
+        if (!tableStats[tbl]) {
+          tableStats[tbl] = {
+            name:          tbl,
+            records:       0,
+            runs:          0,
+            durationTotal: 0,
+            successRuns:   0,
+            failedRuns:    0
+          };
+        }
+
+        tableStats[tbl].records += parseInt(run.records || 0, 10);
+        tableStats[tbl].runs++;
+
+        if (run.status === 'success') tableStats[tbl].successRuns++;
+        if (run.status === 'failed')  tableStats[tbl].failedRuns++;
+
+        var match = (run.duration || '').match(/(\d+)\s*min\s*(\d+)\s*sec/i);
+        if (match) {
+          tableStats[tbl].durationTotal +=
+            (parseInt(match[1], 10) * 60) + parseInt(match[2], 10);
+        }
+      });
+    });
+
+    c.tablePerformance = Object.keys(tableStats).map(function (tbl) {
+      var avgSeconds = Math.round(tableStats[tbl].durationTotal / (tableStats[tbl].runs || 1));
+      var avgMin     = Math.floor(avgSeconds / 60);
+      var avgSec     = avgSeconds % 60;
+
+      var totalSeconds  = tableStats[tbl].durationTotal;
+      var totalRecords  = tableStats[tbl].records;
+      var recordsPerSec = totalSeconds > 0 ? totalRecords / totalSeconds : 0;
+
+      var performance = 'Excellent';
+      if      (recordsPerSec < 0.02) performance = 'Slow';
+      else if (recordsPerSec < 0.2)  performance = 'Good';
+
+      var status = 'Success';
+      if (tableStats[tbl].successRuns > 0 && tableStats[tbl].failedRuns > 0) {
+        status = 'Partial';
+      } else if (tableStats[tbl].successRuns === 0 && tableStats[tbl].failedRuns > 0) {
+        status = 'Failed';
+      }
+
+      return {
+        name:         tbl,
+        records:      tableStats[tbl].records,
+        runs:         tableStats[tbl].runs,
+        status:       status,
+        avg_duration: avgMin + 'm ' + avgSec + 's',
+        performance:  performance
+      };
+    });
+
+    c.currentPage = 1;
+    c.updatePagination();
+    return c.tablePerformance;
+  };
+
+  /* ================= PAGINATION ================= */
+
+  c.pageSize    = 5;
+  c.currentPage = 1;
+  c.totalPages  = 1;
+  c.paginatedTables = [];
+
+  c.updatePagination = function () {
+    if (!c.tablePerformance || !c.tablePerformance.length) {
+      c.paginatedTables = [];
+      c.totalPages      = 1;
+      return;
+    }
+
+    c.totalPages = Math.ceil(c.tablePerformance.length / c.pageSize) || 1;
+
+    var start = (c.currentPage - 1) * c.pageSize;
+    var end   = start + c.pageSize;
+
+    c.paginatedTables = c.tablePerformance.slice(start, end);
+  };
+	
+  c.nextPage = function () {
+    if (c.currentPage < c.totalPages) {
+      c.currentPage++;
+      c.updatePagination();
+    }
+  };
+
+  c.prevPage = function () {
+    if (c.currentPage > 1) {
+      c.currentPage--;
+      c.updatePagination();
+    }
+  };
+
+ /* ================= KPI TREND ================= */
+
+c.kpiTrend = function (metric) {
+
+  var runs    = c.filteredRuns();
+  var allRuns = c.data.runs || [];
+
+  if (!runs.length) return { direction: 'up', color: 'green', value: 0 };
+
+  /* All Time has no previous period to compare — return neutral zero */
+  if (c.dateFilter === 'all') {
+    return { direction: 'up', color: 'green', value: 0 };
+  }
+
+  var today    = new Date();
+  var prevRuns = [];
+
+  if (c.dateFilter === 'today') {
+    var yday    = new Date(today);
+    yday.setDate(today.getDate() - 1);
+    var ydayStr = yday.toDateString();
+
+    prevRuns = allRuns.filter(function (r) {
+      var rawStr = (r.created_raw || r.created || '').replace(' ', 'T');
+      var d      = new Date(rawStr);
+      return !isNaN(d.getTime()) && d.toDateString() === ydayStr;
+    });
+  }
+
+  else if (c.dateFilter === 'last7') {
+    var last14 = new Date(today.getTime() - 14 * 86400000);
+    var last7  = new Date(today.getTime() - 7  * 86400000);
+
+    prevRuns = allRuns.filter(function (r) {
+      var rawStr = (r.created_raw || r.created || '').replace(' ', 'T');
+      var d      = new Date(rawStr);
+      return !isNaN(d.getTime()) && d >= last14 && d < last7;
+    });
+  }
+
+  else if (c.dateFilter === 'lastMonth') {
+    var prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+    var prevMonthEnd   = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+
+    prevRuns = allRuns.filter(function (r) {
+      var rawStr = (r.created_raw || r.created || '').replace(' ', 'T');
+      var d      = new Date(rawStr);
+      return !isNaN(d.getTime()) && d >= prevMonthStart && d < prevMonthEnd;
+    });
+  }
+
+  /* ---- Previous period stats ---- */
+
+  var prevDurationTotal = prevRuns.reduce(function (sum, r) {
+    var match = (r.duration || '').match(/(\d+)\s*min\s*(\d+)\s*sec/i);
+    if (match) return sum + (parseInt(match[1], 10) * 60) + parseInt(match[2], 10);
+    return sum;
+  }, 0);
+
+  var prevStats = {
+    total:      prevRuns.length,
+    success:    prevRuns.filter(function (r) { return r.status === 'success'; }).length,
+    avgSeconds: prevRuns.length ? Math.round(prevDurationTotal / prevRuns.length) : 0
+  };
+
+  var currentStats = c.filteredStats();
+
+  var currentValue = 0;
+  var prevValue    = 0;
+
+  if (metric === 'runs') {
+    currentValue = currentStats.total;
+    prevValue    = prevStats.total;
+  }
+
+  else if (metric === 'success') {
+    currentValue = currentStats.success;
+    prevValue    = prevStats.success;
+  }
+
+  else if (metric === 'duration') {
+    /* FIX: use raw seconds not formatted string */
+    currentValue = currentStats.avg_seconds || 0;
+    prevValue    = prevStats.avgSeconds;
+  }
+
+  var delta    = currentValue - prevValue;
+  var improved = metric === 'duration' ? delta < 0 : delta > 0;
+
+  return {
+    direction: improved ? 'up' : 'down',
+    color:     improved ? 'green' : 'red',
+    value:     Math.abs(delta)
+  };
+
+};
+
+  /* ================= FILTER WATCH — FIX: 50ms delay so digest completes before rebuild ================= */
+
+  $scope.$watch(
+    function () {
+      return [c.statusFilter, c.instanceFilter, c.dateFilter, c.tableSearch];
+    },
+    function (newVal, oldVal) {
+      if (!newVal || angular.equals(newVal, oldVal)) return;
+      $timeout(function () {
+        c.refreshDashboard();
+      }, 50);
+    },
+    true
+  );
+};]]></client_script>
+        <controller_as>c</controller_as>
+        <css>/* ================= PRINT ================= */&#13;
+&#13;
+@media print {&#13;
+&#13;
+.ra-sidebar,&#13;
+.dm-sidebar-slot,&#13;
+.ra-actions,&#13;
+.ra-filter{&#13;
+    display:none !important;&#13;
+}&#13;
+&#13;
+&#13;
+.ra-chart-card{&#13;
+    page-break-inside: avoid !important;&#13;
+}&#13;
+&#13;
+#successDonutChart{&#13;
+    page-break-before: always;&#13;
+}&#13;
+&#13;
+}&#13;
+&#13;
+/* ================= GLOBAL ================= */&#13;
+&#13;
+&#13;
+&#13;
+/* ================= PAGE LAYOUT ================= */&#13;
+&#13;
+.dm-page-layout{&#13;
+    display:flex;&#13;
+    width:100%;&#13;
+    max-height:calc(100vh - 64px);&#13;
+    background:linear-gradient(180deg,#f3f7ff,#eef4ff);&#13;
+}&#13;
+.ra-wrapper{&#13;
+  width:100% !important;&#13;
+  padding:20px;&#13;
+  position:relative;&#13;
+  overflow-y:auto;&#13;
+  max-height:calc(100vh - 64px);&#13;
+  flex:1;&#13;
+}&#13;
+&#13;
+.dm-sidebar-slot{&#13;
+    width:260px;&#13;
+}&#13;
+&#13;
+&#13;
+&#13;
+&#13;
+&#13;
+/* ================= MAIN WRAPPER ================= */&#13;
+&#13;
+&#13;
+/* ================= HEADER ================= */&#13;
+&#13;
+.ra-header{&#13;
+    display:flex;&#13;
+    justify-content:space-between;&#13;
+    align-items:center;&#13;
+    margin-bottom:30px;&#13;
+}&#13;
+&#13;
+.ra-header h1{&#13;
+    font-size:34px;&#13;
+    font-weight:700;&#13;
+    color:#1e293b;&#13;
+}&#13;
+&#13;
+.ra-header p{&#13;
+    margin-top:4px;&#13;
+    color:#64748b;&#13;
+}&#13;
+&#13;
+/* ================= BUTTONS ================= */&#13;
+&#13;
+.ra-actions{&#13;
+    display:flex;&#13;
+    gap:16px;&#13;
+}&#13;
+ &#13;
+.btn{&#13;
+    border-radius:10px;&#13;
+    padding:10px 18px;&#13;
+    border:none;&#13;
+    font-weight:600;&#13;
+    cursor:pointer;&#13;
+    transition:.2s ease;&#13;
+ &#13;
+    display:inline-flex;          /* FIX alignment */&#13;
+    align-items:center;           /* center icon + text */&#13;
+    gap:8px;                      /* space between icon &amp; text */&#13;
+}&#13;
+ &#13;
+/* fix svg size */&#13;
+.btn svg{&#13;
+    width:18px;&#13;
+    height:18px;&#13;
+}&#13;
+ &#13;
+/* CSV button (match screenshot look) */&#13;
+.btn.secondary{&#13;
+    background:#f8fafc;           /* lighter */&#13;
+    border:1px solid #e5e7eb;     /* subtle border */&#13;
+    color:#111827;&#13;
+}&#13;
+ &#13;
+/* PDF button */&#13;
+.btn.primary{&#13;
+background:#116AF8;&#13;
+box-shadow:0 4px 10px rgba(17,106,248,.25);&#13;
+}&#13;
+ &#13;
+.btn.primary:hover{&#13;
+    background:#116AF8;&#13;
+    transform:translateY(-1px);&#13;
+}&#13;
+/* CSV hover → greyish */&#13;
+.btn.secondary:hover{&#13;
+    background:#e5e7eb;   /* soft grey */&#13;
+}&#13;
+ &#13;
+/* PDF hover → darker */&#13;
+.btn.primary:hover{&#13;
+    background:#0A50F5;   /* darker shade of your teal */&#13;
+    transform:translateY(-1px);&#13;
+}&#13;
+&#13;
+/* ================= FILTER ================= */&#13;
+&#13;
+.ra-filter{&#13;
+    display:flex;&#13;
+    align-items:center;&#13;
+    gap:16px;&#13;
+    background:white;&#13;
+    padding:18px;&#13;
+    border-radius:14px;&#13;
+    box-shadow:0 12px 30px rgba(0,0,0,.05);&#13;
+    margin-bottom:30px;&#13;
+}&#13;
+&#13;
+.filter.search{&#13;
+    flex:1;&#13;
+    display:flex;&#13;
+    align-items:center;&#13;
+    gap:10px;&#13;
+    background:#f1f5ff;&#13;
+    padding:10px 14px;&#13;
+    border-radius:10px;&#13;
+}&#13;
+&#13;
+.filter.search input{&#13;
+    border:none;&#13;
+    background:transparent;&#13;
+    width:100%;&#13;
+    outline:none;&#13;
+}&#13;
+&#13;
+.ra-filter select{&#13;
+    border:none;&#13;
+    background:#f1f5ff;&#13;
+    padding:10px 14px;&#13;
+    border-radius:10px;&#13;
+}&#13;
+&#13;
+&#13;
+/* ================= CHART SECTION ================= */&#13;
+&#13;
+.ra-charts{&#13;
+    margin-top:60px; /* increased space above charts */&#13;
+}&#13;
+&#13;
+/* two charts row */&#13;
+&#13;
+.ra-chart-row{&#13;
+    display:grid;&#13;
+    grid-template-columns:1fr 1fr;&#13;
+    gap:30px;&#13;
+    margin-bottom:30px;&#13;
+}&#13;
+&#13;
+/* chart card */&#13;
+&#13;
+.ra-chart-card{&#13;
+    background:white;&#13;
+    border-radius:18px;&#13;
+    padding:26px 22px 22px 22px; /* extra top padding */&#13;
+    box-shadow:0 18px 40px rgba(0,0,0,.06);&#13;
+    transition:all .25s ease;&#13;
+    display:flex;&#13;
+    flex-direction:column;&#13;
+    position:relative;&#13;
+}&#13;
+&#13;
+/* hover animation */&#13;
+&#13;
+.ra-chart-card:hover{&#13;
+    transform:translateY(-4px);&#13;
+    box-shadow:&#13;
+        0 22px 50px rgba(0,0,0,.12),&#13;
+        0 8px 20px rgba(37,99,235,.08);&#13;
+}&#13;
+&#13;
+/* chart title */&#13;
+&#13;
+.chart-title{&#13;
+    font-weight:600;&#13;
+    margin-bottom:14px;&#13;
+    color:#334155;&#13;
+}&#13;
+&#13;
+/* chart canvas */&#13;
+&#13;
+.ra-chart-card canvas{&#13;
+    width:100%!important;&#13;
+    height:320px!important;&#13;
+}&#13;
+&#13;
+/* bar chart extra space */&#13;
+&#13;
+#tablesBarChart{&#13;
+    height:380px !important;&#13;
+    margin-top:10px;&#13;
+}&#13;
+/* ================= FIX PIE CHART STRETCH ================= */&#13;
+&#13;
+#instanceDistributionChart {&#13;
+&#13;
+max-height: 320px !important;&#13;
+&#13;
+aspect-ratio: 1 / 1;&#13;
+&#13;
+margin: 0 auto;&#13;
+&#13;
+}&#13;
+/* ================= BOTTOM SECTION ================= */&#13;
+.pagination-bar{&#13;
+&#13;
+display:flex;&#13;
+justify-content:center;   /* centers horizontally */&#13;
+align-items:center;&#13;
+&#13;
+gap:14px;&#13;
+margin-top:18px;&#13;
+&#13;
+}&#13;
+&#13;
+.page-btn{&#13;
+&#13;
+background:#116AF8;&#13;
+color:white;&#13;
+border:none;&#13;
+padding:6px 14px;&#13;
+border-radius:8px;&#13;
+cursor:pointer;&#13;
+font-size:13px;&#13;
+&#13;
+}&#13;
+&#13;
+.page-btn:disabled{&#13;
+&#13;
+background:#cbd5e1;&#13;
+cursor:not-allowed;&#13;
+&#13;
+}&#13;
+&#13;
+.page-info{&#13;
+&#13;
+font-size:14px;&#13;
+color:#475569;&#13;
+font-weight:500;&#13;
+&#13;
+}&#13;
+.ra-bottom{&#13;
+    display:grid;&#13;
+    grid-template-columns:320px 1fr;&#13;
+    gap:22px;&#13;
+    margin-top:30px;&#13;
+}&#13;
+&#13;
+.section-title{&#13;
+    font-weight:700;&#13;
+    margin-bottom:16px;&#13;
+}&#13;
+&#13;
+/* ================= ACTIVITY ================= */&#13;
+&#13;
+.ra-activity{&#13;
+    background:white;&#13;
+    padding:18px;&#13;
+    border-radius:18px;&#13;
+    box-shadow:0 18px 40px rgba(0,0,0,.05);&#13;
+}&#13;
+&#13;
+.activity-item{&#13;
+    display:flex;&#13;
+    justify-content:space-between;&#13;
+    padding:14px;&#13;
+    border-radius:10px;&#13;
+    background:#f8faff;&#13;
+    margin-bottom:10px;&#13;
+}&#13;
+&#13;
+.activity-item:hover{&#13;
+    background:#eef4ff;&#13;
+}&#13;
+&#13;
+/* ================= TABLE ================= */&#13;
+&#13;
+.ra-table{&#13;
+    background:white;&#13;
+    padding:20px;&#13;
+    border-radius:18px;&#13;
+    box-shadow:0 18px 40px rgba(0,0,0,.05);&#13;
+}&#13;
+&#13;
+.ra-table table{&#13;
+    width:100%;&#13;
+    border-collapse:collapse;&#13;
+}&#13;
+&#13;
+.ra-table th{&#13;
+    font-size:13px;&#13;
+    color:#64748b;&#13;
+    padding:12px;&#13;
+    border-bottom:1px solid #e2e8f0;&#13;
+}&#13;
+&#13;
+.ra-table td{&#13;
+    padding:14px;&#13;
+    border-bottom:1px solid #f1f5f9;&#13;
+}&#13;
+&#13;
+.ra-table tbody tr:hover{&#13;
+    background:#f8faff;&#13;
+}&#13;
+.ra-table-performance{&#13;
+background:white;&#13;
+padding:26px;&#13;
+border-radius:18px;&#13;
+box-shadow:0 18px 40px rgba(0,0,0,.05);&#13;
+margin-top:30px;&#13;
+}&#13;
+&#13;
+.performance-table{&#13;
+width:100%;&#13;
+border-collapse:collapse;&#13;
+}&#13;
+&#13;
+.performance-table th{&#13;
+font-size:13px;&#13;
+color:#64748b;&#13;
+text-align:left;&#13;
+padding:14px 8px;&#13;
+border-bottom:1px solid #e5e7eb;&#13;
+}&#13;
+&#13;
+.performance-table td{&#13;
+padding:18px 8px;&#13;
+border-bottom:1px solid #f1f5f9;&#13;
+font-size:16px;&#13;
+color:#0f172a;&#13;
+}&#13;
+&#13;
+.table-name{&#13;
+font-weight:600;&#13;
+}&#13;
+&#13;
+.runs-pill{&#13;
+background:#e0ecff;&#13;
+color:#2563eb;&#13;
+padding:4px 12px;&#13;
+border-radius:10px;&#13;
+font-size:13px;&#13;
+font-weight:500;&#13;
+}&#13;
+&#13;
+.performance-pill{&#13;
+padding:6px 14px;&#13;
+border-radius:20px;&#13;
+font-size:13px;&#13;
+font-weight:600;&#13;
+display:inline-block;&#13;
+}&#13;
+&#13;
+.performance-pill.excellent{&#13;
+background:#d1fae5;&#13;
+color:#065f46;&#13;
+}&#13;
+&#13;
+.performance-pill.good{&#13;
+background:#fef3c7;&#13;
+color:#92400e;&#13;
+}&#13;
+&#13;
+.performance-pill.slow{&#13;
+background:#fee2e2;&#13;
+color:#991b1b;&#13;
+}&#13;
+/* ================= STATUS BADGES ================= */&#13;
+&#13;
+.pill{&#13;
+    padding:5px 10px;&#13;
+    border-radius:999px;&#13;
+    font-size:12px;&#13;
+    font-weight:600;&#13;
+}&#13;
+&#13;
+.pill.success{&#13;
+    background:#e6efff;&#13;
+    color:#2563eb;&#13;
+}&#13;
+&#13;
+.pill.partial{&#13;
+    background:#fff4e5;&#13;
+    color:#f59e0b;&#13;
+}&#13;
+&#13;
+.pill.failed{&#13;
+    background:#ffecec;&#13;
+    color:#ef4444;&#13;
+}&#13;
+/* ================= KPI CARDS (FINAL MATCH DESIGN) ================= */&#13;
+.ra-cards{&#13;
+  display: grid;&#13;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));&#13;
+  gap: 22px;&#13;
+}&#13;
+&#13;
+.ra-card{&#13;
+  position: relative;&#13;
+  background: white;&#13;
+  border-radius: 18px;&#13;
+  padding: 16px;&#13;
+  box-shadow: 0 20px 45px rgba(0,0,0,.06);&#13;
+  transition: all .35s ease;&#13;
+  display: flex;&#13;
+  flex-direction: column;&#13;
+  overflow: hidden;&#13;
+  justify-content: space-between;&#13;
+}&#13;
+&#13;
+/* TOP BORDER EFFECT */&#13;
+&#13;
+.ra-card::before{&#13;
+  content:"";&#13;
+  position:absolute;&#13;
+  top:0;&#13;
+  left:0;&#13;
+  width:0%;&#13;
+  height:4px;&#13;
+  background:#116AF8;&#13;
+  border-radius:18px 18px 0 0;&#13;
+  transition:width .35s ease;&#13;
+}&#13;
+&#13;
+/* HOVER GRADIENT */&#13;
+&#13;
+.ra-card::after{&#13;
+  content:"";&#13;
+  position:absolute;&#13;
+  inset:0;&#13;
+  background:linear-gradient(&#13;
+    135deg,&#13;
+    rgba(37,99,235,0.12),&#13;
+    rgba(255,255,255,0.05)&#13;
+  );&#13;
+  opacity:0;&#13;
+  transition:opacity .35s ease;&#13;
+}&#13;
+&#13;
+/* CARD TOP */&#13;
+&#13;
+.card-top{&#13;
+  display:flex;&#13;
+  justify-content:space-between;&#13;
+  align-items:center;&#13;
+  margin-bottom:5px;&#13;
+}&#13;
+&#13;
+/* TITLE */&#13;
+&#13;
+.card-title{&#13;
+  font-size:15px;&#13;
+  font-weight:600;&#13;
+  color:#64748b;&#13;
+}&#13;
+&#13;
+/* VALUE */&#13;
+&#13;
+.ra-card h2{&#13;
+  font-size:34px;&#13;
+  font-weight:700;&#13;
+  color:#0f172a;&#13;
+  margin-top:5px;&#13;
+}&#13;
+&#13;
+/* HOVER */&#13;
+&#13;
+.ra-card:hover{&#13;
+  transform:translateY(-6px);&#13;
+  box-shadow:0 28px 60px rgba(0,0,0,.12);&#13;
+}&#13;
+&#13;
+.ra-card:hover::before{&#13;
+  width:100%;&#13;
+}&#13;
+&#13;
+.ra-card:hover::after{&#13;
+  opacity:1;&#13;
+}&#13;
+&#13;
+/* TREND TEXT */&#13;
+&#13;
+.trend{&#13;
+  font-size:14px;&#13;
+  font-weight:600;&#13;
+  display:flex;&#13;
+  align-items:center;&#13;
+  gap:6px;&#13;
+}&#13;
+&#13;
+/* TREND COLORS */&#13;
+&#13;
+.trend.up{&#13;
+  color:#16a34a;&#13;
+}&#13;
+&#13;
+.trend.down{&#13;
+  color:#16a34a;&#13;
+}&#13;
+&#13;
+.trend.neutral{&#13;
+  color:#7c3aed;&#13;
+}&#13;
+&#13;
+/* ICON BASE */&#13;
+&#13;
+.card-icon{&#13;
+  width:54px;&#13;
+  height:54px;&#13;
+  border-radius:14px;&#13;
+  display:flex;&#13;
+  align-items:center;&#13;
+  justify-content:center;&#13;
+  color:white;&#13;
+  font-size:20px;&#13;
+}&#13;
+&#13;
+/* ================= CARD BACKGROUNDS ================= */&#13;
+&#13;
+/* TOTAL RUNS */&#13;
+&#13;
+.ra-card.runs{&#13;
+  background:linear-gradient(135deg,#eef4ff,#dbeafe);&#13;
+}&#13;
+&#13;
+.ra-card.runs .card-icon{&#13;
+  background:#3b82f6;&#13;
+}&#13;
+&#13;
+/* SUCCESS RATE */&#13;
+&#13;
+.ra-card.success-rate{&#13;
+  background:linear-gradient(135deg,#ecfdf5,#d1fae5);&#13;
+}&#13;
+&#13;
+.ra-card.success-rate .card-icon{&#13;
+  background:#10b981;&#13;
+}&#13;
+&#13;
+/* RECORDS MIGRATED */&#13;
+&#13;
+.ra-card.migrated{&#13;
+  background:linear-gradient(135deg,#f5f3ff,#ede9fe);&#13;
+}&#13;
+&#13;
+.ra-card.migrated .card-icon{&#13;
+  background:#8b5cf6;&#13;
+}&#13;
+&#13;
+/* AVG DURATION */&#13;
+&#13;
+.ra-card.duration{&#13;
+  background:linear-gradient(135deg,#fff7ed,#ffedd5);&#13;
+}&#13;
+&#13;
+.ra-card.duration .card-icon{&#13;
+  background:#f59e0b;&#13;
+}&#13;
+/* ================= CUSTOM DROPDOWN STYLE ================= */&#13;
+&#13;
+.custom-select {&#13;
+&#13;
+appearance:none;&#13;
+&#13;
+background:transparent;&#13;
+&#13;
+border:none;&#13;
+&#13;
+font-size:15px;&#13;
+&#13;
+font-weight:600;&#13;
+&#13;
+color:#111827;&#13;
+&#13;
+cursor:pointer;&#13;
+&#13;
+padding-right:22px;&#13;
+&#13;
+}&#13;
+&#13;
+&#13;
+/* custom dropdown arrow */&#13;
+&#13;
+.filter-pill {&#13;
+&#13;
+position:relative;&#13;
+&#13;
+}&#13;
+&#13;
+&#13;
+.filter-pill::after {&#13;
+&#13;
+content:"⌄";&#13;
+&#13;
+position:absolute;&#13;
+&#13;
+right:14px;&#13;
+&#13;
+font-size:14px;&#13;
+&#13;
+color:#6b7280;&#13;
+&#13;
+pointer-events:none;&#13;
+&#13;
+}&#13;
+&#13;
+&#13;
+/* dropdown popup styling */&#13;
+&#13;
+select.custom-select option {&#13;
+&#13;
+background:#f3f4f6;&#13;
+&#13;
+padding:10px;&#13;
+&#13;
+font-weight:500;&#13;
+&#13;
+}&#13;
+&#13;
+&#13;
+/* selected item */&#13;
+&#13;
+select.custom-select option:checked {&#13;
+&#13;
+background:#e5e7eb;&#13;
+&#13;
+font-weight:600;&#13;
+&#13;
+}&#13;
+&#13;
+/* ================= MODERN CLEAN FILTER BAR ================= */&#13;
+&#13;
+.ra-filter {&#13;
+&#13;
+display: flex;&#13;
+&#13;
+align-items: center;&#13;
+&#13;
+gap: 20px;&#13;
+&#13;
+background: #f8fafc; /* lighter, cleaner */&#13;
+&#13;
+padding: 20px 26px;&#13;
+&#13;
+border-radius: 18px;&#13;
+&#13;
+box-shadow: &#13;
+0 6px 20px rgba(0,0,0,0.06);&#13;
+&#13;
+margin-bottom: 30px;&#13;
+&#13;
+flex-wrap: wrap;&#13;
+&#13;
+}&#13;
+&#13;
+&#13;
+/* ================= LABEL ================= */&#13;
+&#13;
+.filter-label {&#13;
+&#13;
+display: flex;&#13;
+&#13;
+align-items: center;&#13;
+&#13;
+gap: 10px;&#13;
+&#13;
+font-weight: 600;&#13;
+&#13;
+font-size: 15px;&#13;
+&#13;
+color: #334155;&#13;
+&#13;
+}&#13;
+&#13;
+.filter-label i {&#13;
+&#13;
+color: #116AF8;&#13;
+&#13;
+font-size: 16px;&#13;
+&#13;
+}&#13;
+&#13;
+&#13;
+/* ================= FILTER PILLS ================= */&#13;
+&#13;
+.filter-pill {&#13;
+&#13;
+display: flex;&#13;
+&#13;
+align-items: center;&#13;
+&#13;
+gap: 10px;&#13;
+&#13;
+background: #ffffff; /* FIX: was grey → now white */&#13;
+&#13;
+padding: 10px 18px;&#13;
+&#13;
+border-radius: 12px;&#13;
+&#13;
+min-width: 170px;&#13;
+&#13;
+border: 1px solid #e5e7eb;&#13;
+&#13;
+transition: all 0.2s ease;&#13;
+&#13;
+position: relative;&#13;
+&#13;
+}&#13;
+&#13;
+&#13;
+/* hover (clean subtle) */&#13;
+&#13;
+.filter-pill:hover {&#13;
+&#13;
+border-color: #cbd5f5;&#13;
+&#13;
+box-shadow: 0 4px 12px rgba(0,0,0,0.05);&#13;
+&#13;
+}&#13;
+&#13;
+&#13;
+/* ================= ICON ================= */&#13;
+&#13;
+.filter-pill i {&#13;
+&#13;
+color: #64748b;&#13;
+&#13;
+font-size: 14px;&#13;
+&#13;
+}&#13;
+&#13;
+&#13;
+/* ================= SELECT ================= */&#13;
+&#13;
+.custom-select {&#13;
+&#13;
+appearance: none;&#13;
+&#13;
+border: none;&#13;
+&#13;
+background: transparent;&#13;
+&#13;
+font-size: 14px;&#13;
+&#13;
+font-weight: 600;&#13;
+&#13;
+color: #111827;&#13;
+&#13;
+cursor: pointer;&#13;
+&#13;
+outline: none;&#13;
+&#13;
+width: 100%;&#13;
+&#13;
+padding-right: 20px;&#13;
+&#13;
+}&#13;
+&#13;
+&#13;
+/* ================= CHEVRON ================= */&#13;
+&#13;
+.filter-pill::after {&#13;
+&#13;
+content: "⌄";&#13;
+&#13;
+position: absolute;&#13;
+&#13;
+right: 12px;&#13;
+&#13;
+top: 50%;&#13;
+&#13;
+transform: translateY(-50%);&#13;
+&#13;
+font-size: 13px;&#13;
+&#13;
+color: #6b7280;&#13;
+&#13;
+pointer-events: none;&#13;
+&#13;
+}&#13;
+&#13;
+&#13;
+/* ================= DROPDOWN OPTIONS ================= */&#13;
+&#13;
+select.custom-select option {&#13;
+&#13;
+background: #ffffff;&#13;
+&#13;
+padding: 10px;&#13;
+&#13;
+font-weight: 500;&#13;
+&#13;
+}&#13;
+&#13;
+&#13;
+/* selected */&#13;
+&#13;
+select.custom-select option:checked {&#13;
+&#13;
+background: #f1f5f9;&#13;
+&#13;
+font-weight: 600;&#13;
+&#13;
+}&#13;
+&#13;
+&#13;
+/* hover */&#13;
+&#13;
+select.custom-select option:hover {&#13;
+&#13;
+background: #e2e8f0;&#13;
+&#13;
+}&#13;
+/* ================= REPORT TITLE ICON STYLE ================= */&#13;
+&#13;
+.chart-title{&#13;
+font-size:18px;&#13;
+font-weight:600;&#13;
+color:#0f172a;&#13;
+display:flex;&#13;
+align-items:center;&#13;
+gap:10px;&#13;
+padding-bottom:10px;&#13;
+border-bottom:1px solid #e5e7eb; /* underline divider */&#13;
+margin-bottom:20px;&#13;
+}&#13;
+&#13;
+/* icon base */&#13;
+&#13;
+.chart-icon{&#13;
+width:22px;&#13;
+height:22px;&#13;
+display:inline-block;&#13;
+}&#13;
+&#13;
+/* individual icon colors */&#13;
+&#13;
+.trend-icon{&#13;
+background:#0ea5a4;&#13;
+mask:url('https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/trending-up.svg') no-repeat center;&#13;
+-webkit-mask:url('https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/trending-up.svg') no-repeat center;&#13;
+}&#13;
+&#13;
+.success-icon{&#13;
+background:#10b981;&#13;
+mask:url('https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/check-circle.svg') no-repeat center;&#13;
+-webkit-mask:url('https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/check-circle.svg') no-repeat center;&#13;
+}&#13;
+&#13;
+.table-icon{&#13;
+background:#8b5cf6;&#13;
+mask:url('https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/database.svg') no-repeat center;&#13;
+-webkit-mask:url('https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/database.svg') no-repeat center;&#13;
+}&#13;
+&#13;
+.instance-icon{&#13;
+background:#06b6d4;&#13;
+mask:url('https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/server.svg') no-repeat center;&#13;
+-webkit-mask:url('https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/server.svg') no-repeat center;&#13;
+}&#13;
+&#13;
+.status-icon{&#13;
+background:#2563eb;&#13;
+mask:url('https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/bar-chart-3.svg') no-repeat center;&#13;
+-webkit-mask:url('https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/bar-chart-3.svg') no-repeat center;&#13;
+}&#13;
+&#13;
+/* ===== FIRST ROW WIDTH RATIO ===== */&#13;
+&#13;
+.row-uneven{&#13;
+display:grid;&#13;
+grid-template-columns: 2.2fr 1fr;&#13;
+gap:28px;&#13;
+margin-bottom:28px;&#13;
+}&#13;
+&#13;
+&#13;
+/* ===== CARD STRUCTURE ===== */&#13;
+&#13;
+.chart-body{&#13;
+flex:1;&#13;
+display:flex;&#13;
+align-items:flex-start;&#13;
+justify-content:center;&#13;
+}&#13;
+&#13;
+&#13;
+/* ===== LINE CHART SIZE ===== */&#13;
+&#13;
+.wide-card canvas{&#13;
+width:100% !important;&#13;
+height:360px !important;&#13;
+}&#13;
+&#13;
+&#13;
+/* ===== DONUT CARD ALIGNMENT ===== */&#13;
+&#13;
+.donut-card{&#13;
+display:flex;&#13;
+flex-direction:column;&#13;
+}&#13;
+&#13;
+&#13;
+.donut-body{&#13;
+display:flex;&#13;
+align-items:center;&#13;
+justify-content:center;&#13;
+height:100%;&#13;
+}&#13;
+&#13;
+&#13;
+/* donut size control */&#13;
+&#13;
+.donut-card canvas{&#13;
+max-width:260px;&#13;
+max-height:260px;&#13;
+margin:auto;&#13;
+}&#13;
+&#13;
+&#13;
+/* legend spacing under donut */&#13;
+&#13;
+.donut-card .chart-body{&#13;
+padding-top:10px;&#13;
+}&#13;
+.instance-chart-wrapper{&#13;
+display:flex;&#13;
+justify-content:center;&#13;
+align-items:center;&#13;
+height:320px;&#13;
+}&#13;
+&#13;
+#instanceDistributionChart{&#13;
+max-width:300px !important;&#13;
+max-height:300px !important;&#13;
+margin:auto;&#13;
+}&#13;
+&#13;
+#instanceDistributionChart{&#13;
+max-width:260px !important;&#13;
+max-height:260px !important;&#13;
+margin:auto;&#13;
+}&#13;
+&#13;
+/* ===== ROW 1 layout ===== */&#13;
+&#13;
+.row-uneven{&#13;
+display:grid;&#13;
+grid-template-columns: 2.2fr 1fr;&#13;
+gap:28px;&#13;
+margin-bottom:28px;&#13;
+}&#13;
+&#13;
+&#13;
+/* ===== ROW 2 reversed layout ===== */&#13;
+&#13;
+.row-uneven-reverse{&#13;
+display:grid;&#13;
+grid-template-columns: 1fr 2.2fr;&#13;
+gap:28px;&#13;
+margin-bottom:28px;&#13;
+}&#13;
+.wide-card #tablesBarChart{&#13;
+height:360px !important;&#13;
+}&#13;
+.instance-chart-wrapper{&#13;
+display:flex;&#13;
+justify-content:center;&#13;
+align-items:center;&#13;
+height:260px;&#13;
+}&#13;
+&#13;
+#instanceDistributionChart{&#13;
+max-width:260px !important;&#13;
+max-height:260px !important;&#13;
+margin:auto;&#13;
+}&#13;
+/* center pie chart vertically + horizontally inside card */&#13;
+&#13;
+.donut-card{&#13;
+display:flex;&#13;
+flex-direction:column;&#13;
+height:100%;&#13;
+}&#13;
+&#13;
+.instance-chart-wrapper{&#13;
+flex:1;&#13;
+display:flex;&#13;
+align-items:center;&#13;
+justify-content:center;&#13;
+}&#13;
+&#13;
+&#13;
+/* control pie size */&#13;
+&#13;
+#instanceDistributionChart{&#13;
+max-width:260px !important;&#13;
+max-height:260px !important;&#13;
+margin:auto;&#13;
+display:block;&#13;
+}&#13;
+.status-pill{&#13;
+padding:4px 10px;&#13;
+border-radius:12px;&#13;
+font-size:12px;&#13;
+font-weight:600;&#13;
+}&#13;
+&#13;
+.status-pill.success{&#13;
+background:#e6f7ef;&#13;
+color:#22c55e;&#13;
+}&#13;
+&#13;
+.status-pill.failed{&#13;
+background:#fdecea;&#13;
+color:#ef4444;&#13;
+}&#13;
+&#13;
+.status-pill.partial{&#13;
+background:#fff7e6;&#13;
+color:#f59e0b;&#13;
+}&#13;
+/* ================= RESPONSIVE ================= */&#13;
+&#13;
+@media(max-width:1000px){&#13;
+&#13;
+.ra-chart-row{&#13;
+    grid-template-columns:1fr;&#13;
+}&#13;
+&#13;
+.ra-bottom{&#13;
+    grid-template-columns:1fr;&#13;
+}&#13;
+&#13;
+}&#13;
+</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>false</has_preview>
+        <id/>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link>
+        <name>tracenow_reports</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function () {
+
+  data.side = $sp.getWidget('tracenow_sidebar');
+
+  data.runs = [];
+  data.activity = [];
+
+  /* ================= KPI COUNTERS ================= */
+
+  var totalRuns = 0;
+  var successRuns = 0;
+  var partialRuns = 0;
+  var failedRuns = 0;
+  var totalRecords = 0;
+  var totalDuration = 0;
+  var instanceName = '';
+
+  /* ================= LOAD MIGRATION DETAILS ================= */
+
+  var gr = new GlideRecordSecure('x_sysus_tracenow_migration_details');
+
+  gr.addQuery('sys_created_by', gs.getUserName());
+  gr.orderByDesc('sys_created_on');
+  gr.query();
+
+  gs.info('=== DEBUG USER: ' + gs.getUserName() + ', Found: ' + gr.getRowCount() + ' records ===');
+
+  while (gr.next()) {
+
+    totalRuns++;
+
+    var inserted = parseInt(gr.getValue('records_inserted') || 0);
+    var updated  = parseInt(gr.getValue('records_updated')  || 0);
+    var failed   = parseInt(gr.getValue('records_failed')   || 0);
+    var fetched  = parseInt(gr.getValue('records_fetched')  || 0);
+    var records  = inserted + updated;
+
+    totalRecords += records;
+
+    /* ================= DETERMINE STATUS ================= */
+
+    var successRate = parseInt(gr.getValue('success_rate') || 0);
+    var status = 'success';
+
+    if (successRate === 0) {
+      status = 'failed';
+      failedRuns++;
+    } else if (successRate === 100) {
+      status = 'success';
+      successRuns++;
+    } else {
+      status = 'partial';
+      partialRuns++;
+    }
+
+    /* ================= TABLE LIST ================= */
+
+    var tables = [];
+    try {
+      var tableJSON = JSON.parse(gr.getValue('table') || '{}');
+			//console.log('tablesjson = ' + JSON.stringify(tableJSON));
+      //for (var key in tableJSON) {
+      //  tables.push(key.table);
+      //}
+			tableJSON.forEach(function(rec) {
+				tables.push(rec.table)
+			})
+      if (tables.length === 0) {
+        tables = ['Unknown Table'];
+      }
+    } catch (e) {
+      tables = ['Parse Error'];
+    }
+
+    /* ================= DURATION ================= */
+
+    var duration = gr.getValue('duration') || '0 min 0 sec';
+
+    totalDuration += 0;
+
+    /* ================= CONNECTION LOOKUP ================= */
+
+    var connectionSysId = gr.getValue('connection');
+    var connectionName  = '';
+
+    if (connectionSysId) {
+      var connLookup = new GlideRecordSecure('x_sysus_tracenow_connection');
+      if (connLookup.get(connectionSysId)) {
+        instanceName   = connLookup.getValue('name');
+        connectionName = connLookup.getValue('name');
+      }
+    }
+
+    /* ================= FIX: push created_raw (ISO) for reliable client-side date parsing ================= */
+
+    data.runs.push({
+      run_id:        gr.getValue('number'),
+      number:        gr.getValue('number'),
+      instance:      (gr.getValue('instance_url') || '').trim().replace(/\/$/, '').toLowerCase(),
+      instance_name: instanceName,
+      created:       gr.getDisplayValue('sys_created_on'),
+      created_raw:   gr.getValue('sys_created_on'),        // ISO value — client uses this for date filters
+      tables:        tables,
+      records:       records,
+      status:        status,
+      duration:      duration,
+      success_rate:  gr.getValue('success_rate')
+    });
+
+    data.activity.push({
+      created: gr.getDisplayValue('sys_created_on'),
+      tables:  tables,
+      records: records,
+      status:  status
+    });
+  }
+
+  /* ================= CONNECTIONS ================= */
+
+  data.connections = [];
+
+  var connGR = new GlideRecordSecure('x_sysus_tracenow_connection');
+  connGR.addQuery('sys_created_by', gs.getUserName());
+  connGR.query();
+
+  while (connGR.next()) {
+    data.connections.push({
+      /* FIX: normalize url here so instance filter matching is consistent */
+      url:  (connGR.getValue('url') || '').trim().replace(/\/$/, '').toLowerCase(),
+      name: connGR.getDisplayValue('name')
+    });
+  }
+
+  /* ================= KPI SUMMARY ================= */
+
+  data.stats = {
+    total:        totalRuns,
+    success:      successRuns,
+    failed:       failedRuns,
+    records:      totalRecords,
+    avg_duration: (totalRuns ? Math.round(totalDuration / totalRuns) : 0)
+  };
+
+  gs.info('=== FINAL: ' + totalRuns + ' runs for user ' + gs.getUserName() + ' ===');
+
+})();]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>irfan.wani</sys_created_by>
+        <sys_created_on>2026-05-20 10:15:51</sys_created_on>
+        <sys_id>408f35dc930587100af5f4e9b903d6a6</sys_id>
+        <sys_mod_count>8</sys_mod_count>
+        <sys_name>tracenow_reports</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_widget_408f35dc930587100af5f4e9b903d6a6</sys_update_name>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-06-09 06:53:55</sys_updated_on>
+        <template><![CDATA[<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<div class="dm-page-layout">
+
+    <!-- ================= SIDEBAR ================= -->
+    <div class="dm-sidebar-slot">
+        <sp-widget widget="data.side"></sp-widget>
+    </div>
+
+    <!-- ================= REPORTS WRAPPER ================= -->
+    <div class="ra-wrapper">
+
+
+
+
+        <!-- ================= HEADER ================= -->
+
+        <div class="ra-header">
+
+            <div>
+                <h1>Reports & Analytics</h1>
+                <p>Migration performance insights and trends</p>
+            </div>
+
+            <div class="ra-actions">
+ 
+    <button class="btn secondary" ng-click="c.exportCSV()">
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 15V3"/>
+<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+<path d="m7 10 5 5 5-5"/>
+</svg>
+        Export CSV
+</button>
+ 
+    <button class="btn primary" ng-click="c.exportPDF()">
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/>
+<path d="M14 2v5a1 1 0 0 0 1 1h5"/>
+<path d="M10 9H8"/>
+<path d="M16 13H8"/>
+<path d="M16 17H8"/>
+</svg>
+        Export PDF
+</button>
+ 
+</div>
+
+        </div>
+
+
+        <!-- ================= FILTER BAR ================= -->
+
+        <div class="ra-filter">
+
+            <div class="filter-label">
+                <i class="fa fa-filter"></i>
+                <span>Filters:</span>
+            </div>
+
+
+            <!-- DATE FILTER -->
+
+            <div class="filter-pill">
+
+                <i class="fa fa-calendar"></i>
+
+                <select class="custom-select" ng-model="c.dateFilter">
+                    <option value="today">Today</option>
+                    <option value="lastMonth">Last Month</option>
+                    <option value="last7">Last 7 Days</option>
+                    <option value="all">All Time</option>
+
+                </select>
+
+            </div>
+
+
+            <!-- STATUS FILTER -->
+
+            <div class="filter-pill">
+
+                <i class="fa fa-line-chart"></i>
+
+                <select class="custom-select" ng-model="c.statusFilter">
+
+                    <option value="all">All Status</option>
+                    <option value="success">Success</option>
+                    <option value="partial">Partial</option>
+                    <option value="failed">Failed</option>
+
+                </select>
+
+            </div>
+
+
+            <!-- INSTANCE FILTER -->
+
+            <div class="filter-pill">
+
+                <i class="fa fa-server"></i>
+
+             <select class="custom-select" ng-model="c.instanceFilter" >
+
+               <option value="all"><strong>All Instances</strong></option>
+
+<option
+ng-repeat="conn in c.data.connections"
+ng-value="conn.url">
+
+{{conn.name}}
+
+</option>
+
+</select>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ================= KPI CARDS ================= -->
+
+        <div class="ra-cards">
+
+
+            <!-- TOTAL RUNS -->
+
+            <div class="ra-card runs">
+
+                <div class="card-top">
+                    <span class="card-title">Total Runs</span>
+                    <span class="card-icon blue">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-activity-icon lucide-activity">
+                            <path
+                                d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" />
+                        </svg></span>
+                </div>
+
+                <h2>{{c.filteredStats().total}}</h2>
+
+               <p class="trend {{c.kpiTrend('runs').direction}}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="{{c.kpiTrend('runs').color==='green' ? '#009966' : '#ef4444'}}"stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-arrow-up-right-icon lucide-arrow-up-right">
+                        <path d="M7 7h10v10" />
+                        <path d="M7 17 17 7" />
+                    </svg>{{c.kpiTrend('runs').direction==='up' ? '+' : '-'}}
+{{c.kpiTrend('runs').value}}
+change
+                </p>
+
+            </div>
+
+
+
+            <!-- SUCCESS RATE -->
+
+            <div class="ra-card success-rate">
+
+                <div class="card-top">
+                    <span class="card-title">Success Rate</span>
+                    <span class="card-icon green">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-circle-check-icon lucide-circle-check">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="m9 12 2 2 4-4" />
+                        </svg>
+                    </span>
+                </div>
+
+                <h2>
+                    {{ (c.filteredStats().success / c.filteredStats().total * 100 || 0) | number:0 }}%
+                </h2>
+
+               <p class="trend {{c.kpiTrend('success').direction}}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="{{c.kpiTrend('success').color==='green' ? '#009966' : '#ef4444'}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-arrow-up-right-icon lucide-arrow-up-right">
+                        <path d="M7 7h10v10" />
+                        <path d="M7 17 17 7" />
+                    </svg>
+                    {{c.kpiTrend('success').direction==='up' ? '+' : '-'}}
+{{c.kpiTrend('success').value}}
+change
+                </p>
+
+            </div>
+
+
+
+            <!-- RECORDS MIGRATED (FIXED HERE) -->
+
+            <div class="ra-card migrated">
+
+                <div class="card-top">
+                    <span class="card-title">Records Migrated</span>
+                    <span class="card-icon purple">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-database-icon lucide-database">
+                            <ellipse cx="12" cy="5" rx="9" ry="3" />
+                            <path d="M3 5V19A9 3 0 0 0 21 19V5" />
+                            <path d="M3 12A9 3 0 0 0 21 12" />
+                        </svg>
+                    </span>
+                </div>
+
+                <h2>{{c.filteredStats().records}}</h2>
+
+                <p class="trend neutral">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="#A52DFB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-zap-icon lucide-zap">
+                        <path
+                            d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+                    </svg>Across all tables
+                </p>
+
+            </div>
+
+
+
+            <!-- AVG DURATION -->
+
+            <div class="ra-card duration">
+
+                <div class="card-top">
+                    <span class="card-title">Avg Duration</span>
+                    <span class="card-icon orange">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-clock-icon lucide-clock">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 6v6l4 2" />
+                        </svg>
+                    </span>
+                </div>
+
+                <h2>{{c.filteredStats().avg_duration}}s</h2>
+
+              <p class="trend {{c.kpiTrend('duration').color}}">
+
+<i
+class="fa fa-arrow-{{c.kpiTrend('duration').direction}}"
+style="color: {{c.kpiTrend('duration').color==='green' ? '#009966' : '#ef4444'}}"
+></i>
+
+{{c.kpiTrend('duration').direction==='up' ? 'Improved' : 'Slower'}}
+
+</p>
+
+            </div>
+
+
+        </div>
+
+
+
+      <!-- ================= CHARTS ================= -->
+
+<div class="ra-charts">
+
+
+<!-- ===== ROW 1 (WIDE + SMALL) ===== -->
+
+<div class="ra-chart-row row-uneven">
+
+<!-- LINE CHART (WIDE) -->
+<div class="ra-chart-card wide-card">
+
+<div class="chart-title">
+<span class="chart-icon trend-icon"></span>
+Records Migrated Over Time
+</div>
+
+<div class="chart-body">
+<canvas id="recordsLineChart"></canvas>
+</div>
+
+</div>
+
+
+<!-- DONUT CHART (SMALL) -->
+<div class="ra-chart-card donut-card">
+
+<div class="chart-title">
+<span class="chart-icon success-icon"></span>
+Success Distribution
+</div>
+
+<div class="chart-body donut-body">
+<canvas id="successDonutChart"></canvas>
+</div>
+
+</div>
+
+</div>
+
+
+
+
+<!-- ===== ROW 2 (PIE SMALL + BAR WIDE) ===== -->
+
+<div class="ra-chart-row row-uneven-reverse">
+
+<div class="ra-chart-card donut-card">
+
+<div class="chart-title">
+<span class="chart-icon instance-icon"></span>
+Instance Distribution
+</div>
+
+<div class="instance-chart-wrapper">
+<canvas id="instanceDistributionChart"></canvas>
+</div>
+
+</div>
+
+
+<div class="ra-chart-card wide-card">
+
+<div class="chart-title">
+<span class="chart-icon table-icon"></span>
+Top 5 Migrated Tables
+</div>
+
+<canvas id="tablesBarChart"></canvas>
+
+</div>
+
+</div>
+
+
+
+<!-- ===== FULL WIDTH LAST ROW ===== -->
+
+<div class="ra-chart-card full-width-card">
+
+<div class="chart-title">
+<span class="chart-icon status-icon"></span>
+Migrations across tables over time
+</div>
+
+<canvas id="statusTrendChart"></canvas>
+
+</div>
+
+
+</div>
+
+       <!-- ================= TABLE PERFORMANCE DETAILS ================= -->
+
+<div class="ra-table-performance">
+
+<div class="section-title">
+Table Performance Details
+</div>
+
+<table class="performance-table">
+
+<thead>
+<tr>
+<th>TABLE NAME</th>
+<th>TOTAL RECORDS</th>
+<th>MIGRATION RUNS</th>
+<th>STATUS</th>
+<th>AVG DURATION</th>
+<th>PERFORMANCE</th>
+</tr>
+</thead>
+
+<tbody>
+
+<tr ng-repeat="t in c.paginatedTables">
+
+<td class="table-name">
+{{t.name}}
+</td>
+
+<td>
+{{t.records | number}}
+</td>
+
+<td>
+<span class="runs-pill">
+{{t.runs}} runs
+</span>
+</td>
+
+<td>
+
+<span class="status-pill success"
+ng-if="t.status=='Success'">
+✔ Success
+</span>
+<span class="status-pill partial"
+ng-if="t.status=='Partial'">
+⚠ Partial
+</span>
+<span class="status-pill failed"
+ng-if="t.status=='Failed'">
+✖ Failed
+</span>
+
+</td>
+
+<td>
+{{t.avg_duration}}
+</td>
+
+<td>
+
+<span class="performance-pill excellent"
+ng-if="t.performance=='Excellent'">
+⚡ Excellent
+</span>
+
+<span class="performance-pill good"
+ng-if="t.performance=='Good'">
+⚡ Good
+</span>
+
+<span class="performance-pill slow"
+ng-if="t.performance=='Slow'">
+⚡ Slow
+</span>
+
+</td>
+
+</tr>
+
+<tr ng-if="!c.paginatedTables.length">
+
+<td colspan="5"
+style="text-align:center;padding:30px;">
+No migration table data available
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+
+<!-- ================= PAGINATION ================= -->
+
+<div class="pagination-bar">
+
+<button
+class="page-btn"
+ng-click="c.prevPage()"
+ng-disabled="c.currentPage===1">
+
+Previous
+
+</button>
+
+
+<span class="page-info">
+
+Page {{c.currentPage}} of {{c.totalPages}}
+
+</span>
+
+
+<button
+class="page-btn"
+ng-click="c.nextPage()"
+ng-disabled="c.currentPage===c.totalPages">
+
+Next
+
+</button>
+
+</div>
+
+</div>
+
+    </div>
+
+</div>]]></template>
+    </sp_widget>
+</record_update>

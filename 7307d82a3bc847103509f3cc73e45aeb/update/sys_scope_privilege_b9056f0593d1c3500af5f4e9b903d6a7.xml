@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_scope_privilege">
+    <sys_scope_privilege action="INSERT_OR_UPDATE">
+        <operation>write</operation>
+        <source_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</source_scope>
+        <status>allowed</status>
+        <sys_class_name>sys_scope_privilege</sys_class_name>
+        <sys_created_by>faizan.latief</sys_created_by>
+        <sys_created_on>2026-06-04 11:45:20</sys_created_on>
+        <sys_id>b9056f0593d1c3500af5f4e9b903d6a7</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>std_change_proposal</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_scope_privilege_b9056f0593d1c3500af5f4e9b903d6a7</sys_update_name>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-06-04 11:45:20</sys_updated_on>
+        <target_name>std_change_proposal</target_name>
+        <target_scope display_value="Global">global</target_scope>
+        <target_type>sys_db_object</target_type>
+    </sys_scope_privilege>
+</record_update>

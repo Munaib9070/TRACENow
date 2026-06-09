@@ -3,14 +3,196 @@
         <sys_ui_element action="INSERT_OR_UPDATE">
             <element>number</element>
             <position>0</position>
-            <sys_created_by>admin</sys_created_by>
-            <sys_created_on>2026-04-07 09:27:33</sys_created_on>
-            <sys_id>8a499c2e3bc847103509f3cc73e45ab6</sys_id>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-05 06:14:32</sys_created_on>
+            <sys_id>3de2ab91935d07500af5f4e9b903d632</sys_id>
             <sys_mod_count>0</sys_mod_count>
             <sys_ui_formatter/>
             <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
-            <sys_updated_by>admin</sys_updated_by>
-            <sys_updated_on>2026-04-07 09:27:33</sys_updated_on>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-05 06:14:32</sys_updated_on>
+            <sys_user/>
+            <type/>
+        </sys_ui_element>
+        <sys_ui_element action="INSERT_OR_UPDATE">
+            <element>sys_created_on</element>
+            <position>1</position>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-05 06:14:32</sys_created_on>
+            <sys_id>75e2ab91935d07500af5f4e9b903d634</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_ui_formatter/>
+            <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-05 06:14:32</sys_updated_on>
+            <sys_user/>
+            <type/>
+        </sys_ui_element>
+        <sys_ui_element action="INSERT_OR_UPDATE">
+            <element>sys_created_by</element>
+            <position>2</position>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-05 06:14:32</sys_created_on>
+            <sys_id>f1e2eb91935d07500af5f4e9b903d6c3</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_ui_formatter/>
+            <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-05 06:14:32</sys_updated_on>
+            <sys_user/>
+            <type/>
+        </sys_ui_element>
+        <sys_ui_element action="INSERT_OR_UPDATE">
+            <element>duration</element>
+            <position>3</position>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-05 06:14:32</sys_created_on>
+            <sys_id>71e2eb91935d07500af5f4e9b903d6c4</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_ui_formatter/>
+            <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-05 06:14:32</sys_updated_on>
+            <sys_user/>
+            <type/>
+        </sys_ui_element>
+        <sys_ui_element action="INSERT_OR_UPDATE">
+            <element>instance_url</element>
+            <position>4</position>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-05 06:14:32</sys_created_on>
+            <sys_id>fde2eb91935d07500af5f4e9b903d6c4</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_ui_formatter/>
+            <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-05 06:14:32</sys_updated_on>
+            <sys_user/>
+            <type/>
+        </sys_ui_element>
+        <sys_ui_element action="INSERT_OR_UPDATE">
+            <element>records_failed</element>
+            <position>5</position>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-05 06:14:32</sys_created_on>
+            <sys_id>7de2eb91935d07500af5f4e9b903d6c5</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_ui_formatter/>
+            <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-05 06:14:32</sys_updated_on>
+            <sys_user/>
+            <type/>
+        </sys_ui_element>
+        <sys_ui_element action="INSERT_OR_UPDATE">
+            <element>records_fetched</element>
+            <position>6</position>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-05 06:14:32</sys_created_on>
+            <sys_id>f9e2eb91935d07500af5f4e9b903d6c6</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_ui_formatter/>
+            <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-05 06:14:32</sys_updated_on>
+            <sys_user/>
+            <type/>
+        </sys_ui_element>
+        <sys_ui_element action="INSERT_OR_UPDATE">
+            <element>records_inserted</element>
+            <position>7</position>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-05 06:14:32</sys_created_on>
+            <sys_id>79e2eb91935d07500af5f4e9b903d6c7</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_ui_formatter/>
+            <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-05 06:14:32</sys_updated_on>
+            <sys_user/>
+            <type/>
+        </sys_ui_element>
+        <sys_ui_element action="INSERT_OR_UPDATE">
+            <element>records_updated</element>
+            <position>8</position>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-05 06:14:32</sys_created_on>
+            <sys_id>f5e2eb91935d07500af5f4e9b903d6c8</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_ui_formatter/>
+            <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-05 06:14:32</sys_updated_on>
+            <sys_user/>
+            <type/>
+        </sys_ui_element>
+        <sys_ui_element action="INSERT_OR_UPDATE">
+            <element>started_at</element>
+            <position>9</position>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-05 06:14:32</sys_created_on>
+            <sys_id>75e2eb91935d07500af5f4e9b903d6c9</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_ui_formatter/>
+            <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-05 06:14:32</sys_updated_on>
+            <sys_user/>
+            <type/>
+        </sys_ui_element>
+        <sys_ui_element action="INSERT_OR_UPDATE">
+            <element>success_rate</element>
+            <position>10</position>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-05 06:14:32</sys_created_on>
+            <sys_id>f1e2eb91935d07500af5f4e9b903d6ca</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_ui_formatter/>
+            <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-05 06:14:32</sys_updated_on>
+            <sys_user/>
+            <type/>
+        </sys_ui_element>
+        <sys_ui_element action="INSERT_OR_UPDATE">
+            <element>completed_at</element>
+            <position>11</position>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-05 06:14:32</sys_created_on>
+            <sys_id>71e2eb91935d07500af5f4e9b903d6cb</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_ui_formatter/>
+            <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-05 06:14:32</sys_updated_on>
+            <sys_user/>
+            <type/>
+        </sys_ui_element>
+        <sys_ui_element action="INSERT_OR_UPDATE">
+            <element>table</element>
+            <position>12</position>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-05 06:14:32</sys_created_on>
+            <sys_id>fde2eb91935d07500af5f4e9b903d6cb</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_ui_formatter/>
+            <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-05 06:14:32</sys_updated_on>
+            <sys_user/>
+            <type/>
+        </sys_ui_element>
+        <sys_ui_element action="INSERT_OR_UPDATE">
+            <element>target_instance</element>
+            <position>13</position>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-08 09:54:42</sys_created_on>
+            <sys_id>9012b3d29395cb500af5f4e9b903d6cd</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_ui_formatter/>
+            <sys_ui_section caption="NULL" display_value="" name="x_sysus_tracenow_migration_details" sys_domain="global" view="Default view">864918ea3bc847103509f3cc73e45a0d</sys_ui_section>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-08 09:54:42</sys_updated_on>
             <sys_user/>
             <type/>
         </sys_ui_element>

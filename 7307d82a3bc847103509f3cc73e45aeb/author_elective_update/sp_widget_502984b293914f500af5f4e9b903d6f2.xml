@@ -1,0 +1,2587 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="DELETE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller=function() {
+  /* widget controller */
+  var c = this;
+};]]></client_script>
+        <controller_as>c</controller_as>
+        <css>.pp-page {
+  font-family: Inter, "Helvetica Neue", sans-serif;
+  background: #f5f7fc;
+  overflow-x: hidden;
+}
+
+/* CONTAINER */
+
+.container {
+  width: 100%;
+  max-width: 1180px;
+  margin: auto;
+  padding: 0 32px;
+}
+
+/* HERO */
+
+.pp-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    #116AF8 0%,
+    #0A50F5 100%
+  );
+
+  padding: 70px 0 120px;
+
+  border-radius: 0 0 32px 32px;
+}
+
+/* GRID */
+
+.pp-grid {
+  position: absolute;
+  inset: 0;
+  opacity: .12;
+
+  background-image:
+    linear-gradient(
+      rgba(255,255,255,.5) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255,255,255,.5) 1px,
+      transparent 1px
+    );
+
+  background-size: 78px 78px;
+}
+
+/* FLOATING CIRCLE */
+
+.pp-circle {
+  position: absolute;
+  left: 80px;
+  top: 340px;
+
+  width: 150px;
+  height: 150px;
+
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.08);
+}
+
+/* HERO LAYOUT */
+
+.pp-hero-content {
+  position: relative;
+  z-index: 10;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 60px;
+}
+
+/* LEFT */
+
+.pp-left {
+  max-width: 620px;
+  padding: 10px 18px;
+}
+
+.pp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 5px 10px;
+}
+
+  .pp-badge:hover {
+    transform: translateY(-2px) scale(1.01);
+}
+.pp-left h1 {
+  color: white;
+
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1.05;
+
+  margin: 28px 0 20px;
+}
+
+.pp-left p {
+  color: rgba(255,255,255,.9);
+
+  font-size: 18px;
+  line-height: 1.8;
+
+  max-width: 520px;
+}
+
+/* BUTTONS */
+
+.pp-actions {
+  margin-top: 32px;
+
+  display: flex;
+  gap: 16px;
+}
+
+.btn-primary,
+.btn-secondary {
+  height: 52px;
+
+  padding: 0 26px;
+
+  border-radius: 14px;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: all .25s ease;
+}
+
+.btn-primary {
+  background: white;
+  border: none;
+  color: #116AF8;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.25);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: rgba(255,255,255,.12);
+}
+
+/* RIGHT */
+
+.pp-right {
+  position: relative;
+}
+
+.security-card {
+  width: 310px;
+  height: 310px;
+
+  border-radius: 28px;
+
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,.18),
+    rgba(255,255,255,.08)
+  );
+
+  border: 1px solid rgba(255,255,255,.15);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+
+  backdrop-filter: blur(20px);
+}
+
+/* DECORATIVE OUTLINE CARD */
+
+.security-card:before {
+  content: "";
+
+  position: absolute;
+
+  width: 150px;
+  height: 150px;
+
+  top: -35px;
+  right: -20px;
+
+  border-radius: 24px;
+
+  border: 2px solid rgba(255,255,255,.08);
+
+  transform: rotate(10deg);
+}
+
+/* FLOATING ICONS */
+
+.floating-lock,
+.floating-check {
+  position: absolute;
+
+  width: 48px;
+  height: 48px;
+
+  border-radius: 14px;
+
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.2);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+  font-size: 18px;
+}
+
+.floating-lock {
+  top: -12px;
+  right: -12px;
+
+  animation: lockFloat 4s ease-in-out infinite;
+}
+
+.floating-check {
+  left: -12px;
+  bottom: 38px;
+
+  animation: checkFloat 3s ease-in-out infinite;
+}
+
+@keyframes lockFloat {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-15px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes checkFloat {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(12px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* HERO CURVE */
+
+.hero-curve {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+
+  width: 100%;
+  height: 80px;
+
+  background: #f5f7fc;
+
+  clip-path: polygon(
+    0 55%,
+    20% 20%,
+    50% 0,
+    80% 20%,
+    100% 55%,
+    100% 100%,
+    0 100%
+  );
+}
+
+/* FEATURES */
+
+.pp-features {
+  position: relative;
+  z-index: 20;
+
+  margin-top: -60px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
+}
+
+.feature-card {
+  background: white;
+  border-radius: 20px;
+  padding: 26px;
+  min-height: 170px;
+
+  box-shadow:
+    0 15px 40px rgba(0,0,0,.08);
+
+  transition:
+    transform .3s ease,
+    box-shadow .3s ease;
+
+  cursor: pointer;
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+
+  box-shadow:
+    0 25px 60px rgba(17,106,248,.15);
+}
+
+.feature-card:hover .icon-box {
+  transform: scale(1.08);
+}
+
+.icon-box {
+  width: 48px;
+  height: 48px;
+
+  border-radius: 14px;
+
+  background: linear-gradient(
+    180deg,
+    #116AF8,
+    #0A50F5
+  );
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+  font-size: 18px;
+
+  transition: transform .3s ease;
+}
+
+.feature-card h3 {
+  margin-top: 18px;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  color: #101828;
+}
+
+.feature-card p {
+  margin-top: 8px;
+
+  font-size: 14px;
+  line-height: 1.6;
+
+  color: #667085;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1200px) {
+
+  .pp-hero-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .pp-left {
+    max-width: 100%;
+  }
+
+  .pp-left p {
+    margin: 0 auto;
+  }
+
+  .pp-actions {
+    justify-content: center;
+  }
+
+  .feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pp-left h1 {
+    font-size: 54px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .container {
+    padding: 0 20px;
+  }
+
+  .pp-hero {
+    padding: 60px 0 110px;
+  }
+
+  .pp-left h1 {
+    font-size: 42px;
+  }
+
+  .pp-left p {
+    font-size: 16px;
+  }
+
+  .security-card {
+    width: 260px;
+    height: 260px;
+  }
+
+  .pp-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    max-width: 260px;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pp-features {
+    margin-top: -40px;
+  }
+}
+/* ==========================
+   CONTENT AREA
+========================== */
+
+.pp-content-section {
+  padding: 50px 0 80px;
+}
+
+.pp-layout {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+/* ==========================
+   SIDEBAR
+========================== */
+
+.pp-sidebar {
+  width: 280px;
+  flex: 0 0 280px;
+}
+
+.toc-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+  position: sticky;
+  top: 30px;
+}
+
+.toc-card h3 {
+  margin: 0 0 20px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.toc-card h3 i {
+  margin-right: 10px;
+  color: #116AF8;
+}
+
+.toc-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.toc-card li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 14px 14px;
+  border-radius: 12px;
+
+  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+
+  cursor: pointer;
+  transition: all .3s ease;
+}
+
+.toc-card li:hover {
+  background: #f3f7ff;
+  color: #116AF8;
+}
+
+.toc-card li.active {
+  background: linear-gradient(
+    90deg,
+    #116AF8,
+    #0A50F5
+  );
+
+  color: white;
+
+  box-shadow:
+    0 8px 20px rgba(17,106,248,.25);
+}
+
+.help-box {
+  margin-top: 24px;
+
+  background: #eef4ff;
+  border: 1px solid #d8e5ff;
+
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.help-box h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.help-box p {
+  margin: 8px 0 16px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.help-box button {
+  width: 100%;
+  height: 42px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: linear-gradient(
+    90deg,
+    #116AF8,
+    #0A50F5
+  );
+
+  color: white;
+  font-weight: 600;
+}
+
+/* ==========================
+   MAIN CONTENT
+========================== */
+
+.pp-main-content {
+  flex: 1;
+  min-width:0;
+}
+
+/* ==========================
+   POLICY CARD
+========================== */
+
+.policy-card {
+  background: white;
+
+  border-radius: 18px;
+
+  overflow: hidden;
+
+  margin-bottom: 28px;
+
+  box-shadow:
+    0 10px 30px rgba(15,23,42,.08);
+}
+
+.policy-header {
+  background: linear-gradient(
+    90deg,
+    #116AF8,
+    #0A50F5
+  );
+
+  padding: 18px 26px;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.policy-icon {
+  width: 42px;
+  height: 42px;
+
+  border-radius: 50%;
+
+  background: rgba(255,255,255,.15);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+}
+
+.policy-header h2 {
+  margin: 0;
+
+  color: white;
+
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.policy-body {
+  padding: 28px;
+}
+
+.policy-body p {
+  color: #334155;
+
+  line-height: 1.9;
+
+  font-size: 16px;
+}
+
+/* IMPORTANT BOX */
+
+.important-box {
+  margin-top: 25px;
+
+  background: #f2f7ff;
+
+  border-left: 4px solid #116AF8;
+
+  padding: 18px 20px;
+
+  border-radius: 12px;
+
+  color: #334155;
+}
+
+/* SUBSECTIONS */
+
+.policy-subsection {
+  margin-bottom: 35px;
+}
+
+.policy-subsection h3 {
+  position: relative;
+
+  margin-bottom: 14px;
+
+  padding-left: 16px;
+
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.policy-subsection h3:before {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  top: 2px;
+
+  width: 5px;
+  height: 24px;
+
+  border-radius: 50px;
+
+  background: #116AF8;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 992px) {
+
+  .pp-layout {
+    flex-direction: column;
+  }
+
+  .pp-sidebar {
+    width: 100%;
+  }
+
+  .toc-card {
+    position: relative;
+    top: auto;
+  }
+}
+/* MINI INFO CARDS */
+
+.info-mini-grid {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding-bottom:10px;
+}
+
+.info-mini-card {
+  flex: 1;
+
+  min-height: 66px;
+
+  border-radius: 12px;
+
+  border: 1px solid #dbe4f0;
+  background: #f8fafc;
+
+  padding: 14px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  transition: all .25s ease;
+}
+
+.info-mini-card:hover {
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 10px 20px rgba(17,106,248,.08);
+}
+
+.mini-icon {
+  width: 28px;
+  height: 28px;
+
+  border-radius: 8px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #fff;
+
+  font-size: 12px;
+
+  margin-bottom: 8px;
+}
+
+.account-icon {
+  background: linear-gradient(
+    135deg,
+    #4F46E5,
+    #3B82F6
+  );
+}
+
+.migration-icon {
+  background: linear-gradient(
+    135deg,
+    #EC4899,
+    #A855F7
+  );
+}
+
+.info-mini-card span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.section-intro {
+    margin-bottom: 28px;
+    color: #475569;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.usage-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.usage-list li {
+    position: relative;
+
+    padding-left: 28px;
+
+    margin-bottom: 28px;
+
+    color: #334155;
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+.usage-list li:last-child {
+    margin-bottom: 0;
+}
+
+.usage-list li:before {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    top: 7px;
+
+    width: 14px;
+    height: 14px;
+
+    border: 2px solid #116AF8;
+    border-radius: 50%;
+
+    background: #fff;
+}
+
+.usage-list li:after {
+    content: "";
+
+    position: absolute;
+
+    left: 5px;
+    top: 12px;
+
+    width: 4px;
+    height: 4px;
+
+    border-radius: 50%;
+
+    background: #116AF8;
+}</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>true</has_preview>
+        <id/>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link>
+        <name>tracenow_privacy_policy</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function() {
+  /* populate the 'data' object */
+  /* e.g., data.table = $sp.getValue('table'); */
+
+})();]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-06-09 06:14:27</sys_created_on>
+        <sys_id>502984b293914f500af5f4e9b903d6f2</sys_id>
+        <sys_mod_count>34</sys_mod_count>
+        <sys_name>tracenow_privacy_policy</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_widget_502984b293914f500af5f4e9b903d6f2</sys_update_name>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-06-09 17:14:50</sys_updated_on>
+        <template><![CDATA[<div class="pp-page">
+
+  <!-- HERO -->
+  <section class="pp-hero">
+
+    <!-- GRID -->
+    <div class="pp-grid"></div>
+
+    <!-- FLOATING SHAPES -->
+    <div class="pp-circle"></div>
+
+    <div class="container">
+
+      <div class="pp-hero-content">
+
+        <!-- LEFT -->
+        <div class="pp-left">
+
+          <div class="pp-badge">
+            <svg width="300" height="98" viewBox="0 0 630 98" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M169.886 88V27.1047H151.047V17.114H199.573V27.1047H181.019V88H169.886ZM201.253 88V36.5244H211.529V46.8956L210.577 45.3733C211.719 42.0113 213.559 39.6009 216.096 38.1419C218.633 36.6196 221.678 35.8584 225.23 35.8584H228.37V45.6587H223.898C220.346 45.6587 217.46 46.7688 215.239 48.9889C213.083 51.1456 212.004 54.2538 212.004 58.3135V88H201.253ZM251.14 89.1418C247.651 89.1418 244.574 88.5392 241.91 87.334C239.309 86.0653 237.28 84.3526 235.821 82.1959C234.362 79.9758 233.632 77.375 233.632 74.3937C233.632 71.6027 234.235 69.0971 235.44 66.8769C236.709 64.6568 238.643 62.7855 241.244 61.2631C243.845 59.7408 247.112 58.6624 251.044 58.0281L268.933 55.0785V63.5467L253.138 66.306C250.283 66.8135 248.19 67.7333 246.858 69.0654C245.526 70.334 244.86 71.9833 244.86 74.0131C244.86 75.9795 245.589 77.597 247.048 78.8657C248.571 80.0709 250.505 80.6735 252.852 80.6735C255.77 80.6735 258.308 80.0392 260.464 78.7705C262.684 77.5019 264.397 75.8209 265.602 73.7277C266.808 71.5709 267.41 69.1922 267.41 66.5915V53.3658C267.41 50.8285 266.459 48.7669 264.556 47.1811C262.716 45.5318 260.242 44.7072 257.134 44.7072C254.28 44.7072 251.774 45.4684 249.617 46.9908C247.524 48.4497 245.97 50.3527 244.955 52.6997L236.011 48.2277C236.962 45.6904 238.517 43.4703 240.673 41.5673C242.83 39.6009 245.336 38.0785 248.19 37.0001C251.108 35.9218 254.184 35.3826 257.419 35.3826C261.479 35.3826 265.063 36.1438 268.171 37.6662C271.343 39.1886 273.785 41.3136 275.498 44.0412C277.274 46.7053 278.162 49.8135 278.162 53.3658V88H267.886V78.6754L270.074 78.9608C268.869 81.0541 267.315 82.862 265.412 84.3843C263.572 85.9067 261.447 87.0802 259.037 87.9049C256.69 88.7295 254.058 89.1418 251.14 89.1418ZM315.187 89.1418C310.049 89.1418 305.482 87.9683 301.485 85.6213C297.553 83.2108 294.413 79.9758 292.066 75.9161C289.782 71.8564 288.64 67.2575 288.64 62.1195C288.64 57.0449 289.782 52.4777 292.066 48.418C294.349 44.3583 297.489 41.1867 301.485 38.9031C305.482 36.5561 310.049 35.3826 315.187 35.3826C318.676 35.3826 321.942 36.0169 324.987 37.2856C328.032 38.4908 330.664 40.1718 332.885 42.3285C335.168 44.4852 336.849 46.9908 337.927 49.8453L328.508 54.2221C327.429 51.5579 325.685 49.4329 323.274 47.8471C320.927 46.1979 318.232 45.3733 315.187 45.3733C312.269 45.3733 309.636 46.1027 307.289 47.5617C305.006 48.9572 303.198 50.9553 301.866 53.5561C300.534 56.0934 299.868 58.9796 299.868 62.2146C299.868 65.4497 300.534 68.3676 301.866 70.9683C303.198 73.5056 305.006 75.5038 307.289 76.9627C309.636 78.4217 312.269 79.1511 315.187 79.1511C318.295 79.1511 320.991 78.3582 323.274 76.7724C325.621 75.1232 327.366 72.9347 328.508 70.2071L337.927 74.6791C336.912 77.4067 335.263 79.8806 332.98 82.1008C330.76 84.2575 328.127 85.9702 325.082 87.2388C322.038 88.5075 318.739 89.1418 315.187 89.1418ZM372.604 89.1418C367.466 89.1418 362.899 87.9683 358.903 85.6213C354.97 83.2108 351.893 79.9758 349.673 75.9161C347.453 71.793 346.343 67.1941 346.343 62.1195C346.343 56.918 347.453 52.3191 349.673 48.3229C351.957 44.3266 355.001 41.1867 358.807 38.9031C362.613 36.5561 366.927 35.3826 371.748 35.3826C375.617 35.3826 379.074 36.0487 382.119 37.3807C385.164 38.7128 387.733 40.5524 389.826 42.8994C391.919 45.183 393.505 47.8154 394.583 50.7967C395.725 53.7781 396.296 56.9497 396.296 60.3116C396.296 61.1363 396.264 61.9926 396.201 62.8807C396.138 63.7687 396.011 64.5934 395.82 65.3545H354.811V56.7911H389.731L384.593 60.6922C385.227 57.584 385.005 54.8247 383.927 52.4143C382.912 49.9404 381.326 48.0057 379.169 46.6102C377.076 45.1512 374.602 44.4218 371.748 44.4218C368.893 44.4218 366.356 45.1512 364.136 46.6102C361.916 48.0057 360.203 50.0356 358.998 52.6997C357.792 55.3005 357.317 58.4721 357.57 62.2146C357.253 65.7034 357.729 68.7482 358.998 71.3489C360.33 73.9497 362.169 75.9795 364.516 77.4385C366.927 78.8974 369.654 79.6269 372.699 79.6269C375.807 79.6269 378.44 78.9291 380.597 77.5336C382.817 76.1381 384.561 74.3303 385.83 72.1101L394.583 76.3918C393.568 78.8023 391.983 80.9907 389.826 82.9571C387.733 84.8601 385.195 86.3825 382.214 87.5243C379.296 88.6026 376.093 89.1418 372.604 89.1418ZM408.883 88V17.114H415.543L457.123 76.7724H454.554V17.114H462.166V88H455.506L413.925 27.961H416.494V88H408.883ZM501.779 89.1418C496.958 89.1418 492.581 88 488.649 85.7164C484.716 83.3694 481.576 80.1978 479.229 76.2015C476.945 72.1418 475.803 67.543 475.803 62.4049C475.803 57.3303 476.945 52.7949 479.229 48.7986C481.512 44.8024 484.589 41.6624 488.458 39.3789C492.391 37.0319 496.831 35.8584 501.779 35.8584C506.727 35.8584 511.135 37.0001 515.005 39.2837C518.938 41.5673 522.014 44.7072 524.234 48.7035C526.518 52.6997 527.66 57.2669 527.66 62.4049C527.66 67.6064 526.486 72.237 524.139 76.2967C521.792 80.2929 518.652 83.4328 514.719 85.7164C510.85 88 506.537 89.1418 501.779 89.1418ZM501.779 82.0056C505.205 82.0056 508.281 81.1493 511.009 79.4366C513.8 77.7239 515.988 75.3769 517.574 72.3956C519.223 69.4142 520.048 66.084 520.048 62.4049C520.048 58.7258 519.223 55.4273 517.574 52.5094C515.988 49.5915 513.8 47.2762 511.009 45.5636C508.281 43.8509 505.205 42.9945 501.779 42.9945C498.354 42.9945 495.246 43.8509 492.455 45.5636C489.727 47.2762 487.539 49.5915 485.889 52.5094C484.24 55.4273 483.415 58.7258 483.415 62.4049C483.415 66.084 484.24 69.4142 485.889 72.3956C487.539 75.3769 489.727 77.7239 492.455 79.4366C495.246 81.1493 498.354 82.0056 501.779 82.0056ZM550.544 88L533.036 37.0001H541.124L555.587 81.625H552.732L566.338 37.0001H573.475L587.081 81.625H584.226L598.784 37.0001H606.777L589.269 88H582.133L568.907 44.3266H570.906L557.68 88H550.544Z" fill="white"/>
+<path opacity="0.42" d="M83.1415 12.0938L0 12.0938L27.0122 40.86L55.0768 40.86L55.0768 69.6262L83.1415 97.6909L83.1415 12.0938Z" fill="#6B6B6B"/>
+<path d="M93.4217 0H10.2803L37.2925 28.7662H65.3571V57.5325L93.4217 85.5971V0Z" fill="white"/>
+<path d="M101.584 0H132.422L101.584 33.8613V0Z" fill="white"/>
+</svg>
+
+          </div>
+
+          <h1>Privacy Policy</h1>
+
+          <p>
+            Your privacy matters to us. Learn how we collect,
+            use, protect, and manage your information.
+          </p>
+
+          <div class="pp-actions">
+
+            <button class="btn-primary">
+              Read Policy
+              <i class="fa fa-angle-right"></i>
+            </button>
+
+            <button class="btn-secondary">
+              <i class="fa fa-download"></i>
+              Download PDF
+            </button>
+
+          </div>
+
+        </div>
+
+        <!-- RIGHT -->
+        <div class="pp-right">
+
+          <div class="security-card">
+
+            <div class="floating-lock">
+              <i class="fa fa-lock"></i>
+            </div>
+
+            <div class="floating-check">
+              <i class="fa fa-check-circle-o"></i>
+            </div>
+
+            <svg
+              width="150"
+              height="150"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              stroke-width="1.2">
+
+              <path
+                d="M12 2L4 5V11C4 16.5 7.4 21.3 12 22
+                C16.6 21.3 20 16.5 20 11V5L12 2Z">
+              </path>
+
+            </svg>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- CURVE -->
+    <div class="hero-curve"></div>
+
+  </section>
+
+  <!-- FEATURE CARDS -->
+  <section class="pp-features">
+
+    <div class="container">
+
+      <div class="feature-grid">
+
+        <div class="feature-card">
+          <div class="icon-box">
+            <i class="fa fa-shield"></i>
+          </div>
+
+          <h3>SOC 2 Certified</h3>
+          <p>Independently audited security</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon-box">
+            <i class="fa fa-lock"></i>
+          </div>
+
+          <h3>AES-256 Encryption</h3>
+          <p>Military-grade protection</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon-box">
+            <i class="fa fa-check-circle"></i>
+          </div>
+
+          <h3>GDPR Compliant</h3>
+          <p>Full regulatory compliance</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon-box">
+            <i class="fa fa-server"></i>
+          </div>
+
+          <h3>Secure Infrastructure</h3>
+          <p>Enterprise-grade hosting</p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+<section class="pp-content-section">
+
+  <div class="container">
+
+    <div class="pp-layout">
+
+      <!-- SIDEBAR -->
+      <aside class="pp-sidebar">
+
+        <div class="toc-card">
+
+          <h3>
+            <i class="fa fa-file-text-o"></i>
+            Table of Contents
+          </h3>
+
+          <ul>
+
+            <li class="active">
+              <i class="fa fa-file-text-o"></i>
+              Introduction
+            </li>
+
+            <li>
+              <i class="fa fa-database"></i>
+              Information We Collect
+            </li>
+
+            <li>
+              <i class="fa fa-cogs"></i>
+              How We Use Information
+            </li>
+
+            <li>
+              <i class="fa fa-pie-chart"></i>
+              Cookies & Tracking
+            </li>
+
+            <li>
+              <i class="fa fa-lock"></i>
+              Data Security
+            </li>
+
+            <li>
+              <i class="fa fa-globe"></i>
+              Third-Party Services
+            </li>
+
+            <li>
+              <i class="fa fa-user-o"></i>
+              User Rights
+            </li>
+
+            <li>
+              <i class="fa fa-clipboard"></i>
+              Data Retention
+            </li>
+
+            <li>
+              <i class="fa fa-envelope-o"></i>
+              Contact Us
+            </li>
+
+          </ul>
+
+          <div class="help-box">
+
+            <h4>Need Help?</h4>
+
+            <p>
+              Contact our privacy team for any questions
+            </p>
+
+            <button>
+              <i class="fa fa-envelope-o"></i>
+              Contact Us
+            </button>
+
+          </div>
+
+        </div>
+
+      </aside>
+
+      <!-- CONTENT -->
+      <div class="pp-main-content">
+
+        <!-- INTRO -->
+
+        <div class="policy-card">
+
+          <div class="policy-header">
+            <span class="policy-icon">
+              <i class="fa fa-file-text-o"></i>
+            </span>
+
+            <h2>Introduction</h2>
+          </div>
+
+          <div class="policy-body">
+
+            <p>
+              Welcome to our Privacy Policy. At TraceNow, we are committed
+              to protecting your privacy and ensuring the security of your
+              personal information. This Privacy Policy explains how we
+              collect, use, disclose, and safeguard your information when
+              you use our data migration platform and services.
+            </p>
+
+            <p>
+              We understand that privacy is important to you, and we strive
+              to be transparent about our data practices. This policy applies
+              to all users of our platform, including enterprise customers,
+              individual users, and visitors to our website.
+            </p>
+
+            <div class="important-box">
+
+              <strong>Important:</strong>
+
+              By using our services, you agree to the collection and use of
+              information in accordance with this Privacy Policy. If you do
+              not agree with our policies and practices, please do not use
+              our services.
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- INFORMATION WE COLLECT -->
+
+        <div class="policy-card">
+
+          <div class="policy-header">
+            <span class="policy-icon">
+              <i class="fa fa-database"></i>
+            </span>
+
+            <h2>Information We Collect</h2>
+          </div>
+
+          <div class="policy-body">
+
+            <div class="policy-subsection">
+
+              <h3>Personal Information</h3>
+
+              <p>
+                We collect personal information that you provide directly
+                to us, including your name, email address, company name,
+                job title, phone number, and billing information when
+                you create an account or purchase our services.
+              </p>
+
+            </div>
+
+            <div class="policy-subsection">
+
+              <h3>Migration Data</h3>
+
+              <p>
+                When you use our data migration services, we process the
+                data you choose to migrate, including ServiceNow records,
+                metadata, attachments, and configuration settings.
+              </p>
+
+            </div>
+<div class="info-mini-grid">
+
+  <div class="info-mini-card">
+
+    <div class="mini-icon account-icon">
+      <i class="fa fa-user-o"></i>
+    </div>
+
+    <span>Account Data</span>
+
+  </div>
+
+  <div class="info-mini-card">
+
+    <div class="mini-icon migration-icon">
+      <i class="fa fa-refresh"></i>
+    </div>
+
+    <span>Migration Data</span>
+
+  </div>
+
+</div>
+          </div>
+</div>  
+          <!-- HOW WE USE INFORMATION -->
+<div class="policy-card">
+
+    <div class="policy-header">
+
+        <span class="policy-icon">
+            <i class="fa fa-cog"></i>
+        </span>
+
+        <h2>How We Use Information</h2>
+
+    </div>
+
+    <div class="policy-body">
+
+        <p class="section-intro">
+            We use the information we collect for various purposes, including:
+        </p>
+
+        <ul class="usage-list">
+
+            <li>
+                Providing, maintaining, and improving our data migration services
+            </li>
+
+            <li>
+                Processing your transactions and managing your account
+            </li>
+
+            <li>
+                Sending you technical notices, updates, security alerts, and support messages
+            </li>
+
+            <li>
+                Responding to your comments, questions, and customer service requests
+            </li>
+
+            <li>
+                Monitoring and analyzing usage patterns and trends to improve user experience
+            </li>
+
+            <li>
+                Detecting, preventing, and addressing technical issues and security vulnerabilities
+            </li>
+
+            <li>
+                Complying with legal obligations and enforcing our terms of service
+            </li>
+
+        </ul>
+
+    </div>
+  </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+</section>  
+
+</div>]]></template>
+    </sp_widget>
+    <sys_update_version action="INSERT_OR_UPDATE">
+        <action>DELETE</action>
+        <application display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</application>
+        <file_path/>
+        <instance_id>5af4a451db6abb448aea21c405961971</instance_id>
+        <instance_name>sysusademo7</instance_name>
+        <name>sp_widget_502984b293914f500af5f4e9b903d6f2</name>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sp_widget"&gt;&lt;sp_widget action="INSERT_OR_UPDATE"&gt;&lt;category&gt;custom&lt;/category&gt;&lt;client_script&gt;&lt;![CDATA[api.controller=function() {
+  /* widget controller */
+  var c = this;
+};]]&gt;&lt;/client_script&gt;&lt;controller_as&gt;c&lt;/controller_as&gt;&lt;css&gt;.pp-page {
+  font-family: Inter, "Helvetica Neue", sans-serif;
+  background: #f5f7fc;
+  overflow-x: hidden;
+}
+
+/* CONTAINER */
+
+.container {
+  width: 100%;
+  max-width: 1180px;
+  margin: auto;
+  padding: 0 32px;
+}
+
+/* HERO */
+
+.pp-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    #116AF8 0%,
+    #0A50F5 100%
+  );
+
+  padding: 70px 0 120px;
+
+  border-radius: 0 0 32px 32px;
+}
+
+/* GRID */
+
+.pp-grid {
+  position: absolute;
+  inset: 0;
+  opacity: .12;
+
+  background-image:
+    linear-gradient(
+      rgba(255,255,255,.5) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255,255,255,.5) 1px,
+      transparent 1px
+    );
+
+  background-size: 78px 78px;
+}
+
+/* FLOATING CIRCLE */
+
+.pp-circle {
+  position: absolute;
+  left: 80px;
+  top: 340px;
+
+  width: 150px;
+  height: 150px;
+
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.08);
+}
+
+/* HERO LAYOUT */
+
+.pp-hero-content {
+  position: relative;
+  z-index: 10;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 60px;
+}
+
+/* LEFT */
+
+.pp-left {
+  max-width: 620px;
+  padding: 10px 18px;
+}
+
+.pp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 5px 10px;
+}
+
+  .pp-badge:hover {
+    transform: translateY(-2px) scale(1.01);
+}
+.pp-left h1 {
+  color: white;
+
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1.05;
+
+  margin: 28px 0 20px;
+}
+
+.pp-left p {
+  color: rgba(255,255,255,.9);
+
+  font-size: 18px;
+  line-height: 1.8;
+
+  max-width: 520px;
+}
+
+/* BUTTONS */
+
+.pp-actions {
+  margin-top: 32px;
+
+  display: flex;
+  gap: 16px;
+}
+
+.btn-primary,
+.btn-secondary {
+  height: 52px;
+
+  padding: 0 26px;
+
+  border-radius: 14px;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: all .25s ease;
+}
+
+.btn-primary {
+  background: white;
+  border: none;
+  color: #116AF8;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.25);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: rgba(255,255,255,.12);
+}
+
+/* RIGHT */
+
+.pp-right {
+  position: relative;
+}
+
+.security-card {
+  width: 310px;
+  height: 310px;
+
+  border-radius: 28px;
+
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,.18),
+    rgba(255,255,255,.08)
+  );
+
+  border: 1px solid rgba(255,255,255,.15);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+
+  backdrop-filter: blur(20px);
+}
+
+/* DECORATIVE OUTLINE CARD */
+
+.security-card:before {
+  content: "";
+
+  position: absolute;
+
+  width: 150px;
+  height: 150px;
+
+  top: -35px;
+  right: -20px;
+
+  border-radius: 24px;
+
+  border: 2px solid rgba(255,255,255,.08);
+
+  transform: rotate(10deg);
+}
+
+/* FLOATING ICONS */
+
+.floating-lock,
+.floating-check {
+  position: absolute;
+
+  width: 48px;
+  height: 48px;
+
+  border-radius: 14px;
+
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.2);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+  font-size: 18px;
+}
+
+.floating-lock {
+  top: -12px;
+  right: -12px;
+
+  animation: lockFloat 4s ease-in-out infinite;
+}
+
+.floating-check {
+  left: -12px;
+  bottom: 38px;
+
+  animation: checkFloat 3s ease-in-out infinite;
+}
+
+@keyframes lockFloat {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-15px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes checkFloat {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(12px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* HERO CURVE */
+
+.hero-curve {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+
+  width: 100%;
+  height: 80px;
+
+  background: #f5f7fc;
+
+  clip-path: polygon(
+    0 55%,
+    20% 20%,
+    50% 0,
+    80% 20%,
+    100% 55%,
+    100% 100%,
+    0 100%
+  );
+}
+
+/* FEATURES */
+
+.pp-features {
+  position: relative;
+  z-index: 20;
+
+  margin-top: -60px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
+}
+
+.feature-card {
+  background: white;
+  border-radius: 20px;
+  padding: 26px;
+  min-height: 170px;
+
+  box-shadow:
+    0 15px 40px rgba(0,0,0,.08);
+
+  transition:
+    transform .3s ease,
+    box-shadow .3s ease;
+
+  cursor: pointer;
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+
+  box-shadow:
+    0 25px 60px rgba(17,106,248,.15);
+}
+
+.feature-card:hover .icon-box {
+  transform: scale(1.08);
+}
+
+.icon-box {
+  width: 48px;
+  height: 48px;
+
+  border-radius: 14px;
+
+  background: linear-gradient(
+    180deg,
+    #116AF8,
+    #0A50F5
+  );
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+  font-size: 18px;
+
+  transition: transform .3s ease;
+}
+
+.feature-card h3 {
+  margin-top: 18px;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  color: #101828;
+}
+
+.feature-card p {
+  margin-top: 8px;
+
+  font-size: 14px;
+  line-height: 1.6;
+
+  color: #667085;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1200px) {
+
+  .pp-hero-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .pp-left {
+    max-width: 100%;
+  }
+
+  .pp-left p {
+    margin: 0 auto;
+  }
+
+  .pp-actions {
+    justify-content: center;
+  }
+
+  .feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pp-left h1 {
+    font-size: 54px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .container {
+    padding: 0 20px;
+  }
+
+  .pp-hero {
+    padding: 60px 0 110px;
+  }
+
+  .pp-left h1 {
+    font-size: 42px;
+  }
+
+  .pp-left p {
+    font-size: 16px;
+  }
+
+  .security-card {
+    width: 260px;
+    height: 260px;
+  }
+
+  .pp-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    max-width: 260px;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pp-features {
+    margin-top: -40px;
+  }
+}
+/* ==========================
+   CONTENT AREA
+========================== */
+
+.pp-content-section {
+  padding: 50px 0 80px;
+}
+
+.pp-layout {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+/* ==========================
+   SIDEBAR
+========================== */
+
+.pp-sidebar {
+  width: 280px;
+  flex: 0 0 280px;
+}
+
+.toc-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+  position: sticky;
+  top: 30px;
+}
+
+.toc-card h3 {
+  margin: 0 0 20px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.toc-card h3 i {
+  margin-right: 10px;
+  color: #116AF8;
+}
+
+.toc-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.toc-card li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 14px 14px;
+  border-radius: 12px;
+
+  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+
+  cursor: pointer;
+  transition: all .3s ease;
+}
+
+.toc-card li:hover {
+  background: #f3f7ff;
+  color: #116AF8;
+}
+
+.toc-card li.active {
+  background: linear-gradient(
+    90deg,
+    #116AF8,
+    #0A50F5
+  );
+
+  color: white;
+
+  box-shadow:
+    0 8px 20px rgba(17,106,248,.25);
+}
+
+.help-box {
+  margin-top: 24px;
+
+  background: #eef4ff;
+  border: 1px solid #d8e5ff;
+
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.help-box h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.help-box p {
+  margin: 8px 0 16px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.help-box button {
+  width: 100%;
+  height: 42px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: linear-gradient(
+    90deg,
+    #116AF8,
+    #0A50F5
+  );
+
+  color: white;
+  font-weight: 600;
+}
+
+/* ==========================
+   MAIN CONTENT
+========================== */
+
+.pp-main-content {
+  flex: 1;
+  min-width:0;
+}
+
+/* ==========================
+   POLICY CARD
+========================== */
+
+.policy-card {
+  background: white;
+
+  border-radius: 18px;
+
+  overflow: hidden;
+
+  margin-bottom: 28px;
+
+  box-shadow:
+    0 10px 30px rgba(15,23,42,.08);
+}
+
+.policy-header {
+  background: linear-gradient(
+    90deg,
+    #116AF8,
+    #0A50F5
+  );
+
+  padding: 18px 26px;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.policy-icon {
+  width: 42px;
+  height: 42px;
+
+  border-radius: 50%;
+
+  background: rgba(255,255,255,.15);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+}
+
+.policy-header h2 {
+  margin: 0;
+
+  color: white;
+
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.policy-body {
+  padding: 28px;
+}
+
+.policy-body p {
+  color: #334155;
+
+  line-height: 1.9;
+
+  font-size: 16px;
+}
+
+/* IMPORTANT BOX */
+
+.important-box {
+  margin-top: 25px;
+
+  background: #f2f7ff;
+
+  border-left: 4px solid #116AF8;
+
+  padding: 18px 20px;
+
+  border-radius: 12px;
+
+  color: #334155;
+}
+
+/* SUBSECTIONS */
+
+.policy-subsection {
+  margin-bottom: 35px;
+}
+
+.policy-subsection h3 {
+  position: relative;
+
+  margin-bottom: 14px;
+
+  padding-left: 16px;
+
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.policy-subsection h3:before {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  top: 2px;
+
+  width: 5px;
+  height: 24px;
+
+  border-radius: 50px;
+
+  background: #116AF8;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 992px) {
+
+  .pp-layout {
+    flex-direction: column;
+  }
+
+  .pp-sidebar {
+    width: 100%;
+  }
+
+  .toc-card {
+    position: relative;
+    top: auto;
+  }
+}
+/* MINI INFO CARDS */
+
+.info-mini-grid {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding-bottom:10px;
+}
+
+.info-mini-card {
+  flex: 1;
+
+  min-height: 66px;
+
+  border-radius: 12px;
+
+  border: 1px solid #dbe4f0;
+  background: #f8fafc;
+
+  padding: 14px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  transition: all .25s ease;
+}
+
+.info-mini-card:hover {
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 10px 20px rgba(17,106,248,.08);
+}
+
+.mini-icon {
+  width: 28px;
+  height: 28px;
+
+  border-radius: 8px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #fff;
+
+  font-size: 12px;
+
+  margin-bottom: 8px;
+}
+
+.account-icon {
+  background: linear-gradient(
+    135deg,
+    #4F46E5,
+    #3B82F6
+  );
+}
+
+.migration-icon {
+  background: linear-gradient(
+    135deg,
+    #EC4899,
+    #A855F7
+  );
+}
+
+.info-mini-card span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.section-intro {
+    margin-bottom: 28px;
+    color: #475569;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.usage-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.usage-list li {
+    position: relative;
+
+    padding-left: 28px;
+
+    margin-bottom: 28px;
+
+    color: #334155;
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+.usage-list li:last-child {
+    margin-bottom: 0;
+}
+
+.usage-list li:before {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    top: 7px;
+
+    width: 14px;
+    height: 14px;
+
+    border: 2px solid #116AF8;
+    border-radius: 50%;
+
+    background: #fff;
+}
+
+.usage-list li:after {
+    content: "";
+
+    position: absolute;
+
+    left: 5px;
+    top: 12px;
+
+    width: 4px;
+    height: 4px;
+
+    border-radius: 50%;
+
+    background: #116AF8;
+}&lt;/css&gt;&lt;data_table&gt;sp_instance&lt;/data_table&gt;&lt;demo_data/&gt;&lt;description/&gt;&lt;docs/&gt;&lt;field_list/&gt;&lt;has_preview&gt;true&lt;/has_preview&gt;&lt;id/&gt;&lt;internal&gt;false&lt;/internal&gt;&lt;link&gt;&lt;![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]&gt;&lt;/link&gt;&lt;name&gt;tracenow_privacy_policy&lt;/name&gt;&lt;option_schema/&gt;&lt;public&gt;false&lt;/public&gt;&lt;roles/&gt;&lt;script&gt;&lt;![CDATA[(function() {
+  /* populate the 'data' object */
+  /* e.g., data.table = $sp.getValue('table'); */
+
+})();]]&gt;&lt;/script&gt;&lt;servicenow&gt;false&lt;/servicenow&gt;&lt;sys_class_name&gt;sp_widget&lt;/sys_class_name&gt;&lt;sys_created_by&gt;munaib.ashraf&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2026-06-09 06:14:27&lt;/sys_created_on&gt;&lt;sys_id&gt;502984b293914f500af5f4e9b903d6f2&lt;/sys_id&gt;&lt;sys_mod_count&gt;34&lt;/sys_mod_count&gt;&lt;sys_name&gt;tracenow_privacy_policy&lt;/sys_name&gt;&lt;sys_package display_value="TRACENow" source="x_sysus_tracenow"&gt;7307d82a3bc847103509f3cc73e45aeb&lt;/sys_package&gt;&lt;sys_policy/&gt;&lt;sys_scope display_value="TRACENow"&gt;7307d82a3bc847103509f3cc73e45aeb&lt;/sys_scope&gt;&lt;sys_update_name&gt;sp_widget_502984b293914f500af5f4e9b903d6f2&lt;/sys_update_name&gt;&lt;sys_updated_by&gt;munaib.ashraf&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2026-06-09 17:14:50&lt;/sys_updated_on&gt;&lt;template&gt;&lt;![CDATA[&lt;div class="pp-page"&gt;
+
+  &lt;!-- HERO --&gt;
+  &lt;section class="pp-hero"&gt;
+
+    &lt;!-- GRID --&gt;
+    &lt;div class="pp-grid"&gt;&lt;/div&gt;
+
+    &lt;!-- FLOATING SHAPES --&gt;
+    &lt;div class="pp-circle"&gt;&lt;/div&gt;
+
+    &lt;div class="container"&gt;
+
+      &lt;div class="pp-hero-content"&gt;
+
+        &lt;!-- LEFT --&gt;
+        &lt;div class="pp-left"&gt;
+
+          &lt;div class="pp-badge"&gt;
+            &lt;svg width="300" height="98" viewBox="0 0 630 98" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+&lt;path d="M169.886 88V27.1047H151.047V17.114H199.573V27.1047H181.019V88H169.886ZM201.253 88V36.5244H211.529V46.8956L210.577 45.3733C211.719 42.0113 213.559 39.6009 216.096 38.1419C218.633 36.6196 221.678 35.8584 225.23 35.8584H228.37V45.6587H223.898C220.346 45.6587 217.46 46.7688 215.239 48.9889C213.083 51.1456 212.004 54.2538 212.004 58.3135V88H201.253ZM251.14 89.1418C247.651 89.1418 244.574 88.5392 241.91 87.334C239.309 86.0653 237.28 84.3526 235.821 82.1959C234.362 79.9758 233.632 77.375 233.632 74.3937C233.632 71.6027 234.235 69.0971 235.44 66.8769C236.709 64.6568 238.643 62.7855 241.244 61.2631C243.845 59.7408 247.112 58.6624 251.044 58.0281L268.933 55.0785V63.5467L253.138 66.306C250.283 66.8135 248.19 67.7333 246.858 69.0654C245.526 70.334 244.86 71.9833 244.86 74.0131C244.86 75.9795 245.589 77.597 247.048 78.8657C248.571 80.0709 250.505 80.6735 252.852 80.6735C255.77 80.6735 258.308 80.0392 260.464 78.7705C262.684 77.5019 264.397 75.8209 265.602 73.7277C266.808 71.5709 267.41 69.1922 267.41 66.5915V53.3658C267.41 50.8285 266.459 48.7669 264.556 47.1811C262.716 45.5318 260.242 44.7072 257.134 44.7072C254.28 44.7072 251.774 45.4684 249.617 46.9908C247.524 48.4497 245.97 50.3527 244.955 52.6997L236.011 48.2277C236.962 45.6904 238.517 43.4703 240.673 41.5673C242.83 39.6009 245.336 38.0785 248.19 37.0001C251.108 35.9218 254.184 35.3826 257.419 35.3826C261.479 35.3826 265.063 36.1438 268.171 37.6662C271.343 39.1886 273.785 41.3136 275.498 44.0412C277.274 46.7053 278.162 49.8135 278.162 53.3658V88H267.886V78.6754L270.074 78.9608C268.869 81.0541 267.315 82.862 265.412 84.3843C263.572 85.9067 261.447 87.0802 259.037 87.9049C256.69 88.7295 254.058 89.1418 251.14 89.1418ZM315.187 89.1418C310.049 89.1418 305.482 87.9683 301.485 85.6213C297.553 83.2108 294.413 79.9758 292.066 75.9161C289.782 71.8564 288.64 67.2575 288.64 62.1195C288.64 57.0449 289.782 52.4777 292.066 48.418C294.349 44.3583 297.489 41.1867 301.485 38.9031C305.482 36.5561 310.049 35.3826 315.187 35.3826C318.676 35.3826 321.942 36.0169 324.987 37.2856C328.032 38.4908 330.664 40.1718 332.885 42.3285C335.168 44.4852 336.849 46.9908 337.927 49.8453L328.508 54.2221C327.429 51.5579 325.685 49.4329 323.274 47.8471C320.927 46.1979 318.232 45.3733 315.187 45.3733C312.269 45.3733 309.636 46.1027 307.289 47.5617C305.006 48.9572 303.198 50.9553 301.866 53.5561C300.534 56.0934 299.868 58.9796 299.868 62.2146C299.868 65.4497 300.534 68.3676 301.866 70.9683C303.198 73.5056 305.006 75.5038 307.289 76.9627C309.636 78.4217 312.269 79.1511 315.187 79.1511C318.295 79.1511 320.991 78.3582 323.274 76.7724C325.621 75.1232 327.366 72.9347 328.508 70.2071L337.927 74.6791C336.912 77.4067 335.263 79.8806 332.98 82.1008C330.76 84.2575 328.127 85.9702 325.082 87.2388C322.038 88.5075 318.739 89.1418 315.187 89.1418ZM372.604 89.1418C367.466 89.1418 362.899 87.9683 358.903 85.6213C354.97 83.2108 351.893 79.9758 349.673 75.9161C347.453 71.793 346.343 67.1941 346.343 62.1195C346.343 56.918 347.453 52.3191 349.673 48.3229C351.957 44.3266 355.001 41.1867 358.807 38.9031C362.613 36.5561 366.927 35.3826 371.748 35.3826C375.617 35.3826 379.074 36.0487 382.119 37.3807C385.164 38.7128 387.733 40.5524 389.826 42.8994C391.919 45.183 393.505 47.8154 394.583 50.7967C395.725 53.7781 396.296 56.9497 396.296 60.3116C396.296 61.1363 396.264 61.9926 396.201 62.8807C396.138 63.7687 396.011 64.5934 395.82 65.3545H354.811V56.7911H389.731L384.593 60.6922C385.227 57.584 385.005 54.8247 383.927 52.4143C382.912 49.9404 381.326 48.0057 379.169 46.6102C377.076 45.1512 374.602 44.4218 371.748 44.4218C368.893 44.4218 366.356 45.1512 364.136 46.6102C361.916 48.0057 360.203 50.0356 358.998 52.6997C357.792 55.3005 357.317 58.4721 357.57 62.2146C357.253 65.7034 357.729 68.7482 358.998 71.3489C360.33 73.9497 362.169 75.9795 364.516 77.4385C366.927 78.8974 369.654 79.6269 372.699 79.6269C375.807 79.6269 378.44 78.9291 380.597 77.5336C382.817 76.1381 384.561 74.3303 385.83 72.1101L394.583 76.3918C393.568 78.8023 391.983 80.9907 389.826 82.9571C387.733 84.8601 385.195 86.3825 382.214 87.5243C379.296 88.6026 376.093 89.1418 372.604 89.1418ZM408.883 88V17.114H415.543L457.123 76.7724H454.554V17.114H462.166V88H455.506L413.925 27.961H416.494V88H408.883ZM501.779 89.1418C496.958 89.1418 492.581 88 488.649 85.7164C484.716 83.3694 481.576 80.1978 479.229 76.2015C476.945 72.1418 475.803 67.543 475.803 62.4049C475.803 57.3303 476.945 52.7949 479.229 48.7986C481.512 44.8024 484.589 41.6624 488.458 39.3789C492.391 37.0319 496.831 35.8584 501.779 35.8584C506.727 35.8584 511.135 37.0001 515.005 39.2837C518.938 41.5673 522.014 44.7072 524.234 48.7035C526.518 52.6997 527.66 57.2669 527.66 62.4049C527.66 67.6064 526.486 72.237 524.139 76.2967C521.792 80.2929 518.652 83.4328 514.719 85.7164C510.85 88 506.537 89.1418 501.779 89.1418ZM501.779 82.0056C505.205 82.0056 508.281 81.1493 511.009 79.4366C513.8 77.7239 515.988 75.3769 517.574 72.3956C519.223 69.4142 520.048 66.084 520.048 62.4049C520.048 58.7258 519.223 55.4273 517.574 52.5094C515.988 49.5915 513.8 47.2762 511.009 45.5636C508.281 43.8509 505.205 42.9945 501.779 42.9945C498.354 42.9945 495.246 43.8509 492.455 45.5636C489.727 47.2762 487.539 49.5915 485.889 52.5094C484.24 55.4273 483.415 58.7258 483.415 62.4049C483.415 66.084 484.24 69.4142 485.889 72.3956C487.539 75.3769 489.727 77.7239 492.455 79.4366C495.246 81.1493 498.354 82.0056 501.779 82.0056ZM550.544 88L533.036 37.0001H541.124L555.587 81.625H552.732L566.338 37.0001H573.475L587.081 81.625H584.226L598.784 37.0001H606.777L589.269 88H582.133L568.907 44.3266H570.906L557.68 88H550.544Z" fill="white"/&gt;
+&lt;path opacity="0.42" d="M83.1415 12.0938L0 12.0938L27.0122 40.86L55.0768 40.86L55.0768 69.6262L83.1415 97.6909L83.1415 12.0938Z" fill="#6B6B6B"/&gt;
+&lt;path d="M93.4217 0H10.2803L37.2925 28.7662H65.3571V57.5325L93.4217 85.5971V0Z" fill="white"/&gt;
+&lt;path d="M101.584 0H132.422L101.584 33.8613V0Z" fill="white"/&gt;
+&lt;/svg&gt;
+
+          &lt;/div&gt;
+
+          &lt;h1&gt;Privacy Policy&lt;/h1&gt;
+
+          &lt;p&gt;
+            Your privacy matters to us. Learn how we collect,
+            use, protect, and manage your information.
+          &lt;/p&gt;
+
+          &lt;div class="pp-actions"&gt;
+
+            &lt;button class="btn-primary"&gt;
+              Read Policy
+              &lt;i class="fa fa-angle-right"&gt;&lt;/i&gt;
+            &lt;/button&gt;
+
+            &lt;button class="btn-secondary"&gt;
+              &lt;i class="fa fa-download"&gt;&lt;/i&gt;
+              Download PDF
+            &lt;/button&gt;
+
+          &lt;/div&gt;
+
+        &lt;/div&gt;
+
+        &lt;!-- RIGHT --&gt;
+        &lt;div class="pp-right"&gt;
+
+          &lt;div class="security-card"&gt;
+
+            &lt;div class="floating-lock"&gt;
+              &lt;i class="fa fa-lock"&gt;&lt;/i&gt;
+            &lt;/div&gt;
+
+            &lt;div class="floating-check"&gt;
+              &lt;i class="fa fa-check-circle-o"&gt;&lt;/i&gt;
+            &lt;/div&gt;
+
+            &lt;svg
+              width="150"
+              height="150"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              stroke-width="1.2"&gt;
+
+              &lt;path
+                d="M12 2L4 5V11C4 16.5 7.4 21.3 12 22
+                C16.6 21.3 20 16.5 20 11V5L12 2Z"&gt;
+              &lt;/path&gt;
+
+            &lt;/svg&gt;
+
+          &lt;/div&gt;
+
+        &lt;/div&gt;
+
+      &lt;/div&gt;
+
+    &lt;/div&gt;
+
+    &lt;!-- CURVE --&gt;
+    &lt;div class="hero-curve"&gt;&lt;/div&gt;
+
+  &lt;/section&gt;
+
+  &lt;!-- FEATURE CARDS --&gt;
+  &lt;section class="pp-features"&gt;
+
+    &lt;div class="container"&gt;
+
+      &lt;div class="feature-grid"&gt;
+
+        &lt;div class="feature-card"&gt;
+          &lt;div class="icon-box"&gt;
+            &lt;i class="fa fa-shield"&gt;&lt;/i&gt;
+          &lt;/div&gt;
+
+          &lt;h3&gt;SOC 2 Certified&lt;/h3&gt;
+          &lt;p&gt;Independently audited security&lt;/p&gt;
+        &lt;/div&gt;
+
+        &lt;div class="feature-card"&gt;
+          &lt;div class="icon-box"&gt;
+            &lt;i class="fa fa-lock"&gt;&lt;/i&gt;
+          &lt;/div&gt;
+
+          &lt;h3&gt;AES-256 Encryption&lt;/h3&gt;
+          &lt;p&gt;Military-grade protection&lt;/p&gt;
+        &lt;/div&gt;
+
+        &lt;div class="feature-card"&gt;
+          &lt;div class="icon-box"&gt;
+            &lt;i class="fa fa-check-circle"&gt;&lt;/i&gt;
+          &lt;/div&gt;
+
+          &lt;h3&gt;GDPR Compliant&lt;/h3&gt;
+          &lt;p&gt;Full regulatory compliance&lt;/p&gt;
+        &lt;/div&gt;
+
+        &lt;div class="feature-card"&gt;
+          &lt;div class="icon-box"&gt;
+            &lt;i class="fa fa-server"&gt;&lt;/i&gt;
+          &lt;/div&gt;
+
+          &lt;h3&gt;Secure Infrastructure&lt;/h3&gt;
+          &lt;p&gt;Enterprise-grade hosting&lt;/p&gt;
+        &lt;/div&gt;
+
+      &lt;/div&gt;
+
+    &lt;/div&gt;
+
+  &lt;/section&gt;
+&lt;section class="pp-content-section"&gt;
+
+  &lt;div class="container"&gt;
+
+    &lt;div class="pp-layout"&gt;
+
+      &lt;!-- SIDEBAR --&gt;
+      &lt;aside class="pp-sidebar"&gt;
+
+        &lt;div class="toc-card"&gt;
+
+          &lt;h3&gt;
+            &lt;i class="fa fa-file-text-o"&gt;&lt;/i&gt;
+            Table of Contents
+          &lt;/h3&gt;
+
+          &lt;ul&gt;
+
+            &lt;li class="active"&gt;
+              &lt;i class="fa fa-file-text-o"&gt;&lt;/i&gt;
+              Introduction
+            &lt;/li&gt;
+
+            &lt;li&gt;
+              &lt;i class="fa fa-database"&gt;&lt;/i&gt;
+              Information We Collect
+            &lt;/li&gt;
+
+            &lt;li&gt;
+              &lt;i class="fa fa-cogs"&gt;&lt;/i&gt;
+              How We Use Information
+            &lt;/li&gt;
+
+            &lt;li&gt;
+              &lt;i class="fa fa-pie-chart"&gt;&lt;/i&gt;
+              Cookies &amp; Tracking
+            &lt;/li&gt;
+
+            &lt;li&gt;
+              &lt;i class="fa fa-lock"&gt;&lt;/i&gt;
+              Data Security
+            &lt;/li&gt;
+
+            &lt;li&gt;
+              &lt;i class="fa fa-globe"&gt;&lt;/i&gt;
+              Third-Party Services
+            &lt;/li&gt;
+
+            &lt;li&gt;
+              &lt;i class="fa fa-user-o"&gt;&lt;/i&gt;
+              User Rights
+            &lt;/li&gt;
+
+            &lt;li&gt;
+              &lt;i class="fa fa-clipboard"&gt;&lt;/i&gt;
+              Data Retention
+            &lt;/li&gt;
+
+            &lt;li&gt;
+              &lt;i class="fa fa-envelope-o"&gt;&lt;/i&gt;
+              Contact Us
+            &lt;/li&gt;
+
+          &lt;/ul&gt;
+
+          &lt;div class="help-box"&gt;
+
+            &lt;h4&gt;Need Help?&lt;/h4&gt;
+
+            &lt;p&gt;
+              Contact our privacy team for any questions
+            &lt;/p&gt;
+
+            &lt;button&gt;
+              &lt;i class="fa fa-envelope-o"&gt;&lt;/i&gt;
+              Contact Us
+            &lt;/button&gt;
+
+          &lt;/div&gt;
+
+        &lt;/div&gt;
+
+      &lt;/aside&gt;
+
+      &lt;!-- CONTENT --&gt;
+      &lt;div class="pp-main-content"&gt;
+
+        &lt;!-- INTRO --&gt;
+
+        &lt;div class="policy-card"&gt;
+
+          &lt;div class="policy-header"&gt;
+            &lt;span class="policy-icon"&gt;
+              &lt;i class="fa fa-file-text-o"&gt;&lt;/i&gt;
+            &lt;/span&gt;
+
+            &lt;h2&gt;Introduction&lt;/h2&gt;
+          &lt;/div&gt;
+
+          &lt;div class="policy-body"&gt;
+
+            &lt;p&gt;
+              Welcome to our Privacy Policy. At TraceNow, we are committed
+              to protecting your privacy and ensuring the security of your
+              personal information. This Privacy Policy explains how we
+              collect, use, disclose, and safeguard your information when
+              you use our data migration platform and services.
+            &lt;/p&gt;
+
+            &lt;p&gt;
+              We understand that privacy is important to you, and we strive
+              to be transparent about our data practices. This policy applies
+              to all users of our platform, including enterprise customers,
+              individual users, and visitors to our website.
+            &lt;/p&gt;
+
+            &lt;div class="important-box"&gt;
+
+              &lt;strong&gt;Important:&lt;/strong&gt;
+
+              By using our services, you agree to the collection and use of
+              information in accordance with this Privacy Policy. If you do
+              not agree with our policies and practices, please do not use
+              our services.
+
+            &lt;/div&gt;
+
+          &lt;/div&gt;
+
+        &lt;/div&gt;
+
+        &lt;!-- INFORMATION WE COLLECT --&gt;
+
+        &lt;div class="policy-card"&gt;
+
+          &lt;div class="policy-header"&gt;
+            &lt;span class="policy-icon"&gt;
+              &lt;i class="fa fa-database"&gt;&lt;/i&gt;
+            &lt;/span&gt;
+
+            &lt;h2&gt;Information We Collect&lt;/h2&gt;
+          &lt;/div&gt;
+
+          &lt;div class="policy-body"&gt;
+
+            &lt;div class="policy-subsection"&gt;
+
+              &lt;h3&gt;Personal Information&lt;/h3&gt;
+
+              &lt;p&gt;
+                We collect personal information that you provide directly
+                to us, including your name, email address, company name,
+                job title, phone number, and billing information when
+                you create an account or purchase our services.
+              &lt;/p&gt;
+
+            &lt;/div&gt;
+
+            &lt;div class="policy-subsection"&gt;
+
+              &lt;h3&gt;Migration Data&lt;/h3&gt;
+
+              &lt;p&gt;
+                When you use our data migration services, we process the
+                data you choose to migrate, including ServiceNow records,
+                metadata, attachments, and configuration settings.
+              &lt;/p&gt;
+
+            &lt;/div&gt;
+&lt;div class="info-mini-grid"&gt;
+
+  &lt;div class="info-mini-card"&gt;
+
+    &lt;div class="mini-icon account-icon"&gt;
+      &lt;i class="fa fa-user-o"&gt;&lt;/i&gt;
+    &lt;/div&gt;
+
+    &lt;span&gt;Account Data&lt;/span&gt;
+
+  &lt;/div&gt;
+
+  &lt;div class="info-mini-card"&gt;
+
+    &lt;div class="mini-icon migration-icon"&gt;
+      &lt;i class="fa fa-refresh"&gt;&lt;/i&gt;
+    &lt;/div&gt;
+
+    &lt;span&gt;Migration Data&lt;/span&gt;
+
+  &lt;/div&gt;
+
+&lt;/div&gt;
+          &lt;/div&gt;
+&lt;/div&gt;  
+          &lt;!-- HOW WE USE INFORMATION --&gt;
+&lt;div class="policy-card"&gt;
+
+    &lt;div class="policy-header"&gt;
+
+        &lt;span class="policy-icon"&gt;
+            &lt;i class="fa fa-cog"&gt;&lt;/i&gt;
+        &lt;/span&gt;
+
+        &lt;h2&gt;How We Use Information&lt;/h2&gt;
+
+    &lt;/div&gt;
+
+    &lt;div class="policy-body"&gt;
+
+        &lt;p class="section-intro"&gt;
+            We use the information we collect for various purposes, including:
+        &lt;/p&gt;
+
+        &lt;ul class="usage-list"&gt;
+
+            &lt;li&gt;
+                Providing, maintaining, and improving our data migration services
+            &lt;/li&gt;
+
+            &lt;li&gt;
+                Processing your transactions and managing your account
+            &lt;/li&gt;
+
+            &lt;li&gt;
+                Sending you technical notices, updates, security alerts, and support messages
+            &lt;/li&gt;
+
+            &lt;li&gt;
+                Responding to your comments, questions, and customer service requests
+            &lt;/li&gt;
+
+            &lt;li&gt;
+                Monitoring and analyzing usage patterns and trends to improve user experience
+            &lt;/li&gt;
+
+            &lt;li&gt;
+                Detecting, preventing, and addressing technical issues and security vulnerabilities
+            &lt;/li&gt;
+
+            &lt;li&gt;
+                Complying with legal obligations and enforcing our terms of service
+            &lt;/li&gt;
+
+        &lt;/ul&gt;
+
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+        &lt;/div&gt;
+
+      &lt;/div&gt;
+
+    &lt;/div&gt;
+
+&lt;/section&gt;  
+
+&lt;/div&gt;]]&gt;&lt;/template&gt;&lt;/sp_widget&gt;&lt;/record_update&gt;</payload>
+        <payload_hash>-1820340419</payload_hash>
+        <record_name>tracenow_privacy_policy</record_name>
+        <reverted_from/>
+        <source>bd9731d03b4d4b10092273c5e4e45af8</source>
+        <source_table>sys_update_set</source_table>
+        <state>previous</state>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-06-09 17:14:50</sys_created_on>
+        <sys_id>0960ee7693918f500af5f4e9b903d6f4</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_recorded_at>19ead6138aa0000001</sys_recorded_at>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-06-09 17:14:50</sys_updated_on>
+        <type>Widget</type>
+        <update_guid>49602a361c918f509b55ef9af2e4aec6</update_guid>
+        <update_guid_history>49602a361c918f509b55ef9af2e4aec6:-1820340419,cc7fdaf230918f5034e471d71cebf81a:546136670,37ee9eb29e918f50ce5040a2d79d4eea:-934540642,f85e9afed9518f50976857f25b1aa12a:-774930274,e1fb967e47518f506fd8b0830d237c1d:-1166480610,e6cb967eb3518f500b599eb3299ec365:878889619,ea8b527e2a518f50c1fb09b613d615a8:1779878345,25da1efaf1518f508222cd021c24be77:878889619,a0ba5eba1e518f506728b1afec780b19:-1677558821,aa1a1ebae7518f50b601fa8e882fdcbd:878889619,e5f996ba35518f50883bc02d75239f99:1395276877,fc5945b66a594f507e356bad6236763a:-795375586,c729cd766b594f50d38cd83c33408cff:2048587184,f5094d760f594f50782d5dd190eeb69a:-1040308475,dbe84d7696594f503ca855299b8a8610:1498379192,50b8c57630594f509552b86d8d394068:685793944,5198057648594f500b632e338954da27:-1450110956,33c7c5f280594f501a524ba1a394e7f4:-1908825319,4c7589fedb194f500b75ae9552bf4944:-1394777191,a86589fe64194f5063e55977acceebd6:1477732024,0f94c9be9b194f509c9d057d5bb64fd9:2025578680,1c9449bea5194f50d2781d4628283300:-1107796328,ad3441beb0194f509dc5ddb5de1d198c:1114743312,2624cd7e18194f50db92b243792641e2:-338256400,a114457ee5194f5084bdb8b71d0e61ea:-358963180,8b13453e93194f50abc313f346695908:664279476,99c20dfa3f194f5025fb4ea406a9b147:447083077,24eab83e07d54f501dfecd3d62575c97:-1302740834,473e80fa85914f508e4254db2b8d9f0a:659632737,aa0cccf68f914f50aad801f9e7bd9063:-1067461322,b7eb48f6ec914f50e0559de1d52bdfe9:-1103828816,7d7b4cb612914f5045df2de5d0403ad5:1391240284,ad1bc0b668914f50f6a18678dbeeba26:442575101,db894cb202914f50190887e28f7e8257:-108412365,3f3988b25e914f5085e5d772f2148083:-1591206873</update_guid_history>
+    </sys_update_version>
+    <sys_metadata_delete action="INSERT_OR_UPDATE">
+        <sys_audit_delete display_value="tracenow_privacy_policy">b092c33e93558f500af5f4e9b903d6fb</sys_audit_delete>
+        <sys_class_name>sys_metadata_delete</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-06-09 19:44:11</sys_created_on>
+        <sys_db_object display_value="" name="sp_widget">sp_widget</sys_db_object>
+        <sys_id>1a7ee6e0ef6344f488f22512b6588a10</sys_id>
+        <sys_metadata>502984b293914f500af5f4e9b903d6f2</sys_metadata>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>tracenow_privacy_policy</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_parent/>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_scope_delete display_value="">2ef2079d3a0a4f3ea6602966dfb43524</sys_scope_delete>
+        <sys_update_name>sp_widget_502984b293914f500af5f4e9b903d6f2</sys_update_name>
+        <sys_update_version display_value="sp_widget_502984b293914f500af5f4e9b903d6f2">0960ee7693918f500af5f4e9b903d6f4</sys_update_version>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-06-09 19:44:11</sys_updated_on>
+    </sys_metadata_delete>
+</record_update>

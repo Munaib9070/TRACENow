@@ -1,0 +1,1109 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller = function() {
+  var c = this;
+	c.status = sessionStorage.getItem('status');
+
+  /* ================= REFRESH ================= */
+  c.refreshData = function() {
+    c.server.update();
+  };
+
+  /* ================= TABS ================= */
+  c.tabs = ["All", "Success", "Failed", "Partial"];
+  c.activeTab = "All";
+
+  /* ================= SET TAB ================= */
+  c.setTab = function(tab) {
+    c.activeTab = tab;
+  };
+
+  /* ================= FILTER RECORDS ================= */
+c.getFilteredRecords = function() {
+
+    if (c.activeTab === "All") {
+        return c.data.records;
+    }
+
+    if (c.activeTab === "Success") {
+        return c.data.records.filter(function(rec) {
+            return rec.status === 'success';
+        });
+    }
+
+    if (c.activeTab === "Failed") {
+        return c.data.records.filter(function(rec) {
+            return rec.status === 'failed';
+        });
+    }
+
+    if (c.activeTab === "Partial") {
+        return c.data.records.filter(function(rec) {
+            //var rate = parseInt(rec.success_rate, 10);
+            //return rate > 0 && rate < 100;
+						return rec.status === 'partial';
+        });
+    }
+	console.log("data.records = " + JSON.stringify(c.data.records));
+    return c.data.records;
+};
+  /* ================= COUNT ================= */
+  c.getCount = function(tab) {
+    if (tab === "All") {
+      return c.data.totalRecords;
+    }
+		if(tab == "Success") {
+			return c.data.successRecords;
+		}
+		if(tab == "Failed") {
+			return c.data.failedRecords;
+		}
+		if(tab == "Partial") {
+			return c.data.partialRecords;
+		}
+  };
+
+  /* ================= SVG PROGRESS RING ================= */
+  setTimeout(function () {
+
+    var total = c.data.totalRecords || 1;
+    var success = c.data.successRecords || 0;
+
+    var percent = (success / total) * 100;
+
+    var circle = document.getElementById("progressBar");
+
+    if (!circle) return;
+
+    var radius = 70;
+    var circumference = 2 * Math.PI * radius;
+
+    // Start empty
+    circle.style.strokeDasharray = circumference;
+    circle.style.strokeDashoffset = circumference;
+
+    // Force reflow (important for animation)
+    circle.getBoundingClientRect();
+
+    var offset = circumference - (percent / 100) * circumference;
+
+    // Animate
+    circle.style.strokeDashoffset = offset;
+
+  }, 150);
+
+/* ================= MODAL ================= */
+c.showModal = false;
+c.selectedRecord = {};
+
+c.openModal = function(rec) {
+	sessionStorage.setItem('record_id', rec.rec_number);
+	c.results = c.data.records.filter(function(rec) {
+    return rec.rec_number === sessionStorage.getItem('record_id');
+		});
+
+  c.selectedRecord = rec;
+  c.showModal = true;
+};
+
+c.closeModal = function() {
+  c.showModal = false;
+};	
+};
+]]></client_script>
+        <controller_as>c</controller_as>
+        <css>/* ===== MAIN LAYOUT ===== */
+.sp-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f3f6f9;
+}
+
+/* Sidebar width */
+.sidebar-area {
+  flex-basis: 260px;
+  flex-shrink:0;
+  height:100%;
+}
+
+/* CONTENT */
+.content-area {
+  flex: 1;
+  padding: 20px 30px;
+}
+
+/* ================= HERO ================= */
+.mic-hero {
+  display: flex;
+  justify-content: space-between;
+  padding: 56px 48px;
+  border-radius: 18px;
+  color: #1e293b;
+  background: linear-gradient(135deg, #dce8ff 0%, #e8eeff 40%, #c8d9f9 70%, #b8ccf8 100%);
+  min-height: 280px;
+}
+.mic-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.75);
+  border: 1.5px solid rgba(17,106,248,0.2);
+  font-size: 12px;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+.mic-hero h1 {
+  font-size: 28px;
+  margin: 6px 0;
+  font-weight: 700;
+  color: #0f172a;
+}
+.mic-hero h1 span {
+  color: #116AF8;
+}
+.mic-hero p {
+  font-size: 14px;
+  color: #334155;
+  opacity: 1;
+  max-width: 520px;
+}
+.mic-breadcrumb {
+  margin-top: 12px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+.mic-hero-right {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+/* ================= BUTTONS ================= */
+.btn {
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn.primary {
+  background: #06b6d4;
+  color: #fff;
+}
+
+.btn.ghost {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+}
+
+.btn.small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+
+/* ================= CARD ================= */
+.mic-card {
+  background: #f8fafc;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+}
+
+/* ================= HEADER ================= */
+.mic-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mic-header .left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+
+
+.mic-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+/* TAGS */
+.tags {
+  margin-top: 6px;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-right: 6px;
+}
+
+.tag.success {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.tag.failed {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.tag.partial {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+/*.tag.warn {
+  background: #ffedd5;
+  color: #ea580c;
+}*/
+
+/* ================= STATS ================= */
+.mic-stats {
+  display: flex;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.stat {
+  flex: 1;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1.5px solid;
+  background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.4));
+  backdrop-filter: blur(6px);
+  transition: all 0.2s ease;
+}
+
+.stat span {
+  font-size: 13px;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.stat h3 {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* COLORS */
+.stat.blue {
+  border-color: #7dd3fc;
+  background: linear-gradient(135deg, #e0f2fe, #f0f9ff);
+}
+.stat.blue span { color: #0284c7; }
+.stat.blue h3 { color: #075985; }
+
+.stat.green {
+  border-color: #86efac;
+  background: linear-gradient(135deg, #dcfce7, #f0fdf4);
+}
+.stat.green span { color: #16a34a; }
+.stat.green h3 { color: #065f46; }
+
+.stat.red {
+  border-color: #fca5a5;
+  background: linear-gradient(135deg, #fee2e2, #fff1f2);
+}
+.stat.red span { color: #dc2626; }
+.stat.red h3 { color: #7f1d1d; }
+
+.stat.orange {
+  border-color: #fdba74;
+  background: linear-gradient(135deg, #ffedd5, #fff7ed);
+}
+.stat.orange span { color: #ea580c; }
+.stat.orange h3 { color: #7c2d12; }
+
+.stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+/* ================= DIVIDER ================= */
+.mic-card hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 18px 0;
+}
+
+/* ================= DETAILS ================= */
+.mic-details-box {
+  margin-top: 10px;
+  padding: 18px 20px;
+  border: 1px solid #e2e8f0; /* light grey border */
+  border-radius: 14px;
+  background: #f9fbfd; /* subtle light background */
+}
+
+/* keep your existing mic-details */
+.mic-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #334155;
+}
+
+.mic-details .col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.mic-details b {
+  font-weight: 600;
+}
+
+/* PILLS */
+.pill {
+  display: inline-block;
+  background: #e0f2fe;
+  color: #0284c7;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-right: 6px;
+  font-size: 11px;
+}
+
+/* ================= PROGRESS ================= */
+.mic-progress {
+  margin-top: 34px;
+  display: flex;
+  justify-content: center;
+}
+
+/* wrapper */
+.progress-wrap {
+  position: relative;
+  width: 160px;
+  height: 160px;
+}
+
+/* rotate svg */
+.progress-wrap svg {
+  transform: rotate(-90deg);
+}
+
+/* background circle */
+.progress-wrap circle:first-child {
+  fill: none;
+  stroke: #e5e7eb;
+  stroke-width: 10;
+}
+
+/* animated circle */
+#progressBar {
+  fill: none;
+  stroke: #06b6d4;
+  stroke-width: 10;
+  stroke-linecap: round;
+
+  transition: stroke-dashoffset 1.4s ease-in-out;
+
+  /* glow */
+  filter: drop-shadow(0 0 6px rgba(6,182,212,0.4));
+}
+
+/* center text */
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+// Table records
+/* ================= RECORDS CARD ================= */
+.records-card {
+  margin-top: 30px;
+  background: #f8fafc;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+}
+
+/* HEADER */
+.records-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.records-header p {
+  margin: 4px 0 16px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* ================= TABS ================= */
+.records-tabs {
+  display: flex;
+  background: #e5e7eb;
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 18px;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* ================= TABLE ================= */
+.records-table {
+  width: 100%;
+}
+
+/* HEADER ROW */
+.table-head {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 2fr 1fr 1fr;
+  font-size: 12px;
+  color: #64748b;
+  padding: 10px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* ROW */
+.table-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 2fr 1fr 1fr;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: center;
+  font-size: 13px;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.bold {
+  font-weight: 600;
+}
+
+/* ================= STATUS ================= */
+.status {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.status.success {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.status.failed {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.status.skipped {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* ================= ACTION ================= */
+.action {
+  color: #0284c7;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.retry {
+  color: #ea580c;
+  margin-left: 10px;
+}
+
+/* ================= MODAL ================= */
+.mic-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 999;
+}
+
+.mic-modal-overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.mic-modal-box {
+  position: relative;
+  width: 900px;
+  max-width: 90%;
+  margin: 60px auto;
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 20px;
+  z-index: 1000;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.modal-close:hover {
+  color: #0f172a;
+}
+
+/* HEADER */
+.mic-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* DETAILS GRID */
+.mic-modal-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.mic-modal-details .box {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.mic-modal-details span {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.mic-modal-details p {
+  margin: 4px 0 0;
+  font-weight: 500;
+}
+
+/* LOGS */
+.mic-modal-logs {
+  margin-top: 20px;
+}
+
+.log-box {
+  background: #0f172a;
+  color: #22c55e;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  max-height: 200px;
+  overflow: auto;
+}
+/* migration modal */
+.status-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  background-color: white;
+  font-weight: bold;
+}
+
+.status-icon.success {
+  background: #2EAA32;
+}
+
+.status-icon.partial {
+  background: #f59e0b;
+}
+
+.status-icon.failed {
+  background: #ef4444;
+}
+
+
+
+.error-box {
+  margin-top: 20px;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.error-box.failed {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.error-box.partial {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+.error-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+}
+
+.error-box.failed .error-icon {
+  background: #ef4444;
+}
+
+.error-box.partial .error-icon {
+  background: #f59e0b;
+}
+</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>false</has_preview>
+        <id/>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link>
+        <name>tracenow_deep_down</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function() {
+
+  data.side = $sp.getWidget('tracenow_sidebar');
+
+  //data.total = 247;
+  data.successRecords = 0;
+  data.failed = 0;
+  data.skipped = 0;
+	data.records = [];
+	data.tables = [];
+	data.all_records = [];
+	data.migration_id = $sp.getParameter('migration_id');
+	var totalCount = 0, insertedCount = 0, updatedCount = 0, successCount = 0, failedCount = 0, partialCount = 0, table = '';
+	console.log('migration_id = ' + data.migration_id);
+	
+	
+	//get migration data from table
+	var gr = new GlideRecord('x_sysus_tracenow_migration_details');
+	gr.addQuery('sys_created_by', gs.getUserName());
+	gr.addQuery('number', data.migration_id);
+	gr.query();
+	
+	while(gr.next()) {
+		data.targetInstance = gr.getValue('target_instance');
+		data.source_instance = gr.getValue('instance_url');
+		data.duration = gr.getValue('duration');
+		data.completedAt = gr.getValue('sys_updated_on');
+		data.current_user = gr.getDisplayValue('sys_created_by');
+		//count total successful migrated records 
+		mig_recs = gr.getValue('table')
+		console.log('mig_recs =' + mig_recs);
+		var new_mig_recs = JSON.parse(mig_recs);
+		data.all_records.push(new_mig_recs);
+		for (var i = 0; i < new_mig_recs.length; i++) {
+
+				var rec = new_mig_recs[i];
+
+				totalCount++;
+
+				if (data.tables.indexOf(rec.table) === -1) {
+						data.tables.push(rec.table);
+				}
+
+				console.log('table = ' + rec.table);
+
+				if (rec.status === "success") {
+
+						successCount++;
+
+						if (rec.action === "updated") {
+								updatedCount++;
+						} else if (rec.action === "inserted") {
+								insertedCount++;
+						}
+
+				} else if (rec.status === "failed") {
+
+						failedCount++;
+
+				} else {
+
+						partialCount++;
+				}
+		}
+	}
+		data.totalRecords = totalCount;
+		data.successRecords = successCount;
+		data.failedRecords = failedCount;
+		data.partialRecords = partialCount;
+		console.log('data.all_records = ' + JSON.stringify(data.all_records));
+		(data.all_records || []).forEach(function(group) {
+
+				if (!Array.isArray(group)) return;
+
+				group.forEach(function(rec) {
+
+						data.records.push({
+								table: rec.table || '',
+								source_id: rec.sys_id || '',
+								state: rec.state || '',
+								rec_number: rec.number || '',
+								short_description: rec.short_description || '',
+								status: rec.status || '',
+								action: rec.action || ''
+						});
+
+				});
+
+		});
+	console.log('records = ' + JSON.stringify(data.records));
+
+//status logic for the top
+	if (data.failedRecords === data.totalRecords) {
+    data.status = "Failed";
+}
+else if (data.successRecords === data.totalRecords) {
+    data.status = "Success";
+}
+else {
+    data.status = "Partial";
+}
+})();
+]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-05-20 10:04:31</sys_created_on>
+        <sys_id>62fdf1103b8d4b10092273c5e4e45a42</sys_id>
+        <sys_mod_count>36</sys_mod_count>
+        <sys_name>tracenow_deep_down</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_widget_62fdf1103b8d4b10092273c5e4e45a42</sys_update_name>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-06-09 10:30:06</sys_updated_on>
+        <template><![CDATA[<div class="sp-layout">
+
+  <!-- ================= SIDEBAR ================= -->
+  <div class="sidebar-area">
+    <sp-widget widget="data.side"></sp-widget>
+  </div>
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <div class="content-area">
+
+    <!-- HERO -->
+    <div class="mic-hero">
+      <div class="mic-hero-left">
+        <div class="mic-badge">✦ Migration Intelligence Center</div>
+
+        <h1>Advanced Analytics & Drill-Down</h1>
+        <p>
+          Deep dive into migration performance with interactive visualizations and granular
+          record-level insights
+        </p>
+
+        <div class="mic-breadcrumb">
+          <a href="/_tracenow?id=tracenow_analytics">Analytics Overview </a>›<a href="/_tracenow?id=tracenow_migration_details&status={{c.status}}"> Migration Runs</a> › <b>{{c.data.migration_id}}</b>
+        </div>
+      </div>
+
+      <!--<div class="mic-hero-right">
+        <button class="btn ghost">Export Report</button>
+        <button class="btn primary">Refresh Data</button>
+      </div>-->
+    </div>
+
+
+    <!-- CARD -->
+    <div class="mic-card">
+
+      <!-- HEADER -->
+      <div class="mic-header">
+        <div class="left">
+          <div class="status-icon"
+             ng-class="{
+               'success': c.data.status === 'Success',
+               'failed': c.data.status === 'Failed',
+               'partial': c.data.status === 'Partial'
+             }">
+
+          <i class="fa"
+             ng-class="{
+               'fa-check-circle': c.data.status === 'Success',
+               'fa-times-circle': c.data.status === 'Failed',
+               'fa-exclamation-triangle': c.data.status === 'Partial'
+             }"></i>
+
+        </div>
+          
+          <div>
+            <h2>{{c.data.migration_id}}</h2>
+            <div class="tags">
+              <span class="tag"
+      ng-class="{
+        'success': c.data.status === 'Success',
+        'failed': c.data.status === 'Failed',
+        'partial': c.data.status === 'Partial'
+      }">
+  {{c.data.status}}
+</span>
+              <!--<span class="tag warn">Multi-Table</span>-->
+            </div>
+          </div>
+        </div>
+
+        <!--<button class="btn ghost small">Export Logs</button>-->
+      </div>
+
+      <!-- STATS -->
+      <div class="mic-stats">
+        <div class="stat blue"><span>Total Records</span><h3>{{c.data.totalRecords}}</h3></div>
+        <div class="stat green"><span>Successful</span><h3>{{c.data.successRecords}}</h3></div>
+        <div class="stat red"><span>Failed</span><h3>{{c.data.failedRecords}}</h3></div>
+        <!--<div class="stat orange"><span>Skipped</span><h3>0</h3></div>-->
+      </div>
+
+      <!-- DETAILS -->
+      <div class="mic-details-box">
+        <div class="mic-details">
+
+          <div class="col">
+            <div>]]>📅<![CDATA[ <b>Timestamp</b><br>{{c.data.completedAt}}</div>
+            <div>⏱ <b>Duration</b><br>{{c.data.duration}}</div>
+            <div>]]>👤<![CDATA[ <b>Triggered By</b><br>{{c.data.current_user}}</div>
+          </div>
+
+          <div class="col">
+            <div>]]>🗄<![CDATA[ <b>Source Instance</b><br>{{c.data.source_instance}}</div>
+            <div>]]>🧩<![CDATA[ <b>Target Instance</b><br>{{c.data.targetInstance}}</div>
+            <div>]]>📦<![CDATA[ <b>Tables</b><br>
+              <span class="pill" ng-repeat="table in c.data.tables">{{table}}</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- PROGRESS -->
+      <div class="mic-progress">
+        <div class="progress-wrap">
+
+          <svg width="160" height="160">
+            <circle cx="80" cy="80" r="70"></circle>
+            <circle id="progressBar" cx="80" cy="80" r="70"></circle>
+          </svg>
+
+          <div class="progress-text">
+            {{c.data.successRecords}}/{{c.data.totalRecords}}
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================= RECORDS ================= -->
+      <div class="records-card">
+
+        <!-- HEADER -->
+        <div class="records-header">
+          <div>
+            <h3>]]>📄<![CDATA[ Migration Records</h3>
+            <p>Detailed breakdown of individual record migration status</p>
+          </div>
+        </div>
+
+        <!-- TABS -->
+        <div class="records-tabs">
+          <div 
+            class="tab" 
+            ng-repeat="tab in c.tabs"
+            ng-class="{'active': c.activeTab === tab}"
+            ng-click="c.setTab(tab)"
+          >
+            {{tab}} ({{c.getCount(tab)}})
+          </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="records-table">
+
+          <div class="table-head">
+            <div>Record</div>
+            <div>Table</div>
+            <div>Record ID</div>
+            <div>Status</div>
+            <div>Actions</div>
+          </div>
+
+          <div 
+            class="table-row" 
+            ng-repeat="rec in c.getFilteredRecords()"
+          >
+            <div class="bold">{{rec.rec_number}}</div>
+            <div><span class="pill">{{rec.table}}</span></div>
+            <div>{{rec.source_id}}</div>
+            <div>{{rec.status}}</div>
+
+          
+
+
+            <!-- ✅ CLEAN ACTION -->
+            <div class="action" ng-click="c.openModal(rec)">]]>👁<![CDATA[ View</div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= MODAL ================= -->
+<div class="mic-modal" ng-if="c.showModal">
+
+  <div class="mic-modal-overlay" ng-click="c.closeModal()"></div>
+
+  <div class="mic-modal-box" ng-repeat="rec in c.results">
+
+    <!-- HEADER -->
+    <div class="mic-modal-header">
+      <div class="left">
+        <div class="status-icon success" ng-if="c.status == 'Success'">✔</div>
+				<div class="status-icon failed" ng-if="c.status == 'Failed'">✖</div>
+				<div class="status-icon partial" ng-if="c.status == 'Partial'">⚠</div>
+        <div>
+          <h2>{{c.selectedRecord.rec_number}}</h2>
+          <div class="tags">
+            <span class="tag"
+                ng-class="{
+                  'success': c.selectedRecord.status === 'Success',
+                  'failed': c.selectedRecord.status === 'Failed',
+                  'partial': c.selectedRecord.status === 'Partial'
+                }">
+
+            {{c.selectedRecord.status}}
+
+          </span>
+            <span class="tag warn">{{c.selectedRecord.table}}</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="modal-close" ng-click="c.closeModal()">✕</button>
+    </div>
+
+    <!-- DETAILS -->
+    <div class="mic-modal-details" ng>
+
+      <div class="box">
+        <span>Record ID</span>
+        <p>{{c.selectedRecord.source_id}}</p>
+      </div>
+
+      <div class="box">
+        <span>State</span>
+        <p>{{rec.state}}</p>
+      </div>
+
+      <div class="box">
+        <span>Migrated At</span>
+        <p>{{c.data.completedAt}}</p>
+      </div>
+
+      <div class="box">
+        <span>Short Description</span>
+        <p>{{rec.short_description}}</p>
+      </div>
+
+      <div class="box">
+        <span>Migration Duration</span>
+        <p>{{c.data.duration}}</p>
+      </div>
+
+      <div class="box">
+        <span>Record ID</span>
+        <p>{{c.selectedRecord.rec_number}}</p>
+      </div>
+
+    </div>
+<!-- FAILED ERROR BOX -->
+<div class="error-box failed" ng-if="c.status == 'Failed'">
+<div class="error-icon">✖</div>
+<div>
+<h4>Error Details</h4>
+<p>{{rec.reason}}</p>
+</div>
+</div>
+ 
+    <!-- PARTIAL WARNING BOX -->
+<div class="error-box partial" ng-if="c.status == 'Partial'">
+<div class="error-icon">⚠</div>
+<div>
+<h4>Partial Migration</h4>
+<p>{{rec.reason}}</p>
+</div>
+</div>
+    <!-- LOGS -->
+    <div class="mic-modal-logs">
+      <h4>]]>📄<![CDATA[ Migration Log</h4>
+
+      <div class="log-box">
+        <pre>
+[14:32:45] INFO: Starting record migration for {{c.selectedRecord.rec_number}}
+[14:32:46] DEBUG: Fetching source record
+[14:32:47] INFO: Field mappings validated successfully
+[14:32:48] INFO: Record created successfully
+[14:32:49] INFO: Migration completed
+        </pre>
+      </div>
+    </div>
+
+  </div>
+</div>
+]]></template>
+    </sp_widget>
+</record_update>

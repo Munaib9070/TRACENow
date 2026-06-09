@@ -1,0 +1,1649 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller = function($scope, spUtil) {
+
+    var c = this;
+
+    c.files = [];
+    c.submitting = false;
+
+    /* =====================================
+       FIELD ERRORS
+    ===================================== */
+
+    c.errors = {};
+
+    /* =====================================
+       HANDLE FILES
+    ===================================== */
+
+    c.handleFiles = function(files) {
+
+        $scope.$apply(function() {
+
+            for (var i = 0; i < files.length; i++) {
+
+                c.files.push({
+                    name: files[i].name,
+                    raw: files[i]
+                });
+
+            }
+
+        });
+
+    };
+
+    /* =====================================
+       REMOVE FILE
+    ===================================== */
+
+    c.removeFile = function(index) {
+
+        c.files.splice(index, 1);
+
+    };
+
+    /* =====================================
+       VALIDATE FORM
+    ===================================== */
+
+    c.validateForm = function() {
+
+        c.errors = {};
+
+        if (!c.data.full_name) {
+            c.errors.full_name = "Please fill this field";
+        }
+
+        if (!c.data.email) {
+            c.errors.email = "Please fill this field";
+        }
+
+        if (!c.data.issue_type) {
+            c.errors.issue_type = "Please select an issue type";
+        }
+
+        if (!c.data.priority) {
+            c.errors.priority = "Please select a priority";
+        }
+
+        if (!c.data.subject) {
+            c.errors.subject = "Please fill this field";
+        }
+
+        if (!c.data.description) {
+            c.errors.description = "Please fill this field";
+        }
+
+        return Object.keys(c.errors).length === 0;
+
+    };
+
+    /* =====================================
+       SUBMIT FORM
+    ===================================== */
+
+    c.submitRequest = function() {
+
+        /* VALIDATE */
+        if (!c.validateForm()) {
+
+            spUtil.addErrorMessage(
+                "Please fill all required fields."
+            );
+
+            return;
+        }
+
+        c.submitting = true;
+
+        c.data.action = "submit_support_request";
+
+        c.server.update().then(function(response) {
+
+            c.submitting = false;
+
+            if (response.data.sys_id) {
+
+                spUtil.addInfoMessage(
+                    "Support request submitted successfully."
+                );
+
+                uploadAttachments(response.data.sys_id);
+
+                clearForm();
+
+            } else {
+
+                spUtil.addErrorMessage(
+                    "Failed to submit request."
+                );
+
+            }
+
+        });
+
+    };
+
+    /* =====================================
+       UPLOAD ATTACHMENTS
+    ===================================== */
+
+    function uploadAttachments(recordSysId) {
+
+        if (!c.files.length)
+            return;
+
+        var formData = new FormData();
+
+        angular.forEach(c.files, function(fileObj) {
+
+            formData.append(
+                "attachFile",
+                fileObj.raw
+            );
+
+        });
+
+        var xhr = new XMLHttpRequest();
+
+        xhr.open(
+            "POST",
+            "/api/now/attachment/upload" +
+            "?table_name=x_sysus_tracenow_support_request" +
+            "&table_sys_id=" + recordSysId,
+            true
+        );
+
+        xhr.setRequestHeader(
+            "X-UserToken",
+            window.g_ck
+        );
+
+        xhr.send(formData);
+
+    }
+
+    /* =====================================
+       CLEAR FORM
+    ===================================== */
+
+    function clearForm() {
+
+        /* RESET FORM DATA */
+				
+        c.data = {};
+
+        /* RESET ERRORS */
+        c.errors = {};
+
+        /* RESET FILES */
+        c.files = [];
+
+        /* RESET FILE INPUT */
+        var fileInput = document.querySelector(
+            '.tn-upload-box input[type="file"]'
+        );
+
+        if (fileInput) {
+            fileInput.value = "";
+        }
+
+        /* REFRESH UI */
+        $scope.$applyAsync();
+
+    }
+
+};]]></client_script>
+        <controller_as>c</controller_as>
+        <css>.tn-page-layout {
+    display: flex;
+    min-height: 100vh;
+   position:relative;
+}
+
+.tn-left-sidebar {
+   flex-basis: 260px;
+  flex-shrink:0;
+  height:100%;
+  position:sticky;
+  top: 0;
+
+}
+
+/* ========================================
+   ROOT
+======================================== */
+
+.tn-support-page {
+    background: #f5f7fb;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #08142b;
+}
+
+/* ========================================
+   CONTAINER
+======================================== */
+
+.tn-container {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* ========================================
+   HERO
+======================================== */
+
+.tn-hero {
+    position: relative;
+    overflow: hidden;
+    padding: 64px 0 72px;
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(155,192,252,0.45),
+            transparent 34%
+        ),
+        linear-gradient(
+            135deg,
+            #116AF8 0%,
+            #0A50F5 55%,
+            #0847DC 100%
+        );
+}
+
+/* glow */
+.tn-hero:before {
+    content: "";
+    position: absolute;
+    width: 620px;
+    height: 620px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    top: -280px;
+    left: -180px;
+    filter: blur(30px);
+}
+
+.tn-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(255,255,255,0.02),
+            rgba(255,255,255,0)
+        );
+}
+
+/* ========================================
+   BRAND
+======================================== */
+
+.tn-brand {
+    display: flex;
+    align-items: center;
+    margin-bottom: 56px;
+    position: relative;
+    z-index: 2;
+}
+
+.tn-brand-icon {
+
+    //width: 340px;
+    height: auto;
+
+    display: flex;
+    align-items: center;
+
+    position: relative;
+
+    transition: all 0.3s ease;
+}
+
+.tn-brand-icon svg {
+
+    width: 100%;
+    height: auto;
+
+    display: block;
+
+    filter:
+        drop-shadow(0 6px 20px rgba(0,0,0,0.18));
+
+    opacity: 0.98;
+}
+
+@media screen and (max-width: 768px) {
+
+    .tn-brand {
+        margin-bottom: 40px;
+    }
+
+    .tn-brand-icon {
+        width: 240px;
+    }
+}
+
+.tn-brand-icon:hover {
+    transform: translateY(-2px) scale(1.01);
+}
+
+/*.tn-brand-text {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}*/
+
+/* ========================================
+   HERO CONTENT
+======================================== */
+
+.tn-hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 760px;
+}
+
+.tn-hero-content h1 {
+    margin: 0 0 24px;
+    color: #ffffff;
+    font-size: 74px;
+    line-height: 1.02;
+    font-weight: 800;
+    letter-spacing: -2px;
+}
+
+.tn-hero-content p {
+    margin: 0;
+    color: rgba(255,255,255,0.82);
+    font-size: 21px;
+    line-height: 1.8;
+    max-width: 760px;
+}
+
+/* ========================================
+   STATS
+======================================== */
+
+.tn-stats {
+    display: flex;
+    gap: 24px;
+    margin-top: 52px;
+    flex-wrap: wrap;
+}
+
+.tn-stat-card {
+    width: 220px;
+    min-height: 118px;
+
+    padding: 22px 24px;
+
+    border-radius: 20px;
+
+    background: rgba(255,255,255,0.10);
+
+    border: 1px solid rgba(255,255,255,0.16);
+
+    backdrop-filter: blur(10px);
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,0.08);
+}
+
+.tn-stat-card h2 {
+    margin: 0 0 10px;
+    color: #ffffff;
+    font-size: 52px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -2px;
+}
+
+.tn-stat-card span {
+    color: rgba(255,255,255,0.82);
+    font-size: 17px;
+    font-weight: 500;
+}
+
+/* ========================================
+   TOPICS SECTION
+======================================== */
+
+.tn-topics-section {
+    padding: 70px 0 90px;
+}
+
+.tn-section-title {
+    margin: 0 0 34px;
+    color: #08142b;
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+/* ========================================
+   GRID
+======================================== */
+
+.tn-topic-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+}
+
+/* ========================================
+   CARD
+======================================== */
+
+.tn-topic-card {
+    background: #ffffff;
+
+    border-radius: 22px;
+
+    padding: 34px 30px;
+
+    border: 1px solid #e8edf5;
+
+    transition: all 0.25s ease;
+
+    box-shadow:
+        0 4px 14px rgba(8,20,43,0.04);
+}
+
+.tn-topic-card:hover {
+    transform: translateY(-6px);
+
+    box-shadow:
+        0 18px 40px rgba(8,20,43,0.10);
+}
+
+.tn-topic-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #F4F8FF;
+
+    color: #116AF8;
+
+    font-size: 26px;
+
+    margin-bottom: 28px;
+}
+
+.tn-topic-card h3 {
+    margin: 0 0 16px;
+
+    color: #08142b;
+
+    font-size: 30px;
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -0.6px;
+}
+
+.tn-topic-card p {
+    margin: 0;
+
+    color: #516074;
+
+    font-size: 18px;
+    line-height: 1.7;
+}
+
+/* ========================================
+   RESPONSIVE
+======================================== */
+
+@media screen and (max-width: 1100px) {
+
+    .tn-topic-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .tn-hero-content h1 {
+        font-size: 58px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+
+    .tn-hero {
+        padding: 50px 0 60px;
+    }
+
+    .tn-brand {
+        margin-bottom: 40px;
+    }
+
+    .tn-hero-content h1 {
+        font-size: 46px;
+    }
+
+    .tn-hero-content p {
+        font-size: 18px;
+        line-height: 1.7;
+    }
+
+    .tn-stats {
+        flex-direction: column;
+    }
+
+    .tn-stat-card {
+        width: 100%;
+    }
+
+    .tn-topic-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tn-section-title {
+        font-size: 34px;
+    }
+
+    .tn-topic-card h3 {
+        font-size: 26px;
+    }
+}
+
+/* ========================================
+   SUPPORT FORM SECTION
+======================================== */
+
+.tn-support-form-section {
+    padding: 0 0 90px;
+}
+
+/* ========================================
+   LAYOUT
+======================================== */
+
+.tn-form-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+/* ========================================
+   FORM CARD
+======================================== */
+
+.tn-form-card {
+    background: #ffffff;
+    border-radius: 22px;
+    overflow: hidden;
+
+    border: 1px solid #e5eaf2;
+
+    box-shadow:
+        0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+/* ========================================
+   HEADER
+======================================== */
+
+.tn-form-header {
+    background: linear-gradient(
+        135deg,
+        #116AF8 0%,
+        #0A50F5 100%
+    );
+
+    padding: 28px 30px;
+
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.tn-form-header-icon {
+    width: 44px;
+    height: 44px;
+
+    border-radius: 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255,255,255,0.14);
+
+    color: #ffffff;
+
+    font-size: 20px;
+}
+
+.tn-form-header h2 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+/* ========================================
+   BODY
+======================================== */
+
+.tn-form-body {
+    padding: 30px;
+}
+
+/* ========================================
+   GRID
+======================================== */
+
+.tn-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+}
+
+/* ========================================
+   FIELD
+======================================== */
+
+.tn-field {
+    margin-bottom: 22px;
+}
+
+.tn-field label {
+    display: block;
+    margin-bottom: 10px;
+
+    color: #10213a;
+
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.tn-field label span {
+    color: #ff4f67;
+}
+
+.tn-field input,
+.tn-field select,
+.tn-field textarea {
+    width: 100%;
+
+    border: 1px solid #cfd8e6;
+
+    background: #ffffff;
+
+    border-radius: 16px;
+
+    padding: 15px 16px;
+
+    font-size: 16px;
+
+    color: #0f172a;
+
+    transition: all 0.2s ease;
+
+    outline: none;
+
+    box-shadow: none;
+}
+
+.tn-field textarea {
+    resize: none;
+    min-height: 170px;
+    line-height: 1.7;
+}
+
+.tn-field input::placeholder,
+.tn-field textarea::placeholder {
+    color: #98a2b3;
+}
+
+.tn-field input:focus,
+.tn-field select:focus,
+.tn-field textarea:focus {
+    border-color: #116AF8;
+
+    box-shadow: 0 0 0 4px rgba(17,106,248,0.10);
+}
+
+/* ========================================
+   UPLOAD
+======================================== */
+
+.tn-upload-box {
+    position: relative;
+
+    border: 1.5px dashed #116AF8;
+
+    background: #F8FBFF;
+
+    border-radius: 18px;
+
+    height: 66px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+
+    color: #10213a;
+
+    font-size: 15px;
+    font-weight: 500;
+
+    cursor: pointer;
+
+    overflow: hidden;
+}
+
+.tn-upload-box i {
+    color: #116AF8;
+    font-size: 20px;
+}
+
+.tn-upload-box input {
+    position: absolute;
+    inset: 0;
+
+    opacity: 0;
+    cursor: pointer;
+}
+
+.tn-upload-note {
+    margin-top: 10px;
+
+    color: #7a869a;
+
+    font-size: 12px;
+}
+/* ========================================
+   UPLOAD CONTENT
+======================================== */
+
+.tn-upload-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+/* ========================================
+   ACTIVE STATE
+======================================== */
+
+.tn-upload-box.has-files {
+    background: #f0fcf7;
+    border-color: #15a46b;
+}
+
+/* ========================================
+   FILE LIST
+======================================== */
+
+.tn-file-list {
+    margin-top: 16px;
+}
+
+.tn-file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 14px 16px;
+
+    background: #ffffff;
+
+    border: 1px solid #e3e8f1;
+
+    border-radius: 14px;
+
+    margin-bottom: 12px;
+
+    transition: all 0.2s ease;
+}
+
+.tn-file-item:hover {
+    background: #f8fafc;
+}
+
+.tn-file-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.tn-file-left i {
+    color: #116AF8;
+    font-size: 18px;
+}
+
+.tn-file-name {
+    color: #10213a;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ========================================
+   REMOVE BUTTON
+======================================== */
+
+.tn-remove-file {
+    width: 32px;
+    height: 32px;
+
+    border: none;
+    outline: none;
+
+    border-radius: 10px;
+
+    background: #fff1f1;
+
+    color: #ff4b4b;
+
+    transition: all 0.2s ease;
+}
+
+.tn-remove-file:hover {
+    background: #ffe1e1;
+}
+/* ========================================
+   BUTTON
+======================================== */
+
+.tn-submit-btn {
+    width: 100%;
+    height: 58px;
+
+    border: none;
+    outline: none;
+
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #116AF8 0%,
+            #0A50F5 100%
+        );
+
+    color: #ffffff;
+
+    font-size: 18px;
+    font-weight: 700;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+
+    transition: all 0.25s ease;
+
+    box-shadow:
+        0 12px 24px rgba(17,106,248,0.25);
+}
+
+.tn-submit-btn:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 16px 30px rgba(17,106,248,0.32);
+}
+
+/* ========================================
+   RIGHT PANEL
+======================================== */
+
+.tn-side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+/* ========================================
+   SIDE CARD
+======================================== */
+
+.tn-side-card,
+.tn-critical-card {
+    background: #ffffff;
+
+    border-radius: 22px;
+
+    padding: 24px;
+
+    border: 1px solid #e7ecf3;
+
+    box-shadow:
+        0 8px 24px rgba(15,23,42,0.05);
+}
+
+.tn-side-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    margin-bottom: 28px;
+
+    color: #08142b;
+
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.tn-side-title i {
+    color: #116AF8;
+    font-size: 18px;
+}
+
+/* ========================================
+   HELP ITEMS
+======================================== */
+
+.tn-help-item {
+    display: flex;
+    gap: 14px;
+
+    margin-bottom: 26px;
+}
+
+.tn-help-item:last-child {
+    margin-bottom: 0;
+}
+
+.tn-help-icon {
+    width: 42px;
+    height: 42px;
+
+    border-radius: 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #F4F8FF;
+
+    color: #116AF8;
+
+    flex-shrink: 0;
+}
+
+.tn-help-item h4 {
+    margin: 0 0 6px;
+
+    color: #08142b;
+
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.tn-help-item p {
+    margin: 0;
+
+    color: #667085;
+
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* ========================================
+   RESPONSE CARD
+======================================== */
+
+.tn-response-card {
+    background:
+        linear-gradient(
+            135deg,
+            #116AF8 0%,
+            #0A50F5 100%
+        );
+
+    border-radius: 22px;
+
+    padding: 24px;
+
+    color: #ffffff;
+
+    box-shadow:
+        0 12px 28px rgba(17,106,248,0.28);
+}
+
+.tn-response-icon {
+    width: 42px;
+    height: 42px;
+
+    border-radius: 50%;
+
+    border: 2px solid rgba(255,255,255,0.7);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-bottom: 22px;
+
+    font-size: 20px;
+}
+
+.tn-response-card h3 {
+    margin: 0 0 14px;
+
+    font-size: 28px;
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+.tn-response-card p {
+    margin: 0 0 18px;
+
+    color: rgba(255,255,255,0.88);
+
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+.tn-response-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    color: #ffffff;
+
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ========================================
+   CRITICAL CARD
+======================================== */
+
+.tn-critical-card {
+    background: #fff8f8;
+    border: 1px solid #ffc9c9;
+}
+
+.tn-critical-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    margin-bottom: 18px;
+}
+
+.tn-critical-icon {
+    width: 42px;
+    height: 42px;
+
+    border-radius: 14px;
+
+    background: #ffe9e9;
+
+    color: #ff3b3b;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 18px;
+}
+
+.tn-critical-card h3 {
+    margin: 0;
+
+    color: #c62828;
+
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.tn-critical-card p {
+    margin: 0 0 18px;
+
+    color: #d32f2f;
+
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.tn-critical-email {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    color: #ff1f1f;
+
+    font-size: 15px;
+    font-weight: 600;
+}
+
+/* ========================================
+   RESPONSIVE
+======================================== */
+
+@media screen and (max-width: 1024px) {
+
+    .tn-form-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media screen and (max-width: 768px) {
+
+    .tn-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tn-form-body {
+        padding: 24px;
+    }
+
+    .tn-submit-btn {
+        font-size: 16px;
+    }
+
+    .tn-response-card h3 {
+        font-size: 24px;
+    }
+}
+/* ========================================
+   FIELD ERROR
+======================================== */
+
+.tn-error {
+    margin-top: 8px;
+
+    color: #e53935;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* ========================================
+   INVALID FIELD
+======================================== */
+
+.tn-field input.ng-invalid-field,
+.tn-field select.ng-invalid-field,
+.tn-field textarea.ng-invalid-field {
+    border-color: #e53935;
+    background: #fff8f8;
+}</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>true</has_preview>
+        <id/>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link>
+        <name>tracenow_contact</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function() {
+    data.side= $sp.getWidget('tracenow_sidebar');
+    /* =====================================
+       SUBMIT REQUEST
+    ===================================== */
+
+    if (input && input.action == "submit_support_request") {
+
+        var gr = new GlideRecord(
+            "x_sysus_tracenow_support_request"
+        );
+
+        gr.initialize();
+
+        gr.full_name = input.full_name;
+        gr.email = input.email;
+        gr.issue_type = input.issue_type;
+        gr.priority = input.priority;
+        gr.subject = input.subject;
+        gr.description = input.description;
+
+        gr.state = "new";
+
+        var sysId = gr.insert();
+
+        data.sys_id = sysId;
+
+    }
+
+})();]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-05-22 10:33:25</sys_created_on>
+        <sys_id>ddd7dc4d3b01cf10092273c5e4e45a25</sys_id>
+        <sys_mod_count>60</sys_mod_count>
+        <sys_name>tracenow_contact</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_widget_ddd7dc4d3b01cf10092273c5e4e45a25</sys_update_name>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-06-09 10:45:40</sys_updated_on>
+        <template><![CDATA[<div class="tn-page-layout">
+  <div class="tn-left-sidebar">
+        <sp-widget widget="data.side"></sp-widget>
+    </div>
+<div class="tn-support-page">
+  <!-- HERO -->
+  <section class="tn-hero">
+    <div class="tn-hero-overlay"></div>
+
+    <div class="tn-container">
+      <!-- BRAND -->
+      <div class="tn-brand">
+        <div class="tn-brand-icon">
+          <svg width="340" height="98" viewBox="0 0 630 98" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M169.886 88V27.1047H151.047V17.114H199.573V27.1047H181.019V88H169.886ZM201.253 88V36.5244H211.529V46.8956L210.577 45.3733C211.719 42.0113 213.559 39.6009 216.096 38.1419C218.633 36.6196 221.678 35.8584 225.23 35.8584H228.37V45.6587H223.898C220.346 45.6587 217.46 46.7688 215.239 48.9889C213.083 51.1456 212.004 54.2538 212.004 58.3135V88H201.253ZM251.14 89.1418C247.651 89.1418 244.574 88.5392 241.91 87.334C239.309 86.0653 237.28 84.3526 235.821 82.1959C234.362 79.9758 233.632 77.375 233.632 74.3937C233.632 71.6027 234.235 69.0971 235.44 66.8769C236.709 64.6568 238.643 62.7855 241.244 61.2631C243.845 59.7408 247.112 58.6624 251.044 58.0281L268.933 55.0785V63.5467L253.138 66.306C250.283 66.8135 248.19 67.7333 246.858 69.0654C245.526 70.334 244.86 71.9833 244.86 74.0131C244.86 75.9795 245.589 77.597 247.048 78.8657C248.571 80.0709 250.505 80.6735 252.852 80.6735C255.77 80.6735 258.308 80.0392 260.464 78.7705C262.684 77.5019 264.397 75.8209 265.602 73.7277C266.808 71.5709 267.41 69.1922 267.41 66.5915V53.3658C267.41 50.8285 266.459 48.7669 264.556 47.1811C262.716 45.5318 260.242 44.7072 257.134 44.7072C254.28 44.7072 251.774 45.4684 249.617 46.9908C247.524 48.4497 245.97 50.3527 244.955 52.6997L236.011 48.2277C236.962 45.6904 238.517 43.4703 240.673 41.5673C242.83 39.6009 245.336 38.0785 248.19 37.0001C251.108 35.9218 254.184 35.3826 257.419 35.3826C261.479 35.3826 265.063 36.1438 268.171 37.6662C271.343 39.1886 273.785 41.3136 275.498 44.0412C277.274 46.7053 278.162 49.8135 278.162 53.3658V88H267.886V78.6754L270.074 78.9608C268.869 81.0541 267.315 82.862 265.412 84.3843C263.572 85.9067 261.447 87.0802 259.037 87.9049C256.69 88.7295 254.058 89.1418 251.14 89.1418ZM315.187 89.1418C310.049 89.1418 305.482 87.9683 301.485 85.6213C297.553 83.2108 294.413 79.9758 292.066 75.9161C289.782 71.8564 288.64 67.2575 288.64 62.1195C288.64 57.0449 289.782 52.4777 292.066 48.418C294.349 44.3583 297.489 41.1867 301.485 38.9031C305.482 36.5561 310.049 35.3826 315.187 35.3826C318.676 35.3826 321.942 36.0169 324.987 37.2856C328.032 38.4908 330.664 40.1718 332.885 42.3285C335.168 44.4852 336.849 46.9908 337.927 49.8453L328.508 54.2221C327.429 51.5579 325.685 49.4329 323.274 47.8471C320.927 46.1979 318.232 45.3733 315.187 45.3733C312.269 45.3733 309.636 46.1027 307.289 47.5617C305.006 48.9572 303.198 50.9553 301.866 53.5561C300.534 56.0934 299.868 58.9796 299.868 62.2146C299.868 65.4497 300.534 68.3676 301.866 70.9683C303.198 73.5056 305.006 75.5038 307.289 76.9627C309.636 78.4217 312.269 79.1511 315.187 79.1511C318.295 79.1511 320.991 78.3582 323.274 76.7724C325.621 75.1232 327.366 72.9347 328.508 70.2071L337.927 74.6791C336.912 77.4067 335.263 79.8806 332.98 82.1008C330.76 84.2575 328.127 85.9702 325.082 87.2388C322.038 88.5075 318.739 89.1418 315.187 89.1418ZM372.604 89.1418C367.466 89.1418 362.899 87.9683 358.903 85.6213C354.97 83.2108 351.893 79.9758 349.673 75.9161C347.453 71.793 346.343 67.1941 346.343 62.1195C346.343 56.918 347.453 52.3191 349.673 48.3229C351.957 44.3266 355.001 41.1867 358.807 38.9031C362.613 36.5561 366.927 35.3826 371.748 35.3826C375.617 35.3826 379.074 36.0487 382.119 37.3807C385.164 38.7128 387.733 40.5524 389.826 42.8994C391.919 45.183 393.505 47.8154 394.583 50.7967C395.725 53.7781 396.296 56.9497 396.296 60.3116C396.296 61.1363 396.264 61.9926 396.201 62.8807C396.138 63.7687 396.011 64.5934 395.82 65.3545H354.811V56.7911H389.731L384.593 60.6922C385.227 57.584 385.005 54.8247 383.927 52.4143C382.912 49.9404 381.326 48.0057 379.169 46.6102C377.076 45.1512 374.602 44.4218 371.748 44.4218C368.893 44.4218 366.356 45.1512 364.136 46.6102C361.916 48.0057 360.203 50.0356 358.998 52.6997C357.792 55.3005 357.317 58.4721 357.57 62.2146C357.253 65.7034 357.729 68.7482 358.998 71.3489C360.33 73.9497 362.169 75.9795 364.516 77.4385C366.927 78.8974 369.654 79.6269 372.699 79.6269C375.807 79.6269 378.44 78.9291 380.597 77.5336C382.817 76.1381 384.561 74.3303 385.83 72.1101L394.583 76.3918C393.568 78.8023 391.983 80.9907 389.826 82.9571C387.733 84.8601 385.195 86.3825 382.214 87.5243C379.296 88.6026 376.093 89.1418 372.604 89.1418ZM408.883 88V17.114H415.543L457.123 76.7724H454.554V17.114H462.166V88H455.506L413.925 27.961H416.494V88H408.883ZM501.779 89.1418C496.958 89.1418 492.581 88 488.649 85.7164C484.716 83.3694 481.576 80.1978 479.229 76.2015C476.945 72.1418 475.803 67.543 475.803 62.4049C475.803 57.3303 476.945 52.7949 479.229 48.7986C481.512 44.8024 484.589 41.6624 488.458 39.3789C492.391 37.0319 496.831 35.8584 501.779 35.8584C506.727 35.8584 511.135 37.0001 515.005 39.2837C518.938 41.5673 522.014 44.7072 524.234 48.7035C526.518 52.6997 527.66 57.2669 527.66 62.4049C527.66 67.6064 526.486 72.237 524.139 76.2967C521.792 80.2929 518.652 83.4328 514.719 85.7164C510.85 88 506.537 89.1418 501.779 89.1418ZM501.779 82.0056C505.205 82.0056 508.281 81.1493 511.009 79.4366C513.8 77.7239 515.988 75.3769 517.574 72.3956C519.223 69.4142 520.048 66.084 520.048 62.4049C520.048 58.7258 519.223 55.4273 517.574 52.5094C515.988 49.5915 513.8 47.2762 511.009 45.5636C508.281 43.8509 505.205 42.9945 501.779 42.9945C498.354 42.9945 495.246 43.8509 492.455 45.5636C489.727 47.2762 487.539 49.5915 485.889 52.5094C484.24 55.4273 483.415 58.7258 483.415 62.4049C483.415 66.084 484.24 69.4142 485.889 72.3956C487.539 75.3769 489.727 77.7239 492.455 79.4366C495.246 81.1493 498.354 82.0056 501.779 82.0056ZM550.544 88L533.036 37.0001H541.124L555.587 81.625H552.732L566.338 37.0001H573.475L587.081 81.625H584.226L598.784 37.0001H606.777L589.269 88H582.133L568.907 44.3266H570.906L557.68 88H550.544Z" fill="white"/>
+<path opacity="0.42" d="M83.1415 12.0938L0 12.0938L27.0122 40.86L55.0768 40.86L55.0768 69.6262L83.1415 97.6909L83.1415 12.0938Z" fill="#6B6B6B"/>
+<path d="M93.4217 0H10.2803L37.2925 28.7662H65.3571V57.5325L93.4217 85.5971V0Z" fill="white"/>
+<path d="M101.584 0H132.422L101.584 33.8613V0Z" fill="white"/>
+</svg>
+
+
+        </div>
+
+        <!--<div class="tn-brand-text">TraceNow</div>-->
+      </div>
+
+      <!-- CONTENT -->
+      <div class="tn-hero-content">
+        <h1>Contact Support</h1>
+
+        <p>
+          Our dedicated team is here to help you with any migration challenges.
+          Get expert assistance within hours, not days.
+        </p>
+
+        <!-- STATS -->
+        <div class="tn-stats">
+          <div class="tn-stat-card">
+            <h2>&lt;2h</h2>
+            <span>Avg Response Time</span>
+          </div>
+
+          <div class="tn-stat-card">
+            <h2>98%</h2>
+            <span>Satisfaction Rate</span>
+          </div>
+
+          <div class="tn-stat-card">
+            <h2>24/7</h2>
+            <span>Enterprise Support</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOPICS -->
+  <section class="tn-topics-section">
+    <div class="tn-container">
+      <h2 class="tn-section-title">Browse Support Topics</h2>
+
+      <div class="tn-topic-grid">
+        <!-- CARD -->
+        <div class="tn-topic-card">
+          <div class="tn-topic-icon">
+            <i class="fa fa-database"></i>
+          </div>
+
+          <h3>Migration Issues</h3>
+
+          <p>Data transfer, mapping, or sync problems</p>
+        </div>
+
+        <!-- CARD -->
+        <div class="tn-topic-card">
+          <div class="tn-topic-icon">
+            <i class="fa fa-bolt"></i>
+          </div>
+
+          <h3>Performance</h3>
+
+          <p>Speed, optimization, or timeout concerns</p>
+        </div>
+
+        <!-- CARD -->
+        <div class="tn-topic-card">
+          <div class="tn-topic-icon">
+            <i class="fa fa-shield"></i>
+          </div>
+
+          <h3>Security & Access</h3>
+
+          <p>Permissions, authentication, compliance</p>
+        </div>
+
+        <!-- CARD -->
+        <div class="tn-topic-card">
+          <div class="tn-topic-icon">
+            <i class="fa fa-file-text-o"></i>
+          </div>
+
+          <h3>Documentation</h3>
+
+          <p>API guides, best practices, tutorials</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- =====================================
+     SUPPORT FORM SECTION
+===================================== -->
+
+  <section class="tn-support-form-section">
+    <div class="tn-container">
+      <div class="tn-form-layout">
+        <!-- LEFT -->
+        <div class="tn-form-card">
+          <!-- HEADER -->
+          <div class="tn-form-header">
+            <div class="tn-form-header-icon">
+              <i class="fa fa-comment-o"></i>
+            </div>
+
+            <h2>Submit a Support Request</h2>
+          </div>
+
+          <!-- BODY -->
+          <div class="tn-form-body">
+            <!-- ROW -->
+            <div class="tn-form-grid">
+              <!-- FULL NAME -->
+              <div class="tn-field">
+                <label> Full Name <span>*</span> </label>
+
+                <input
+                  type="text"
+                 
+                  placeholder="John Doe"
+                  ng-model="c.data.full_name"
+                  ng-class="{'ng-invalid-field': c.errors.full_name}"     
+                />
+                <div class="tn-error" ng-if="c.errors.full_name">
+    {{c.errors.full_name}}
+  </div>
+              </div>
+
+              <!-- EMAIL -->
+              <div class="tn-field">
+                <label> Email Address <span>*</span> </label>
+
+                <input
+                  type="email"
+                  placeholder="john@company.com"
+                  ng-model="c.data.email"
+                  ng-class="{'ng-invalid-field': c.errors.email}"
+                />
+                <div class="tn-error" ng-if="c.errors.email">
+    {{c.errors.email}}
+  </div>
+              </div>
+            </div>
+
+            <!-- ROW -->
+            <div class="tn-form-grid">
+              <!-- ISSUE TYPE -->
+              <div class="tn-field">
+                <label> Issue Type <span>*</span> </label>
+
+                <select ng-model="c.data.issue_type"
+                  ng-class="{'ng-invalid-field': c.errors.issue_type}">
+                  <option value="">Select issue type</option>
+
+                  <option>Migration Issue</option>
+
+                  <option>API Issue</option>
+
+                  <option>Authentication</option>
+
+                  <option>Performance</option>
+                </select>
+                
+                <div class="tn-error" ng-if="c.errors.issue_type">
+    {{c.errors.issue_type}}
+  </div>
+              </div>
+
+              <!-- PRIORITY -->
+              <div class="tn-field">
+                <label> Priority Level <span>*</span> </label>
+
+                <select ng-model="c.data.priority"
+                 ng-class="{'ng-invalid-field': c.errors.priority}">
+                  <option value="">Select priority</option>
+
+                  <option>Low</option>
+
+                  <option>Medium</option>
+
+                  <option>High</option>
+
+                  <option>Critical</option>
+                </select>
+                <div class="tn-error" ng-if="c.errors.priority">
+    {{c.errors.priority}}
+  </div>
+              </div>
+            </div>
+
+            <!-- SUBJECT -->
+            <div class="tn-field">
+              <label> Subject <span>*</span> </label>
+
+              <input
+                type="text"
+                placeholder="Brief description of your issue"
+                ng-model="c.data.subject"
+                ng-class="{'ng-invalid-field': c.errors.subject}"
+              />
+              <div class="tn-error" ng-if="c.errors.subject">
+    {{c.errors.subject}}
+  </div>
+            </div>
+
+            <!-- DESCRIPTION -->
+            <div class="tn-field">
+              <label> Detailed Description <span>*</span> </label>
+
+              <textarea
+                rows="7"
+                placeholder="Please provide as much detail as possible including error messages, steps to reproduce, and expected vs actual behavior..."
+                ng-model="c.data.description"
+                ng-class="{'ng-invalid-field': c.errors.description}"
+              >
+              </textarea>
+              <div class="tn-error" ng-if="c.errors.description">
+    {{c.errors.description}}
+  </div>
+            </div>
+
+            <!-- ATTACHMENTS -->
+            <div class="tn-field">
+              <label> Attachments (Optional) </label>
+
+              <div
+                class="tn-upload-box"
+                ng-class="{'has-files': c.files.length > 0}"
+              >
+                <input
+                  type="file"
+                  multiple
+                  accept=".jpg,.jpeg,.png,.pdf,.log,.txt,.zip"
+                  onchange="
+                    angular.element(this).scope().c.handleFiles(this.files)
+                  "
+                />
+
+                <div class="tn-upload-content">
+                  <i class="fa fa-upload"></i>
+
+                  <span ng-if="!c.files.length">
+                    Click to upload screenshots, logs, or documents
+                  </span>
+
+                  <span ng-if="c.files.length">
+                    {{c.files.length}} file(s) selected
+                  </span>
+                </div>
+              </div>
+
+              <!-- FILE LIST -->
+              <div class="tn-file-list" ng-if="c.files.length">
+                <div
+                  class="tn-file-item"
+                  ng-repeat="file in c.files track by $index"
+                >
+                  <div class="tn-file-left">
+                    <i class="fa fa-file-o"></i>
+
+                    <span class="tn-file-name"> {{file.name}} </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="tn-remove-file"
+                    ng-click="c.removeFile($index)"
+                  >
+                    <i class="fa fa-times"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="tn-upload-note">
+                Supported formats: JPG, PNG, PDF, LOG, TXT, ZIP (Max 10MB)
+              </div>
+            </div>
+
+            <!-- BUTTON -->
+            <button class="tn-submit-btn"
+        ng-click="c.submitRequest()"
+        ng-disabled="c.submitting">
+
+    <span ng-if="!c.submitting">
+        Submit Support Request
+        <i class="fa fa-long-arrow-right"></i>
+    </span>
+
+    <span ng-if="c.submitting">
+        Submitting...
+    </span>
+
+</button>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="tn-side-panel">
+          <!-- QUICK HELP -->
+          <div class="tn-side-card">
+            <div class="tn-side-title">
+              <i class="fa fa-headphones"></i>
+
+              <span>Quick Help</span>
+            </div>
+
+            <div class="tn-help-list">
+              <!-- ITEM -->
+              <div class="tn-help-item">
+                <div class="tn-help-icon">
+                  <i class="fa fa-book"></i>
+                </div>
+
+                <div>
+                  <h4>Documentation</h4>
+                  <p>Comprehensive guides and API references</p>
+                </div>
+              </div>
+
+              <!-- ITEM -->
+              <div class="tn-help-item">
+                <div class="tn-help-icon">
+                  <i class="fa fa-video-camera"></i>
+                </div>
+
+                <div>
+                  <h4>Video Tutorials</h4>
+                  <p>Step-by-step migration walkthroughs</p>
+                </div>
+              </div>
+
+              <!-- ITEM -->
+              <div class="tn-help-item">
+                <div class="tn-help-icon">
+                  <i class="fa fa-users"></i>
+                </div>
+
+                <div>
+                  <h4>Community Forum</h4>
+                  <p>Connect with other TraceNow users</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RESPONSE -->
+          <div class="tn-response-card">
+            <div class="tn-response-icon">
+              <i class="fa fa-clock-o"></i>
+            </div>
+
+            <h3>Expected Response Time</h3>
+
+            <p>
+              Our support team typically responds to tickets within 2 hours
+              during business hours.
+            </p>
+
+            <div class="tn-response-badge">
+              <i class="fa fa-check-circle-o"></i>
+
+              Enterprise: Priority Support
+            </div>
+          </div>
+
+          <!-- CRITICAL -->
+          <div class="tn-critical-card">
+            <div class="tn-critical-top">
+              <div class="tn-critical-icon">
+                <i class="fa fa-exclamation-circle"></i>
+              </div>
+
+              <h3>Critical Issue?</h3>
+            </div>
+
+            <p>
+              For production outages or critical failures affecting your
+              migration:
+            </p>
+
+            <div class="tn-critical-email">
+              <i class="fa fa-envelope-o"></i>
+
+              emergency@tracenow.com
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</div>
+]]></template>
+    </sp_widget>
+</record_update>

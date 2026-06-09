@@ -1,0 +1,1076 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller = function($scope, $timeout) {
+    var c = this;
+    
+	  // ===== LOAD CART FROM SESSION STORAGE =====
+    function loadCartCount() {
+        try {
+            var cart = sessionStorage.getItem("migration_cart");
+
+            if (cart) {
+                var parsedCart = JSON.parse(cart);
+
+                // If it's an array → count length
+                if (Array.isArray(parsedCart)) {
+                    c.data.cartItems = parsedCart.length;
+                } 
+                // If it's an object → count keys
+                else if (typeof parsedCart === "object") {
+                    c.data.cartItems = Object.keys(parsedCart).length;
+                } 
+                else {
+                    c.data.cartItems = 0;
+                }
+
+            } else {
+                c.data.cartItems = 0;
+            }
+
+        } catch (e) {
+            console.error("Cart parse error:", e);
+            c.data.cartItems = 0;
+        }
+
+        $scope.$applyAsync(); // ]]>🔥<![CDATA[ update UI
+    }
+
+    loadCartCount();
+    function loadCharts() {
+
+
+        // ]]>🚫<![CDATA[ Stop if no data
+        if (!c.data || !c.data.durationLabels || c.data.durationLabels.length === 0) {
+            console.warn("No chart data available");
+            return;
+        }
+
+        // ===== SUCCESS GAUGE =====
+        var successRate = parseInt(c.data.success) || 0;
+
+var ctx = document.getElementById("successGauge");
+
+var gaugeChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        datasets: [{
+            data: [successRate, 100 - successRate],
+            backgroundColor: ['#116AF8', '#e5e7eb'], // ✅ your color applied
+            borderWidth: 0,
+            borderRadius: 25
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        rotation: -90,
+        circumference: 180,
+        cutout: '78%',
+        plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+        },
+        animation: {
+            duration: 1200,
+            easing: 'easeOutQuart'
+        }
+    }
+});
+
+// Smooth number animation
+var val = 0;
+var interval = setInterval(function () {
+    if (val >= successRate) {
+        clearInterval(interval);
+    } else {
+        val++;
+        document.getElementById("gaugeValue").innerText = val + "%";
+    }
+}, 15);
+
+        // ===== DURATION CHART =====
+        new Chart(document.getElementById("durationChart"), {
+            type: 'line',
+            data: {
+                labels: c.data.durationLabels,
+                datasets: [{
+                    label: 'Duration',
+                    data: c.data.durationData,
+                    borderColor: '#116AF8',
+                    backgroundColor: 'rgba(31,120,200,0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    //  Wait for data + DOM
+    $timeout(loadCharts, 500);
+};
+]]></client_script>
+        <controller_as>c</controller_as>
+        <css>/* ===== PAGE LAYOUT FIX ===== */
+.dm-page-layout {
+  display: flex;
+
+  max-height: calc(100vh - 64px);
+position:relative;
+  background: linear-gradient(
+    to bottom right,
+    #ffffff 0%,
+    rgba(13, 124, 143, 0.05) 50%,
+    rgba(23, 162, 184, 0.10) 100%
+  );
+}
+
+/* Sidebar width */
+.dm-sidebar-slot {
+  flex-basis: 260px;
+  flex-shrink:0;
+  height:100%;
+}
+
+.lucide{
+  color:#fff;
+  background:none;
+}
+
+/* Dashboard takes remaining space */
+.dm-dashboard-wrapper {
+  position:relative;
+  display: flex;
+  flex-direction: column;
+  height:100%;
+  gap:30px;
+  margin: 0 auto;
+  overflow-y:auto;
+  height:calc(100vh - 64px);
+  width: 100%;
+  padding: 30px 15%;
+}
+
+@media(max-width:1600px){
+  .dm-dashboard-wrapper{
+  	padding:30px;
+  }
+}
+/* HERO CONTAINER */
+.hero-card {
+  background: linear-gradient(
+    135deg,
+    #e8f0ff 0%,
+    #cddffd 40%,
+    #b7cdfc 70%,
+    #aebfd6 100%
+  );
+  border-radius: 20px;
+  padding: 60px;
+  position: relative;
+  overflow: hidden;
+ 
+  /* Soft, enterprise-style shadow */
+  box-shadow: 0 10px 30px rgba(10, 80, 245, 0.06);
+}
+ 
+/* Subtle gradient glow (right side) */
+.hero-card::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+ 
+  background: radial-gradient(
+    circle,
+    rgba(17, 106, 248, 0.12),
+    transparent 70%
+  );
+ 
+  filter: blur(60px);
+  pointer-events: none;
+}
+ 
+/* Optional: soft overlay for depth (very subtle) */
+.hero-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.25),
+    rgba(255, 255, 255, 0)
+  );
+  pointer-events: none;
+}
+ 
+/* Content should stay above effects */
+.hero-card &gt; * {
+  position: relative;
+  z-index: 1;
+}
+/* Badge */
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 50px;
+  background: #fff;
+  color: #3a4a5a;
+  border: 1px solid #116AF8;
+  margin-bottom: 25px;
+  font-weight: 600;
+}
+
+/* Heading */
+.hero-card h1 {
+  font-size: 52px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 20px;
+  line-height: 1.1;
+}
+
+.hero-card h1 span {
+  color: #116AF8;
+}
+
+/* Paragraph */
+.hero-card p {
+  font-size: 18px;
+  color: #475569;
+  max-width: 700px;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+/* Buttons */
+.hero-actions {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 0px;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 15px;
+  background: #116AF8;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(31,140,149,0.25);
+  letter-spacing: 1px;
+  transition: 0.25s;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(to right, #9bc0fc, #116AF8);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  transition: all 2s ease-out;
+}
+
+
+
+/* ================= STATS GRID ================= */
+
+.dm-stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:22px;
+}
+.stat-card{
+  padding:22px;
+  border-radius:18px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.06);
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  transition:all .3s ease;
+}
+.stat-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 18px 35px rgba(0,0,0,0.12);
+}
+.stat-card .top{
+  display:flex;
+  align-items:flex-start;
+}
+.stat-card .top div{
+  flex:1;
+}
+.stat-card .title{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-size:15px;
+  color:#374151;
+}
+.stat-card .stat-value{
+  font-size:36px;
+  font-weight:700;
+  color:#111827;
+}
+.stat-card .stat-icon{
+  display:flex;
+  justify-content:flex-end;
+}
+.stat-card .icon{
+  height:50px;
+  width:50px;
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:white;
+}
+/* CARD COLORS */
+.dm-stats .stat-card:nth-child(1){
+  background:linear-gradient(135deg,#E8F1FE,#D4E4FD);
+}
+.dm-stats .stat-card:nth-child(1) .icon{
+  background:#116AF8;
+}
+.dm-stats .stat-card:nth-child(2){
+  background:linear-gradient(135deg,#E0ECFD,#C7DBFC);
+}
+.dm-stats .stat-card:nth-child(2) .icon{
+  background:#0A50F5;
+}
+.dm-stats .stat-card:nth-child(3){
+  background:linear-gradient(135deg,#F5F9FE,#EBF3FE);
+}
+.dm-stats .stat-card:nth-child(3) .icon{
+  background:#9BC0FC;
+}
+.dm-stats .stat-card:nth-child(4){
+  background:linear-gradient(135deg,#E5EFFE,#D0E0FD);
+}
+.dm-stats .stat-card:nth-child(4) .icon{
+  background:#116AF8;
+}
+/* SUB TEXT */
+.stat-sub{
+  font-size:14px;
+  font-weight:500;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.dm-stats .stat-card:nth-child(1) .stat-sub{
+  color:#0A50F5;
+}
+.dm-stats .stat-card:nth-child(2) .stat-sub{
+  color:#116AF8;
+}
+.dm-stats .stat-card:nth-child(3) .stat-sub{
+  color:#0A50F5;
+}
+.dm-stats .stat-card:nth-child(4) .stat-sub{
+  color:#116AF8;
+}
+/* VISUAL SECTION */
+.dm-visuals{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:22px;
+}
+
+/* CARD */
+.viz-card{
+  background:#fff;
+  border-radius:18px;
+  padding:24px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.06);
+}
+
+.viz-card h3{
+  margin:0;
+  font-size:16px;
+  font-weight:700;
+  color:#1e293b;
+}
+
+.viz-card p{
+  font-size:13px;
+  color:#64748b;
+  margin-bottom:16px;
+}
+
+/* ===== PREMIUM GAUGE DESIGN ===== */
+
+.gauge-card{
+  position: relative;
+  width: 220px;
+  height: 120px;
+  margin: 20px auto;
+}
+
+/* Canvas */
+#successGauge{
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Center Content */
+.gauge-content{
+  position: absolute;
+  bottom: 10px; /* 🔥 anchors text nicely */
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+/* Percentage */
+#gaugeValue{
+  font-size: 34px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1;
+}
+
+/* Label */
+.gauge-text{
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+/* FOOTER */
+.viz-footer{
+  text-align:center;
+  font-size:13px;
+  color:#64748b;
+}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .dm-visuals{
+    grid-template-columns:1fr;
+  }
+}
+/* ================= TABLE ================= */
+
+.table-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 0px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+}
+
+/* HEADER */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  padding:22px;
+  background-image: linear-gradient(to right, #f9fafb, #fff);
+}
+
+.table-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.table-header p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.view-all {
+  font-size: 14px;
+  color: #0f766e;
+  font-weight: 600;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.view-all:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
+}
+
+.view-all,
+.view-all:focus,
+.view-all:active,
+.view-all:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* TABLE */
+.dm-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dm-table th {
+  text-align: left;
+  font-size: 12px;
+  color: #94a3b8;
+  padding: 12px 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background:#f9fafb;
+}
+
+.dm-table td {
+  padding: 16px 12px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 14px;
+  color: #334155;
+}
+
+/* ROW HOVER */
+.dm-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* RUN ID */
+.run-id {
+  color: #0f766e;
+  font-weight: 600;
+}
+
+/* TABLE TAGS */
+.table-pill {
+  display: inline-block;
+  background: #e0ecff;
+  color: #2563eb;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  margin-right: 6px;
+  font-weight: 500;
+}
+
+/* RECORD PILL */
+.record-pill {
+  background: #f1f5f9;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* STATUS BADGE */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-badge i {
+  font-size: 13px;
+}
+
+/* SUCCESS */
+.status-success {
+  background: #d1fae5;
+  color: #047857;
+}
+
+/* PARTIAL */
+.status-partial {
+  background: #fdecc8;
+  color: #b45309;
+}
+
+/* ERROR */
+.status-error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* ================= ANIMATIONS ================= */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes heroGlow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* RESPONSIVE */
+
+@media(max-width:1100px){
+  .dm-stats{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+@media(max-width:600px){
+
+  .dm-stats{
+    grid-template-columns:1fr;
+  }
+
+  .hero-card h1{
+    font-size:26px;
+  }
+
+}
+</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>true</has_preview>
+        <id/>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link>
+        <name>tracenow_dashboard</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function() {
+  data.side= $sp.getWidget('tracenow_sidebar');
+  data.migrations = [];
+	data.user = gs.getUserDisplayName();
+  var gr = new GlideRecord('x_sysus_tracenow_migration_details');
+	gr.addQuery('sys_created_by', gs.getUserName());
+  gr.orderByDesc('sys_created_on');
+	data.totalCount = gr.getRowCount(); //  total records
+	gr.setLimit(3);
+  gr.query();
+	
+	
+	data.runs= 657; //dummy data
+	data.success = "93%"; // dummy data
+ 
+   // limit results
+ 
+while (gr.next()) {
+    var tablesArr = [];
+    var tablesStr = gr.getValue('table') || "";
+
+    // for making the records displayed from 1st inserted, 2nd time updated
+    var inserted = parseInt(gr.getValue('records_inserted')) || 0;
+    var updated = parseInt(gr.getValue('records_updated')) || 0;
+
+    var finalRecords = 0;
+    var finalStatus = "Failed";
+
+    if (inserted > 0) {
+        finalRecords = inserted;
+        finalStatus = "Success";
+    } else if (updated > 0) {
+        finalRecords = updated;
+        finalStatus = "Success";
+    }
+
+    data.migrations.push({
+        id: gr.getValue('number'),
+        tables: Object.keys(JSON.parse(tablesStr)),
+        records: finalRecords,
+        status: finalStatus,
+        date: gr.getDisplayValue('sys_created_on'),
+        duration: gr.getValue('duration'),
+        successRate: parseInt(gr.getValue('success_rate'))
+    });
+}
+	// ===== DYNAMIC SUCCESS RATE =====
+var total = 0;
+var successCount = 0;
+
+var grSuccess = new GlideRecordSecure('x_sysus_tracenow_migration_details');
+grSuccess.addQuery('sys_created_by', gs.getUserName());
+grSuccess.query();
+
+while (grSuccess.next()) {
+    total++;
+
+    var rate = parseInt(grSuccess.getValue('success_rate')) || 0;
+    if (rate === 100) {
+        successCount++;
+    }
+}
+
+// override static value
+data.success = total > 0 ? Math.round((successCount / total) * 100) : 0;
+data.runs = total;
+data.totalCount = successCount;
+
+
+
+// ===== CLEAN DURATION DATA =====
+data.durationLabels = [];
+data.durationData = [];
+
+var grDuration = new GlideRecordSecure('x_sysus_tracenow_migration_details');
+grDuration.addQuery('sys_created_by', gs.getUserName());
+grDuration.orderBy('sys_created_on');
+grDuration.setLimit(8);
+grDuration.query();
+
+while (grDuration.next()) {
+
+    // ✅ correct date
+    // format: "Mar 23"
+var gdt = new GlideDateTime(grDuration.getValue('sys_created_on'));
+
+var month = gdt.getMonthLocalTime(); // 1-12
+var day = gdt.getDayOfMonthLocalTime();
+
+// month names
+var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+var label = months[month - 1] + " " + day;
+
+data.durationLabels.push(label);
+
+    // ✅ get raw duration
+    var dur = grDuration.getValue('duration');
+
+    var cleanDur = 0;
+
+    if (dur) {
+        // remove everything except numbers
+        cleanDur = parseInt(dur.toString().replace(/[^\d]/g, '')) || 0;
+    }
+
+    data.durationData.push(cleanDur);
+}
+})();
+]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-05-20 09:45:59</sys_created_on>
+        <sys_id>ceb9f5d43b4d4b10092273c5e4e45ae1</sys_id>
+        <sys_mod_count>10</sys_mod_count>
+        <sys_name>tracenow_dashboard</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_widget_ceb9f5d43b4d4b10092273c5e4e45ae1</sys_update_name>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-06-09 06:13:54</sys_updated_on>
+        <template><![CDATA[<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<div class="dm-page-layout">
+
+    <!-- LEFT SIDEBAR -->
+    <div class="dm-sidebar-slot">
+        <sp-widget class="widget" widget="data.side"></sp-widget>
+    </div>
+
+    <!-- Dashboard (UNCHANGED) -->
+    <div class="dm-dashboard-wrapper">
+        <div class="dm-dashboard">
+
+            <div class="hero-card">
+
+                <!-- Tag -->
+                <div class="hero-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    ServiceNow Data Migration Platform
+                </div>
+
+                <!-- Heading -->
+                <h1>
+                    Migrate Records with <br>
+                    <span>Precision & Control</span>
+                </h1>
+
+                <!-- Description -->
+                <p>
+                    Select individual records, manage migrations in your queue, and execute transfers
+                    between ServiceNow instances seamlessly with enterprise-grade reliability.
+                </p>
+
+                <!-- Actions -->
+                <div class="hero-actions">
+                    <a class="btn-primary" href="/_tracenow?id=tracenow_connection_list">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-unplug-icon lucide-unplug"><path d="m19 5 3-3"/><path d="m2 22 3-3"/><path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"/><path d="M7.5 13.5 10 11"/><path d="M10.5 16.5 13 14"/><path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z"/></svg>
+                        Connect Now
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right-icon lucide-arrow-right"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </a>
+                  
+                </div>
+
+
+
+            </div>
+
+        </div>
+        <!-- STATS -->
+        <div class="dm-stats">
+            <div class="stat-card">
+                <div class="top">
+                    <div class="title">
+                        <div>Items in Queue</div>
+
+                        <div class="stat-value">{{c.data.cartItems}}</div>
+                    </div>
+
+                    <div class="stat-icon">
+                        <span class="icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-shopping-cart-icon lucide-shopping-cart">
+
+                                <circle cx="8" cy="21" r="1"></circle>
+                                <circle cx="19" cy="21" r="1"></circle>
+                                <path
+                                    d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12">
+                                </path>
+
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="stat-sub stat-sub-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#117E91" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right-icon lucide-arrow-up-right"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></i> Ready to migrate
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="top">
+                    <div class="title">
+                        <div>Total Migrated</div>
+
+                        <div class="stat-value">{{c.data.totalCount}}</div>
+                    </div>
+
+                    <div class="stat-icon">
+                        <span class="icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-file-check-icon lucide-file-check">
+
+                                <path
+                                    d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z">
+                                </path>
+                                <path d="M14 2v5a1 1 0 0 0 1 1h5"></path>
+                                <path d="m9 15 2 2 4-4"></path>
+
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="stat-sub stat-sub-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#009966" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right-icon lucide-arrow-up-right"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></i> +12% this month
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="top">
+                    <div class="title">
+                        <div>Recent Runs</div>
+
+                        <div class="stat-value">{{c.data.runs}}</div>
+                    </div>
+
+                    <div class="stat-icon">
+                        <span class="icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-activity">
+
+                                <path d="M22 12h-4l-3 9-6-18-3 9H2"></path>
+
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="stat-sub stat-sub-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9810FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right-icon lucide-arrow-up-right"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg> This month
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="top">
+                    <div class="title">
+                        <div>Success Rate</div>
+
+                        <div class="stat-value">{{c.data.success}}%</div>
+                    </div>
+
+                    <div class="stat-icon">
+                        <span class="icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-trending-up">
+
+                                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+                                <polyline points="16 7 22 7 22 13"></polyline>
+
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="stat-sub stat-sub-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#195FFC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right-icon lucide-arrow-up-right"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg> +2.3% improvement
+                    </div>
+                </div>
+            </div>
+        </div>
+
+<!-- VISUALIZATIONS -->
+<div class="dm-visuals">
+
+  <!-- SUCCESS RATE -->
+  <div class="viz-card">
+    <h3>Migration Success Rate</h3>
+    <p>Overall performance metrics</p>
+
+  <div class="gauge-card">
+  <canvas id="successGauge"></canvas>
+
+  <div class="gauge-content">
+    <div id="gaugeValue">0%</div>
+    <div class="gauge-text">Success Rate</div>
+  </div>
+</div>
+
+    <div class="viz-footer">
+      Last 30 days: {{c.data.runs}} runs, {{c.data.totalCount}} successful
+    </div>
+  </div>
+
+  <!-- DURATION CHART -->
+  <div class="viz-card">
+    <h3>Migration Duration Analysis</h3>
+    <p>Average time per migration run</p>
+
+    <canvas id="durationChart" height="120"></canvas>
+  </div>
+
+</div>
+        <!-- RECENT MIGRATIONS -->
+<div class="table-card">
+
+  <!-- HEADER -->
+  <div class="table-header">
+    <div>
+      <h3>Recent Migrations</h3>
+      <p>Your latest migration activity</p>
+    </div>
+
+    <a class="view-all" href="?id=tracenow_analytics">
+      View All
+      <span>→</span>
+    </a>
+  </div>
+
+  <!-- TABLE -->
+  <table class="dm-table">
+    <thead>
+      <tr>
+        <th>MIGRATION ID</th>
+        <th>TABLES</th>
+        <th>RECORDS</th>
+        <th>STATUS</th>
+        <th>DURATION</th>
+        <th>DATE</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr ng-repeat="run in c.data.migrations">
+
+        <td class="run-id">{{run.id}}</td>
+
+        <!-- TABLE TAGS -->
+        <td>
+          <span class="table-pill" ng-repeat="t in run.tables">
+            {{t}}
+          </span>
+        </td>
+
+        <!-- RECORD COUNT -->
+        <td>
+          <span class="record-pill">{{run.records}}</span>
+        </td>
+
+        <!-- STATUS -->
+<td>
+  <span class="status-badge"
+        ng-class="{
+          'status-success': run.successRate == 100,
+          'status-partial': run.successRate > 0 && run.successRate < 100,
+          'status-error': run.successRate == 0
+        }">
+
+    <i class="fa"
+       ng-class="{
+         'fa-check-circle': run.successRate == 100,
+         'fa-clock-o': run.successRate > 0 && run.successRate < 100,
+         'fa-times-circle': run.successRate == 0
+       }">
+    </i>
+
+    {{ run.successRate == 100 
+        ? "Success" 
+        : run.successRate > 0 
+            ? "Partial" 
+            : "Failed" }}
+
+  </span>
+</td>
+        <td>{{run.duration}}</td>
+        <td>{{run.date}}</td>
+
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+    </div>
+
+</div>
+</div>
+]]></template>
+    </sp_widget>
+</record_update>

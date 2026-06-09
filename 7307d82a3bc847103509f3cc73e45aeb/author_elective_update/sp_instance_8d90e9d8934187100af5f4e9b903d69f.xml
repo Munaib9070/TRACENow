@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_instance">
+    <sp_instance action="DELETE">
+        <active>true</active>
+        <class_name/>
+        <color>default</color>
+        <css/>
+        <glyph/>
+        <id/>
+        <order>1</order>
+        <roles/>
+        <short_description/>
+        <size>md</size>
+        <sp_column display_value="1">a490e9d8934187100af5f4e9b903d697</sp_column>
+        <sp_widget/>
+        <sys_class_name>sp_instance</sys_class_name>
+        <sys_created_by>irfan.wani</sys_created_by>
+        <sys_created_on>2026-05-20 07:55:31</sys_created_on>
+        <sys_id>8d90e9d8934187100af5f4e9b903d69f</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name/>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_instance_8d90e9d8934187100af5f4e9b903d69f</sys_update_name>
+        <sys_updated_by>irfan.wani</sys_updated_by>
+        <sys_updated_on>2026-05-20 07:55:31</sys_updated_on>
+        <title/>
+        <url/>
+        <widget_parameters/>
+    </sp_instance>
+    <sys_translated_text action="DELETE" query="documentkey=8d90e9d8934187100af5f4e9b903d69f"/>
+    <sys_update_version action="INSERT_OR_UPDATE">
+        <action>DELETE</action>
+        <application display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</application>
+        <file_path/>
+        <instance_id>5af4a451db6abb448aea21c405961971</instance_id>
+        <instance_name>sysusademo7</instance_name>
+        <name>sp_instance_8d90e9d8934187100af5f4e9b903d69f</name>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_instance"><sp_instance action="INSERT_OR_UPDATE"><active>true</active><class_name/><color>default</color><css/><glyph/><id/><order>1</order><roles/><short_description/><size>md</size><sp_column display_value="1">a490e9d8934187100af5f4e9b903d697</sp_column><sp_widget/><sys_class_name>sp_instance</sys_class_name><sys_created_by>irfan.wani</sys_created_by><sys_created_on>2026-05-20 07:55:31</sys_created_on><sys_id>8d90e9d8934187100af5f4e9b903d69f</sys_id><sys_mod_count>0</sys_mod_count><sys_name/><sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package><sys_policy/><sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope><sys_update_name>sp_instance_8d90e9d8934187100af5f4e9b903d69f</sys_update_name><sys_updated_by>irfan.wani</sys_updated_by><sys_updated_on>2026-05-20 07:55:31</sys_updated_on><title/><url/><widget_parameters/></sp_instance><sys_translated_text action="delete_multiple" query="documentkey=8d90e9d8934187100af5f4e9b903d69f"/></record_update>]]></payload>
+        <payload_hash>865812074</payload_hash>
+        <record_name/>
+        <reverted_from/>
+        <source>7fd711d8930187100af5f4e9b903d66a</source>
+        <source_table>sys_update_set</source_table>
+        <state>previous</state>
+        <sys_created_by>irfan.wani</sys_created_by>
+        <sys_created_on>2026-05-20 09:40:20</sys_created_on>
+        <sys_id>9898b9d0930587100af5f4e9b903d618</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_recorded_at>19e44c1ec940000001</sys_recorded_at>
+        <sys_updated_by>irfan.wani</sys_updated_by>
+        <sys_updated_on>2026-05-20 09:40:20</sys_updated_on>
+        <type>Instance</type>
+        <update_guid>cd90e9d82b418710a3ba5f969b9da5ee</update_guid>
+        <update_guid_history>cd90e9d82b418710a3ba5f969b9da5ee:-1706274987,cd90e9d82b418710a3ba5f969b9da5ee:-1706274987</update_guid_history>
+    </sys_update_version>
+    <sys_metadata_delete action="INSERT_OR_UPDATE">
+        <sys_audit_delete display_value="">8fb44ed4934587100af5f4e9b903d65f</sys_audit_delete>
+        <sys_class_name>sys_metadata_delete</sys_class_name>
+        <sys_created_by>irfan.wani</sys_created_by>
+        <sys_created_on>2026-05-20 10:33:29</sys_created_on>
+        <sys_db_object display_value="" name="sp_instance">sp_instance</sys_db_object>
+        <sys_id>3b5038187d864321a9011687eff9cfc9</sys_id>
+        <sys_metadata>8d90e9d8934187100af5f4e9b903d69f</sys_metadata>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name/>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_parent/>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_scope_delete display_value="">2ef2079d3a0a4f3ea6602966dfb43524</sys_scope_delete>
+        <sys_update_name>sp_instance_8d90e9d8934187100af5f4e9b903d69f</sys_update_name>
+        <sys_update_version display_value="sp_instance_8d90e9d8934187100af5f4e9b903d69f">9898b9d0930587100af5f4e9b903d618</sys_update_version>
+        <sys_updated_by>irfan.wani</sys_updated_by>
+        <sys_updated_on>2026-05-20 10:33:29</sys_updated_on>
+    </sys_metadata_delete>
+</record_update>

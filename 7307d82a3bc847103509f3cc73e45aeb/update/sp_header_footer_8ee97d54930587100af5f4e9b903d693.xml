@@ -1,0 +1,1555 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_header_footer">
+    <sp_header_footer action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller = function($scope, $timeout) {
+
+    var c = this;
+
+
+    /* ======================
+   INITIAL STATE
+====================== */
+
+    c.notifications = [];
+    c.unreadCount = 0;
+
+    c.cart = [];
+    c.cartCount = 0;
+
+    c.showNotificationPanel = false;
+    c.showCartPanel = false;
+
+    $scope.showHelp = false;
+    $scope.showMenu = false;
+
+    /* ======================
+       CART TOGGLE
+    ====================== */
+
+    c.toggleCart = function($event) {
+
+        if ($event) $event.stopPropagation();
+
+        c.showCartPanel = !c.showCartPanel;
+
+        c.showNotificationPanel = false;
+        $scope.showHelp = false;
+        $scope.showMenu = false;
+
+        if (c.showCartPanel) {
+            c.loadCart();
+        }
+
+    };
+
+
+    /* ======================
+       HELP MODAL TOGGLE
+    ====================== */
+
+    $scope.toggleHelp = function() {
+
+        $scope.showHelp = !$scope.showHelp;
+
+        $scope.showMenu = false;
+
+    };
+
+
+    /* ======================
+       PROFILE MENU TOGGLE
+    ====================== */
+
+    $scope.toggleMenu = function() {
+
+        $scope.showMenu = !$scope.showMenu;
+
+        $scope.showHelp = false;
+
+    };
+
+
+    /* ======================
+       PROFILE NAVIGATION
+    ====================== */
+
+    $scope.openProfile = function() {
+
+        window.location.href = "/datamigration?id=dm_profile";
+
+    };
+
+
+    /* ======================
+       LOGOUT
+    ====================== */
+
+    $scope.logout = function() {
+
+        window.location.href = "/logout.do";
+
+    };
+
+
+    /* ======================
+       LOAD CART DATA
+    ====================== */
+
+    c.loadCart = function() {
+
+        var raw = JSON.parse(
+            sessionStorage.getItem("migration_cart") || "[]"
+        );
+
+        var grouped = {};
+
+        raw.forEach(function(item) {
+
+            if (!grouped[item.table]) {
+
+                grouped[item.table] = {
+
+                    name: item.table,
+                    label: item.label,
+                    records: []
+
+                };
+
+            }
+
+            grouped[item.table].records.push({
+
+                number: item.number || item.sys_id,
+
+                short_description: item.short_description || "",
+
+                sys_id: item.sys_id
+
+            });
+
+        });
+
+        c.cart = Object.keys(grouped).map(function(key) {
+
+            return grouped[key];
+
+        });
+
+        c.cartCount = raw.length;
+
+    };
+
+
+    /* ======================
+       LIVE CART UPDATE (SAME TAB)
+    ====================== */
+
+    window.addEventListener("cartUpdated", function() {
+
+        $scope.$applyAsync(function() {
+
+            c.loadCart();
+
+        });
+
+    });
+
+
+    /* ======================
+       CROSS TAB CART UPDATE
+    ====================== */
+
+    window.addEventListener("storage", function() {
+
+        $scope.$applyAsync(function() {
+
+            c.loadCart();
+
+        });
+
+    });
+
+
+    /* ======================
+       INITIAL CART LOAD
+    ====================== */
+
+    $timeout(function() {
+
+        c.loadCart();
+
+    }, 100);
+
+
+    /* ======================
+       OUTSIDE CLICK CLOSE
+    ====================== */
+
+    angular.element(document).on("click", function(event) {
+
+        var insideCartModal =
+            event.target.closest(".cart-modal");
+
+        var insideCartIcon =
+            event.target.closest(".cart");
+
+        var insideNotification =
+            event.target.closest(".notification-modal");
+
+        var insideProfile =
+            event.target.closest(".profile-wrapper");
+
+        var insideHelp =
+            event.target.closest(".help-modal");
+
+        if (!insideCartModal &&
+            !insideCartIcon &&
+            !insideNotification &&
+            !insideProfile &&
+            !insideHelp) {
+
+            $scope.$applyAsync(function() {
+
+                c.showCartPanel = false;
+                c.showNotificationPanel = false;
+
+                $scope.showHelp = false;
+                $scope.showMenu = false;
+
+            });
+
+        }
+
+    });
+
+
+    /* ======================
+       LOAD NOTIFICATIONS
+    ====================== */
+
+    c.loadNotifications = function() {
+
+        c.server.get({
+
+            action: "getNotifications"
+
+        }).then(function(response) {
+
+            if (response.data.notifications) {
+
+                c.notifications = response.data.notifications;
+
+                var count = 0;
+
+                angular.forEach(c.notifications, function(n) {
+
+                    if (!n.read) count++;
+
+                });
+
+                c.unreadCount = count;
+
+            }
+
+        });
+
+    };
+
+
+    /* ======================
+       TOGGLE NOTIFICATIONS
+    ====================== */
+
+    c.toggleNotifications = function() {
+
+        c.showNotificationPanel = !c.showNotificationPanel;
+
+        c.showCartPanel = false;
+
+        $scope.showHelp = false;
+        $scope.showMenu = false;
+
+    };
+
+
+    /* ======================
+       MARK SINGLE READ
+    ====================== */
+
+    c.markAsRead = function(notification) {
+
+        notification.read = true;
+
+        if (c.unreadCount > 0)
+            c.unreadCount--;
+
+        c.server.get({
+
+            action: "markNotificationRead",
+            id: notification.id
+
+        });
+
+    };
+
+
+    /* ======================
+       MARK ALL READ
+    ====================== */
+
+    c.markAllAsRead = function() {
+
+        angular.forEach(c.notifications, function(n) {
+
+            n.read = true;
+
+        });
+
+        c.unreadCount = 0;
+
+        c.server.get({
+
+            action: "markAllNotificationsRead"
+
+        });
+
+    };
+
+
+    /* ======================
+       NAVIGATE TO CART PAGE
+    ====================== */
+
+    c.openCartPage = function() {
+
+        var conn = sessionStorage.getItem("currentId");
+
+        window.location.href =
+            "?id=dm_cart&sys_id=" + conn;
+
+    };
+
+
+    /* ======================
+       AUTO REFRESH NOTIFICATIONS
+    ====================== */
+
+    function notificationPolling() {
+
+        c.loadNotifications();
+
+        $timeout(notificationPolling, 15000);
+
+    }
+
+    notificationPolling();
+
+
+};]]></client_script>
+        <controller_as>c</controller_as>
+        <css>*{&#13;
+	outline-style:none!important;&#13;
+}&#13;
+&#13;
+.dm-header{&#13;
+  height:64px;&#13;
+  background:#fff;&#13;
+  border-bottom:1px solid #e5e7eb;&#13;
+  display:flex;&#13;
+  justify-content:space-between;&#13;
+  align-items:center;&#13;
+  padding:0 24px;&#13;
+  position:relative;&#13;
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";&#13;
+}&#13;
+&#13;
+.dm-logo{&#13;
+  display:flex;&#13;
+  align-items:center;&#13;
+  gap:12px;&#13;
+  cursor:pointer;&#13;
+  text-decoration:none;&#13;
+  padding:6px 10px;&#13;
+  border-radius:12px;&#13;
+  transition: all 0.25s ease;&#13;
+}&#13;
+&#13;
+.dm-logo:focus,&#13;
+.dm-logo:active,&#13;
+.dm-logo:focus-visible {&#13;
+  outline: none !important;&#13;
+  box-shadow: none !important;&#13;
+}&#13;
+&#13;
+.dm-logo:hover{&#13;
+ // background: rgba(17, 106, 248, 0.08);&#13;
+  transform: translateY(-1px);&#13;
+}&#13;
+&#13;
+.dm-logo:hover .dm-logo-icon{&#13;
+  transform: scale(1.05) rotate(-2deg);&#13;
+}&#13;
+&#13;
+.dm-logo-icon img{&#13;
+  height:24px;&#13;
+  width:auto;&#13;
+  object-fit:contain;&#13;
+}&#13;
+&#13;
+.dm-logo-text{&#13;
+  display:flex;&#13;
+  flex-direction:column;&#13;
+  line-height:1.1;&#13;
+}&#13;
+&#13;
+.dm-logo:hover .dm-title{&#13;
+  letter-spacing:0.4px;&#13;
+}&#13;
+&#13;
+.dm-header-right{&#13;
+  display:flex;&#13;
+  align-items:center;&#13;
+  gap:20px;&#13;
+}&#13;
+&#13;
+.dm-icon,.help{&#13;
+  font-size:18px;&#13;
+  display:flex;&#13;
+  color:#116AF8!important;&#13;
+  cursor:pointer;&#13;
+  position:relative;&#13;
+}&#13;
+&#13;
+.dm-icon:hover{ color:#9bc0fc; }&#13;
+&#13;
+.badge{&#13;
+  position:absolute;&#13;
+  top:-12px;&#13;
+  right:-12px;&#13;
+  background:#eb0017;&#13;
+  color:#fff;&#13;
+  font-size:12px;&#13;
+  padding:2px 5px;&#13;
+  border-radius:30%;&#13;
+}&#13;
+&#13;
+.profile-wrapper{&#13;
+  position:relative;&#13;
+  border-radius:20px;&#13;
+  padding:5px;&#13;
+  background-color:#f4f4f4;&#13;
+  color:#000;&#13;
+  display:flex;&#13;
+  justify-content:center;&#13;
+  align-items:center;&#13;
+  gap:6px;&#13;
+}&#13;
+&#13;
+.avatar{&#13;
+  width:36px;&#13;
+  height:36px;&#13;
+  border-radius:50%;&#13;
+  background:#116AF8;&#13;
+  display:flex;&#13;
+  color:#fff;&#13;
+  align-items:center;&#13;
+  justify-content:center;&#13;
+  font-weight:600;&#13;
+  cursor:pointer;&#13;
+}&#13;
+&#13;
+.avatar.big{&#13;
+  width:48px;&#13;
+  height:48px;&#13;
+}&#13;
+&#13;
+.profile-dropdown{&#13;
+  position:absolute;&#13;
+  z-index:50;&#13;
+  right:0;&#13;
+  top:54px;&#13;
+  width:100%;&#13;
+  background:#fff;&#13;
+  border-radius:8px;&#13;
+  box-shadow:0 10px 30px rgba(0,0,0,.15);&#13;
+}&#13;
+&#13;
+.profile-info{&#13;
+  padding:15px;&#13;
+  display:flex;&#13;
+  align-items: center;&#13;
+  gap:12px;&#13;
+  border-bottom:1px solid #eee;&#13;
+}&#13;
+&#13;
+.menu-item{&#13;
+  padding:12px 16px;&#13;
+  cursor:pointer;&#13;
+}&#13;
+.menu-item a{ color:tomato; }&#13;
+.menu-item:hover{ background:#f3f4f6; }&#13;
+.logout{ color:#dc2626; }&#13;
+&#13;
+.help-modal{&#13;
+  position:absolute;&#13;
+  z-index:50;&#13;
+  right:70px;&#13;
+  top:76px;&#13;
+  width:340px;&#13;
+  background:#fff;&#13;
+  border-radius:10px;&#13;
+  box-shadow:0 10px 30px rgba(0,0,0,.15);&#13;
+}&#13;
+&#13;
+.help-header{&#13;
+  padding:14px;&#13;
+  font-weight:600;&#13;
+  border-bottom:1px solid #eee;&#13;
+}&#13;
+&#13;
+.help-content{&#13;
+  padding:16px;&#13;
+  font-size:13px;&#13;
+}&#13;
+&#13;
+.notification-modal{&#13;
+  position:absolute;&#13;
+  right:40px;&#13;
+  top:64px;&#13;
+  width:420px;&#13;
+  height:640px;&#13;
+  background:#fff;&#13;
+  border-radius:14px;&#13;
+  box-shadow:0 25px 60px rgba(0,0,0,.18);&#13;
+  display:flex;&#13;
+  flex-direction:column;&#13;
+  overflow:hidden;&#13;
+}&#13;
+&#13;
+.notif-header-bar{&#13;
+  background:#116AF8;&#13;
+  color:#fff;&#13;
+  padding:20px;&#13;
+  display:flex;&#13;
+  justify-content:space-between;&#13;
+  align-items:center;&#13;
+}&#13;
+&#13;
+.notif-header-left{&#13;
+  display:flex;&#13;
+  gap:12px;&#13;
+  align-items:center;&#13;
+}&#13;
+&#13;
+.notif-bell-icon{ font-size:22px; }&#13;
+&#13;
+.notif-title-main{&#13;
+  font-size:20px;&#13;
+  font-weight:600;&#13;
+}&#13;
+&#13;
+.notif-sub{&#13;
+  font-size:13px;&#13;
+  opacity:.85;&#13;
+}&#13;
+&#13;
+.notif-close{&#13;
+  font-size:24px;&#13;
+  cursor:pointer;&#13;
+}&#13;
+&#13;
+.notif-actions{&#13;
+  padding:16px;&#13;
+  border-bottom:1px solid #eee;&#13;
+}&#13;
+&#13;
+.notif-btn{&#13;
+  width:100%;&#13;
+  background:#f3f4f6;&#13;
+  border:none;&#13;
+  padding:12px;&#13;
+  border-radius:10px;&#13;
+  font-size:14px;&#13;
+  cursor:pointer;&#13;
+}&#13;
+&#13;
+.notif-list{&#13;
+  flex:1;&#13;
+  overflow-y:auto;&#13;
+  padding:16px;&#13;
+}&#13;
+&#13;
+.notif-card{&#13;
+  position:relative;&#13;
+  display:flex;&#13;
+  gap:12px;&#13;
+  padding:16px;&#13;
+  border-radius:14px;&#13;
+  margin-bottom:14px;&#13;
+  border:1px solid #e5e7eb;&#13;
+  background:#fff;&#13;
+  cursor:pointer;&#13;
+  transition:.2s;&#13;
+}&#13;
+&#13;
+.notif-card:hover{ transform:translateY(-2px); }&#13;
+&#13;
+.notif-card.success{&#13;
+  background:#ecfdf5;&#13;
+  border:1px solid #22c55e;&#13;
+}&#13;
+&#13;
+.notif-card.warning{&#13;
+  background:#fff7ed;&#13;
+  border:1px solid #f59e0b;&#13;
+}&#13;
+&#13;
+.notif-card.danger{&#13;
+  background:#fef2f2;&#13;
+  border:1px solid #ef4444;&#13;
+}&#13;
+&#13;
+.notif-card.info{&#13;
+  background:#eff6ff;&#13;
+  border:1px solid #3b82f6;&#13;
+}&#13;
+&#13;
+.notif-icon-wrapper{&#13;
+  font-size:22px;&#13;
+  margin-top:2px;&#13;
+}&#13;
+&#13;
+.text-success{ color:#22c55e; }&#13;
+.text-warning{ color:#f59e0b; }&#13;
+.text-danger{  color:#ef4444; }&#13;
+.text-info{    color:#3b82f6; }&#13;
+&#13;
+.notif-content{ flex:1; }&#13;
+&#13;
+.notif-card-title{ font-weight:600; }&#13;
+&#13;
+.notif-card-msg{&#13;
+  font-size:14px;&#13;
+  color:#6b7280;&#13;
+  margin-top:2px;&#13;
+}&#13;
+&#13;
+.notif-card-time{&#13;
+  font-size:12px;&#13;
+  color:#9ca3af;&#13;
+  margin-top:6px;&#13;
+}&#13;
+&#13;
+.notif-dot{&#13;
+  position:absolute;&#13;
+  right:12px;&#13;
+  top:14px;&#13;
+  width:8px;&#13;
+  height:8px;&#13;
+  background:#116AF8;&#13;
+  border-radius:50%;&#13;
+}&#13;
+&#13;
+.empty-notif{&#13;
+  text-align:center;&#13;
+  margin-top:60px;&#13;
+  color:#9ca3af;&#13;
+}&#13;
+&#13;
+.notification-modal.right-drawer{&#13;
+  position:fixed;&#13;
+  top:12px;&#13;
+  right:16px;&#13;
+  width:420px;&#13;
+  height:calc(100vh - 24px);&#13;
+  background:#ffffff;&#13;
+  border-radius:12px;&#13;
+  box-shadow:-10px 0 40px rgba(0,0,0,.15);&#13;
+  transform:translateX(120%);&#13;
+  transition:transform .35s ease;&#13;
+  z-index:9999;&#13;
+  display:flex;&#13;
+  flex-direction:column;&#13;
+}&#13;
+&#13;
+.notification-modal.right-drawer.open{ transform:translateX(0); }&#13;
+&#13;
+.drawer-overlay{&#13;
+  position:fixed;&#13;
+  top:0;&#13;
+  left:0;&#13;
+  width:100%;&#13;
+  height:100vh;&#13;
+  background:rgba(0,0,0,.35);&#13;
+  z-index:9998;&#13;
+}&#13;
+&#13;
+.mark-read-btn{&#13;
+  display:flex;&#13;
+  align-items:center;&#13;
+  gap:8px;&#13;
+  background:#f3f4f6;&#13;
+  color:#374151;&#13;
+  border:none;&#13;
+  padding:10px 16px;&#13;
+  border-radius:8px;&#13;
+  font-size:14px;&#13;
+  cursor:pointer;&#13;
+  transition:all .2s ease;&#13;
+}&#13;
+&#13;
+.mark-read-btn:hover{&#13;
+  background:#116AF8;&#13;
+  color:#ffffff;&#13;
+}&#13;
+&#13;
+.mark-read-btn:hover svg{ stroke:#ffffff; }&#13;
+&#13;
+.mark-read-btn:focus{&#13;
+  outline:none;&#13;
+  box-shadow:0 0 0 2px rgba(17, 106, 248, .25);&#13;
+}&#13;
+&#13;
+.notification-item.error{&#13;
+  border:1.5px solid #ef4444;&#13;
+  background:#fee2e2;&#13;
+}&#13;
+&#13;
+.notification-item.error .notification-icon{ color:#ef4444; }&#13;
+&#13;
+.cart-overlay{&#13;
+  position:fixed;&#13;
+  top:0;&#13;
+  left:0;&#13;
+  width:100%;&#13;
+  height:100vh;&#13;
+  background:rgba(0,0,0,.15);&#13;
+  z-index:9998;&#13;
+}&#13;
+&#13;
+.cart-modal{&#13;
+  position:fixed;&#13;
+  top:77px;&#13;
+  right:150px;&#13;
+  width:350px;&#13;
+  height:360px;&#13;
+  display:flex;&#13;
+  flex-direction:column;&#13;
+  background:#ffffff;&#13;
+  border-radius:16px;&#13;
+  box-shadow:0 30px 80px rgba(0,0,0,.18);&#13;
+  padding:24px;&#13;
+  z-index:9999;&#13;
+  overflow:hidden;&#13;
+}&#13;
+&#13;
+.cart-modal-header{&#13;
+  font-size:20px;&#13;
+  font-weight:600;&#13;
+  display:flex;&#13;
+  justify-content:space-between;&#13;
+  align-items:center;&#13;
+  margin-bottom:16px;&#13;
+}&#13;
+&#13;
+.cart-count{&#13;
+  font-size:13px;&#13;
+  background:#f3f4f6;&#13;
+  padding:4px 10px;&#13;
+  border-radius:20px;&#13;
+}&#13;
+&#13;
+.cart-scroll-area{&#13;
+  flex:1;&#13;
+  overflow-y:auto;&#13;
+  padding-right:4px;&#13;
+}&#13;
+&#13;
+.cart-record-container{&#13;
+  display:flex;&#13;
+  flex-direction:column;&#13;
+  gap:16px;&#13;
+}&#13;
+&#13;
+.cart-table-group{&#13;
+  width:100%;&#13;
+  border:1px solid #e5e7eb;&#13;
+  border-radius:12px;&#13;
+  overflow:hidden;&#13;
+  background:white;&#13;
+}&#13;
+&#13;
+.cart-table-header{&#13;
+  display:flex;&#13;
+  justify-content:space-between;&#13;
+  align-items:center;&#13;
+  padding:12px 16px;&#13;
+  background:#f3f4f6;&#13;
+  font-size:14px;&#13;
+  color:#374151;&#13;
+}&#13;
+&#13;
+.cart-table-count{&#13;
+  background:#116AF8;&#13;
+  color:white;&#13;
+  padding:4px 12px;&#13;
+  border-radius:20px;&#13;
+  font-size:12px;&#13;
+}&#13;
+&#13;
+.cart-record-row{&#13;
+  padding:14px 16px;&#13;
+  border-top:1px solid #eee;&#13;
+}&#13;
+&#13;
+.cart-record-number{&#13;
+  font-weight:600;&#13;
+  color:#116AF8;&#13;
+  font-size:15px;&#13;
+}&#13;
+&#13;
+.cart-record-desc{&#13;
+  font-size:13px;&#13;
+  color:#6b7280;&#13;
+  margin-top:2px;&#13;
+}&#13;
+&#13;
+.cart-action-btn{&#13;
+  margin-top:16px;&#13;
+  margin-left:12px;&#13;
+  margin-right:12px;&#13;
+  width:calc(100% - 24px);&#13;
+  padding:14px;&#13;
+  background:#116AF8;&#13;
+  color:white;&#13;
+  border:none;&#13;
+  border-radius:12px;&#13;
+  font-size:15px;&#13;
+  font-weight:600;&#13;
+  cursor:pointer;&#13;
+  flex-shrink:0;&#13;
+  transition:.2s ease;&#13;
+}&#13;
+&#13;
+.cart-action-btn:hover{&#13;
+  background: linear-gradient(to right, #116AF8, #0A50F5);&#13;
+  box-shadow: 0 10px 20px rgba(17, 106, 248, 0.3);&#13;
+  transition: all 2s ease-out;&#13;
+}&#13;
+&#13;
+.cart-empty-state{&#13;
+  position:absolute;&#13;
+  top:50%;&#13;
+  left:50%;&#13;
+  transform:translate(-50%, -50%);&#13;
+  display:flex;&#13;
+  flex-direction:column;&#13;
+  align-items:center;&#13;
+  justify-content:center;&#13;
+  text-align:center;&#13;
+  gap:14px;&#13;
+  width:100%;&#13;
+  pointer-events:none;&#13;
+}&#13;
+&#13;
+.cart-empty-icon{&#13;
+  width:110px;&#13;
+  height:110px;&#13;
+  border-radius:50%;&#13;
+  background:#eef2f7;&#13;
+  display:flex;&#13;
+  align-items:center;&#13;
+  justify-content:center;&#13;
+  color:#116AF8;&#13;
+}&#13;
+&#13;
+.cart-empty-title{&#13;
+  font-size:22px;&#13;
+  font-weight:600;&#13;
+  color:#111827;&#13;
+}&#13;
+&#13;
+.cart-modal:hover{&#13;
+  outline:2px solid #116AF8;&#13;
+  outline-offset:2px;&#13;
+  box-shadow:&#13;
+    0 35px 90px rgba(0,0,0,.22),&#13;
+    0 0 0 4px rgba(17, 106, 248, .08);&#13;
+}&#13;
+&#13;
+.cart-empty-subtitle{&#13;
+  font-size:14px;&#13;
+  color:#6b7280;&#13;
+  max-width:260px;&#13;
+  line-height:1.5;&#13;
+}&#13;
+&#13;
+.user-name{&#13;
+  text-transform: capitalize;&#13;
+  font-weight:bold;&#13;
+}</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>false</has_preview>
+        <id/>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link>
+        <name>tracenow_header</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function() {
+
+    data.dt = "";
+
+    var user = gs.getUser();
+
+    data.user = {
+
+        name: user.getDisplayName(),
+        sys_id: user.getID()
+
+    };
+
+
+    /* INITIALS */
+
+    var initials = "";
+
+    var parts = data.user.name.split(" ");
+
+    for (var i = 0; i < parts.length; i++)
+        initials += parts[i].charAt(0);
+
+    data.user.initials = initials.substring(0, 2).toUpperCase();
+
+
+    /* GET NOTIFICATIONS */
+
+    if (input && input.action == "getNotifications") {
+
+        data.notifications = [];
+
+        var notif = new GlideRecord("x_sysus_tracenow_notifications");
+
+        notif.addQuery("user", gs.getUserID());
+
+        notif.orderByDesc("sys_created_on");
+
+        notif.setLimit(20);
+
+        notif.query();
+
+        while (notif.next()) {
+
+            data.notifications.push({
+
+                id: notif.getUniqueValue(),
+                title: notif.getValue("title"),
+                message: notif.getValue("message"),
+                priority: notif.getValue("priority"),
+                read: notif.getValue("read") == true,
+                time: notif.getDisplayValue("sys_created_on")
+
+            });
+
+        }
+
+        return;
+
+    }
+
+
+    /* MARK SINGLE */
+
+    if (input && input.action == "markNotificationRead") {
+
+        var rec = new GlideRecord("x_sysus_tracenow_notifications");
+
+        if (rec.get(input.id)) {
+
+            rec.read = true;
+            rec.update();
+
+        }
+
+        return;
+
+    }
+
+
+    /* MARK ALL */
+
+    if (input && input.action == "markAllNotificationsRead") {
+
+        var recAll = new GlideRecord("x_sysus_tracenow_notifications");
+
+        recAll.addQuery("user", gs.getUserID());
+
+        recAll.addQuery("read", false);
+
+        recAll.query();
+
+        while (recAll.next()) {
+
+            recAll.read = true;
+            recAll.update();
+
+        }
+
+        return;
+
+    }
+
+
+    /* CONNECTION STATUS 
+
+    var chk = new GlideRecord('x_sysus_tracenow_connection');
+    	chk.addQuery('state',true);
+    	chk.addQuery('sys_created_by',gs.getUserName());
+    	chk.query();
+    	if(chk.next()){
+    		data.dt = chk.getValue('name');
+    	}
+
+    */
+    /* DEMO FALLBACK */
+
+    data.notifications = [];
+
+    var gr = new GlideRecord("sys_journal_field");
+
+    gr.addQuery("sys_created_by", user.getName());
+
+    gr.orderByDesc("sys_created_on");
+
+    gr.setLimit(5);
+
+    gr.query();
+
+    while (gr.next()) {
+
+        data.notifications.push({
+
+            title: gr.getValue("value"),
+            time: gr.getDisplayValue("sys_created_on")
+
+        });
+
+    }
+
+})();]]></script>
+        <servicenow>false</servicenow>
+        <static>false</static>
+        <sys_class_name>sp_header_footer</sys_class_name>
+        <sys_created_by>irfan.wani</sys_created_by>
+        <sys_created_on>2026-05-20 09:47:14</sys_created_on>
+        <sys_id>8ee97d54930587100af5f4e9b903d693</sys_id>
+        <sys_mod_count>3</sys_mod_count>
+        <sys_name>tracenow_header</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_header_footer_8ee97d54930587100af5f4e9b903d693</sys_update_name>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-06-03 07:23:37</sys_updated_on>
+        <template><![CDATA[<header class="dm-header">
+
+<a class="dm-logo" href="/_tracenow">
+
+  <span class="dm-logo-icon">
+    <img ng-src="{{portal.logo}}" alt="TRACENow Logo" />
+  </span>
+
+
+</a>
+
+
+<div class="dm-header-right">
+
+<!-- ================= CART ICON ================= -->
+
+<div class="dm-icon cart"
+ng-click="c.toggleCart(); $event.stopPropagation()">
+
+<svg xmlns="http://www.w3.org/2000/svg"
+width="18"
+height="18"
+viewBox="0 0 24 24"
+fill="none"
+stroke="currentColor"
+stroke-width="2">
+
+<circle cx="8" cy="21" r="1"/>
+<circle cx="19" cy="21" r="1"/>
+<path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+
+</svg>
+
+<span class="badge"
+ng-if="c.cartCount > 0">
+
+{{c.cartCount}}
+
+</span>
+
+</div>
+
+
+<!-- ================= NOTIFICATIONS ================= -->
+
+<div class="dm-icon notification"
+ng-click="c.toggleNotifications(); $event.stopPropagation()">
+
+<svg xmlns="http://www.w3.org/2000/svg"
+width="18"
+height="18"
+viewBox="0 0 24 24"
+fill="none"
+stroke="currentColor"
+stroke-width="2">
+
+<path d="M10.268 21a2 2 0 0 0 3.464 0"/>
+<path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
+
+</svg>
+
+<span class="badge"
+ng-if="c.unreadCount > 0">
+
+{{c.unreadCount}}
+
+</span>
+
+</div>
+
+
+<!-- HELP -->
+
+<div class="dm-icon help"
+ng-click="toggleHelp(); $event.stopPropagation()">
+
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+
+</div>
+
+
+
+<!-- PROFILE -->
+
+<div class="profile-wrapper" ng-click="toggleMenu(); $event.stopPropagation()">
+<div class="user-name">
+{{data.user.name}}
+</div>
+<div class="avatar"
+>
+
+{{data.user.initials}}
+
+</div>
+
+
+<div class="profile-dropdown"
+ng-show="showMenu">
+
+
+
+
+
+
+
+<div class="menu-item logout">
+  
+<a tabindex="0" href="{{portal.logoutUrl}}">
+<span>Logout</span>
+</a>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- HELP MODAL -->
+
+<div class="help-modal" ng-show="showHelp">
+
+<div class="help-header">
+Data Migration Manager
+</div>
+
+<div class="help-content">
+
+<p>
+Data Migration Manager helps administrators migrate
+records securely between ServiceNow instances including
+incidents, tasks, attachments, and related lists.
+</p>
+
+<p>
+Use Connections, Migration Cart, Run Migration,
+History, and Settings pages to manage migrations.
+</p>
+
+</div>
+
+</div>
+<!-- ================= CART OVERLAY ================= -->
+
+<div class="cart-overlay"
+ng-show="c.showCartPanel"
+ng-click="c.showCartPanel=false">
+</div>
+
+
+<!-- ================= CART MODAL ================= -->
+
+<div class="cart-modal"
+ng-show="c.showCartPanel"
+ng-click="$event.stopPropagation()">
+
+
+<!-- HEADER -->
+
+<div class="cart-modal-header">
+
+<div class="cart-title">
+Migration Cart
+</div>
+
+<div class="cart-count">
+{{c.cartCount}} items
+</div>
+
+</div>
+
+
+<!-- ]]>🔥<![CDATA[ SCROLL AREA (THIS FIXES YOUR ISSUE) -->
+
+<div class="cart-scroll-area">
+
+
+<!-- RECORD LIST -->
+
+<div class="cart-record-container"
+ng-if="c.cartCount>0">
+
+
+<!-- TABLE GROUP -->
+
+<div class="cart-table-group"
+ng-repeat="table in c.cart">
+
+
+<!-- TABLE HEADER -->
+
+<div class="cart-table-header">
+
+<div class="cart-table-name">
+{{table.name}}
+</div>
+
+<div class="cart-table-count">
+{{table.records.length}} record(s)
+</div>
+
+</div>
+
+
+<!-- RECORD ROWS -->
+
+<div class="cart-record-row"
+ng-repeat="rec in table.records">
+
+<div class="cart-record-info">
+
+<div class="cart-record-number">
+{{rec.number}}
+</div>
+
+<div class="cart-record-desc">
+{{rec.short_description}}
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- EMPTY STATE -->
+
+<div class="cart-empty-state"
+ng-if="c.cartCount==0">
+
+<div class="cart-empty-icon">
+
+<svg xmlns="http://www.w3.org/2000/svg"
+width="42"
+height="42"
+viewBox="0 0 24 24"
+fill="none"
+stroke="currentColor"
+stroke-width="2">
+
+<circle cx="8" cy="21" r="1"/>
+<circle cx="19" cy="21" r="1"/>
+<path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+
+</svg>
+
+</div>
+
+<div class="cart-empty-title">
+Your cart is empty
+</div>
+
+</div>
+
+
+</div>
+
+
+<!-- BUTTON -->
+
+<button class="cart-action-btn"
+ng-if="c.cartCount>0"
+ng-click="c.openCartPage()">
+
+View Cart & Migrate
+
+</button>
+
+
+</div>
+
+<!-- NOTIFICATION DRAWER -->
+
+<div class="notification-modal right-drawer"
+ng-class="{'open': c.showNotificationPanel}"
+ng-click="$event.stopPropagation()">
+
+
+<!-- HEADER -->
+
+<div class="notif-header-bar">
+
+<div class="notif-header-left">
+
+<i class="fa fa-bell notif-bell-icon"></i>
+
+<div>
+
+<div class="notif-title-main">
+Notifications
+</div>
+
+<div class="notif-sub">
+{{c.unreadCount}} unread messages
+</div>
+
+</div>
+
+</div>
+
+
+<div class="notif-close"
+ng-click="c.showNotificationPanel=false">
+
+×
+
+</div>
+
+</div>
+
+
+<!-- ACTION BUTTON -->
+
+<div class="notif-actions">
+
+<button class="notif-btn mark-read-btn"
+ng-click="c.markAllAsRead()">
+
+<svg xmlns="http://www.w3.org/2000/svg"
+width="18"
+height="18"
+viewBox="0 0 24 24"
+fill="none"
+stroke="currentColor"
+stroke-width="2"
+stroke-linecap="round"
+stroke-linejoin="round">
+
+<path d="M18 6 7 17l-5-5"/>
+<path d="m22 10-7.5 7.5L13 16"/>
+
+</svg>
+
+<span>Mark All Read</span>
+
+</button>
+
+</div>
+
+
+<!-- LIST -->
+
+<div class="notif-list">
+
+
+<div class="notif-card"
+     ng-repeat="n in c.notifications"
+ng-class="[
+  !n.read && (
+    n.priority=='success' ? 'success' :
+    n.priority=='warning' ? 'warning' :
+    n.priority=='error' ? 'danger' :
+    n.priority=='critical' ? 'danger' :
+    n.priority=='info' ? 'info' :
+    ''
+  ),
+  n.read ? 'read-card' : ''
+]"
+     ng-click="c.markAsRead(n)">
+
+
+<div class="notif-dot"
+     ng-if="!n.read"></div>
+
+
+<!-- ICONS -->
+
+<div class="notif-icon-wrapper">
+
+
+<!-- INFO (BLUE) -->
+
+<svg ng-if="n.priority=='info'"
+xmlns="http://www.w3.org/2000/svg"
+width="22"
+height="22"
+viewBox="0 0 24 24"
+fill="none"
+stroke="#3b82f6"
+stroke-width="2"
+stroke-linecap="round"
+stroke-linejoin="round">
+
+<circle cx="12" cy="12" r="10"/>
+<path d="M12 16v-4"/>
+<path d="M12 8h.01"/>
+
+</svg>
+
+
+<!-- WARNING (YELLOW) -->
+
+<svg ng-if="n.priority=='warning'"
+xmlns="http://www.w3.org/2000/svg"
+width="22"
+height="22"
+viewBox="0 0 24 24"
+fill="none"
+stroke="#f59e0b"
+stroke-width="2"
+stroke-linecap="round"
+stroke-linejoin="round">
+
+<circle cx="12" cy="12" r="10"/>
+<line x1="12" x2="12" y1="8" y2="12"/>
+<line x1="12" x2="12.01" y1="16" y2="16"/>
+
+</svg>
+
+
+<!-- SUCCESS (GREEN) -->
+
+<svg ng-if="n.priority=='success'"
+xmlns="http://www.w3.org/2000/svg"
+width="22"
+height="22"
+viewBox="0 0 24 24"
+fill="none"
+stroke="#22c55e"
+stroke-width="2"
+stroke-linecap="round"
+stroke-linejoin="round">
+
+<circle cx="12" cy="12" r="10"/>
+<path d="m9 12 2 2 4-4"/>
+
+</svg>
+
+
+<!-- FAILED (RED) -->
+
+<svg ng-if="n.priority=='error'"
+xmlns="http://www.w3.org/2000/svg"
+width="22"
+height="22"
+viewBox="0 0 24 24"
+fill="none"
+stroke="#ef4444"
+stroke-width="2"
+stroke-linecap="round"
+stroke-linejoin="round">
+
+<circle cx="12" cy="12" r="10"/>
+<path d="m15 9-6 6"/>
+<path d="m9 9 6 6"/>
+
+</svg>
+
+
+</div>
+
+
+
+
+<div class="notif-content">
+
+<div class="notif-card-title">
+{{n.title}}
+</div>
+
+
+<div class="notif-card-msg"
+ng-if="n.message">
+{{n.message}}
+</div>
+
+
+<div class="notif-card-time">
+{{n.time}}
+</div>
+
+</div>
+
+</div>
+
+
+<div class="empty-notif"
+ng-if="!c.notifications.length">
+
+No notifications
+
+</div>
+
+
+</div>
+
+</div>
+
+
+</header>]]></template>
+    </sp_header_footer>
+</record_update>

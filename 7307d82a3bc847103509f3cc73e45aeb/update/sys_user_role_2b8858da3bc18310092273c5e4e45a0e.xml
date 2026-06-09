@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_user_role">
+    <sys_user_role action="INSERT_OR_UPDATE">
+        <assignable_by/>
+        <can_delegate>true</can_delegate>
+        <description/>
+        <elevated_privilege>false</elevated_privilege>
+        <encryption_context/>
+        <federated_id>AtX91uxgmP7EcXcFuxy4hBVuCUMF1Ahh9yjoMv+FEGI=</federated_id>
+        <grantable>true</grantable>
+        <includes_roles/>
+        <name>x_sysus_tracenow.support_request_user</name>
+        <scoped_admin>false</scoped_admin>
+        <suffix>support_request_user</suffix>
+        <sys_class_name>sys_user_role</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-05-26 07:48:41</sys_created_on>
+        <sys_id>2b8858da3bc18310092273c5e4e45a0e</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>x_sysus_tracenow.support_request_user</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_user_role_2b8858da3bc18310092273c5e4e45a0e</sys_update_name>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-05-26 07:48:41</sys_updated_on>
+    </sys_user_role>
+</record_update>

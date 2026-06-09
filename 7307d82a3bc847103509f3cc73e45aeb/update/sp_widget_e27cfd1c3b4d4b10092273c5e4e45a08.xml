@@ -1,0 +1,2502 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller = function($scope, $timeout) {
+
+    var c = this;
+	//c.loadingTables = true;
+    c.searchingTables = false;
+    c.records = [];
+    c.view = "tables";
+    c.selectedTable = null;
+    c.pageSelectAll = false;
+    c.allSelected = false;
+    c.currentPage = 1;
+    c.pageSize = 10;
+    c.check = sessionStorage.getItem('currentId');
+    c.isMigrating = false;
+    c.loadingRecords = false;
+    c.loadingTables = true;
+    c.showSnackbar = false;
+    c.snackbarMessage = '';
+    c.previewOpen = false;
+    c.previewData = {};
+    c.tableSearch = '';
+    c.recordSearch = '';
+
+    c.inserted = 0;
+    c.updated = 0;
+    c.total = 0;
+    c.count = 0;
+    c.conn_name = c.data.instanceName;
+    c.url = '';
+    c.isCompleted = false;
+    c.migrationResult = {};
+    c.selected_recs = 0;
+    c.showModal = false;
+    c.progress = 0;
+	
+		//store connection name in session
+		sessionStorage.setItem('conn_name', c.conn_name);
+    /* ===== TABLE LOADER WATCH ===== */
+$scope.$watch(
+  function () {
+    return c.data.tables;
+  },
+  function (newVal) {
+    if (newVal && newVal.length) {
+
+      // ]]>🔥<![CDATA[ tell previous page loader to finish
+      sessionStorage.setItem("tablesLoaded", "true");
+
+      $timeout(function () {
+        c.loadingTables = false;
+      }, 300);
+    }
+  }
+);
+
+    c.availableFilterFields = [
+        { key:'number', label:'Number' }
+    ];
+
+    c.filters = [{
+        field: 'number',
+        operator: 'contains',
+        value: '',
+        logic: 'AND'
+    }];
+
+    /* ================= TABLE DISPLAY CONTROL ================= */
+
+ c.searchTimeout = null;
+
+c.getVisibleTables = function() {
+    return c.data.tables || [];
+};
+
+c.searchTables = function() {
+
+    if (c.searchTimeout) {
+        $timeout.cancel(c.searchTimeout);
+    }
+
+    c.searchTimeout = $timeout(function() {
+
+        c.searchingTables = true;
+
+        c.server.get({
+            action: 'searchTables',
+            search: c.tableSearch || ''
+        }).then(function(response) {
+
+            c.data.tables = response.data.tables || [];
+
+            c.loadingTables = false;
+        });
+
+    }, 300);
+};
+
+    /* ================= STATES ================= */
+
+    c.getStateLabel = function(state) {
+
+        var map = {
+            "-5": "New",
+            "-4": "Assess",
+            "-3": "Authorize",
+            "-2": "Scheduled",
+            "-1": "Implement",
+            "0": "Review",
+            "1": "New",
+            "2": "In Progress",
+            "3": "Closed",
+            "4": "Canceled",
+            "7": "Closed"
+        };
+
+        return map[String(state)] || state || "-";
+    };
+
+    /* ================= TOAST ================= */
+
+    c.showToast = function(msg) {
+
+        c.snackbarMessage = msg;
+        c.showSnackbar = true;
+
+        $timeout(function() {
+            c.showSnackbar = false;
+        }, 3000);
+    };
+
+    /* ================= PREVIEW ================= */
+
+    c.openPreview = function(record) {
+        c.previewData = angular.copy(record);
+        c.previewOpen = true;
+    };
+
+    c.closePreview = function() {
+        c.previewOpen = false;
+    };
+
+    /* ================= DYNAMIC FILTER FIELDS ================= */
+
+    c.setAvailableFilterFields = function(tableName) {
+
+        var map = {
+            incident: [
+                { key:'number', label:'Number' },
+                { key:'short_description', label:'Description' },
+                { key:'sys_updated_by', label:'Updated By' },
+                { key:'state', label:'State' }
+            ],
+
+            sc_req_item: [
+                { key:'number', label:'Number' },
+                { key:'short_description', label:'Description' },
+                { key:'sys_updated_by', label:'Updated By' },
+                { key:'state', label:'State' }
+            ],
+
+            change_request: [
+                { key:'number', label:'Number' },
+                { key:'short_description', label:'Description' },
+                { key:'sys_updated_by', label:'Updated By' },
+                { key:'state', label:'State' }
+            ],
+
+            problem: [
+                { key:'number', label:'Number' },
+                { key:'short_description', label:'Description' },
+                { key:'sys_updated_by', label:'Updated By' },
+                { key:'state', label:'State' }
+            ],
+
+            task: [
+                { key:'number', label:'Number' },
+                { key:'short_description', label:'Description' },
+                { key:'sys_updated_by', label:'Updated By' },
+                { key:'state', label:'State' }
+            ],
+
+            sys_user: [
+                { key:'name', label:'Name' },
+                { key:'user_name', label:'User ID' },
+                { key:'sys_updated_by', label:'Updated By' }
+            ],
+
+            sys_user_group: [
+                { key:'name', label:'Name' },
+                { key:'sys_updated_by', label:'Updated By' }
+            ],
+
+            cmdb_ci: [
+                { key:'name', label:'Name' },
+                { key:'sys_updated_by', label:'Updated By' }
+            ],
+
+            alm_asset: [
+                { key:'asset_tag', label:'Asset Tag' },
+                { key:'sys_updated_by', label:'Updated By' }
+            ]
+        };
+
+        c.availableFilterFields = map[tableName] || [
+            { key:'name', label:'Name' },
+            { key:'sys_updated_by', label:'Updated By' }
+        ];
+    };
+
+    /* ================= FILTERS ================= */
+
+    c.addFilter = function(type) {
+        c.filters.push({
+            field: c.availableFilterFields[0].key,
+            operator: 'contains',
+            value: '',
+            logic: type
+        });
+    };
+
+    c.removeFilter = function(index) {
+        c.filters.splice(index, 1);
+    };
+
+    c.dynamicFilter = function(record) {
+
+        var result = true;
+
+        angular.forEach(c.filters, function(f, index) {
+
+            if (!f.value) return;
+
+            var rawVal = f.field === 'state' ? c.getStateLabel(record.state) : record[f.field];
+            var val = String(rawVal || '').trim().toLowerCase();
+            var target = String(f.value || '').trim().toLowerCase();
+
+            var match = false;
+
+            if (f.operator === 'contains')
+                match = val.indexOf(target) !== -1;
+
+            if (f.operator === 'starts')
+                match = val.indexOf(target) === 0;
+
+            if (f.operator === 'is')
+                match = val === target;
+
+            if (index === 0) {
+                result = match;
+            } else {
+                result = f.logic === 'AND' ? result && match : result || match;
+            }
+
+        });
+
+        if (c.filters.every(function(f) {
+            return !f.value;
+        })) return true;
+
+        return result;
+    };
+
+    /* ================= RECORD SEARCH ================= */
+
+    c.recordSearchFilter = function(record) {
+
+        if (!c.recordSearch || !c.recordSearch.trim()) return true;
+
+        var q = c.recordSearch.toLowerCase();
+
+        for (var i = 0; i < c.columns.length; i++) {
+
+            var key = c.columns[i].key;
+            var value = record[key];
+
+            if (key === 'state') value = c.getStateLabel(value);
+
+            if (String(value || '').toLowerCase().indexOf(q) !== -1) return true;
+        }
+
+        return false;
+    };
+
+    $scope.$watch('c.filters', function() {
+        c.currentPage = 1;
+        c.syncSelectionStates();
+    }, true);
+
+    /* ================= OPEN TABLE ================= */
+
+    c.openTable = function(table) {
+
+        c.selectedTable = table;
+        c.view = "records";
+        c.currentPage = 1;
+        c.loadingRecords = true;
+
+        c.setAvailableFilterFields(table.name);
+
+        c.filters = [{
+            field: c.availableFilterFields[0].key,
+            operator: 'contains',
+            value: '',
+            logic: 'AND'
+        }];
+
+        c.server.get({
+            action: "getRecords",
+            table: table.name
+        }).then(function(response) {
+
+            c.records = response.data.records || [];
+            c.setDynamicColumns(c.records);
+            c.recordSearch = '';
+            if (response.data.totalCount !== undefined) {
+                table.count = response.data.totalCount;
+            }
+
+            angular.forEach(c.records, function(r) {
+                r.selected = false;
+            });
+
+            c.loadingRecords = false;
+            c.syncSelectionStates();
+        });
+    };
+
+    c.backToTables = function() {
+        c.view = "tables";
+        c.records = [];
+    };
+
+    /* KEEP REST OF YOUR CURRENT SCRIPT EXACTLY SAME BELOW */
+
+
+
+    /* ================= DYNAMIC COLUMNS ================= */
+
+    c.setDynamicColumns = function(records) {
+
+        if (!records || !records.length) return;
+
+        function hasField(field) {
+            return records.some(function(r) {
+                return r.hasOwnProperty(field);
+            });
+        }
+
+        c.columns = [];
+
+        var priorityFields = ['name', 'user_name', 'label', 'number'];
+        var primaryField = '';
+
+        for (var i = 0; i < priorityFields.length; i++) {
+            if (hasField(priorityFields[i])) {
+                primaryField = priorityFields[i];
+                break;
+            }
+        }
+
+        if (primaryField) {
+            c.columns.push({
+                key: primaryField,
+                label: primaryField.replace(/_/g, ' ').toUpperCase()
+            });
+        }
+
+        var columnMap = [
+            { key: 'user_name', label: 'USER ID' },
+            { key: 'name', label: 'NAME' },
+            { key: 'sys_updated_by', label: 'UPDATED BY' },
+            { key: 'sys_updated_on', label: 'UPDATED ON' },
+            { key: 'state', label: 'STATE' }
+        ];
+
+        columnMap.forEach(function(col) {
+
+            var alreadyAdded = c.columns.some(function(cCol) {
+                return cCol.key === col.key;
+            });
+
+            if (!alreadyAdded && hasField(col.key)) {
+                c.columns.push(col);
+            }
+        });
+    };
+	
+	c.migrateSelected = function() {
+
+    if (c.isMigrating) return;
+
+    c.isMigrating = true;
+
+    /* =========================
+       RESET MODAL STATE
+    ========================== */
+    c.logs = [];
+    c.showModal = true;
+    c.progress = 0;
+    c.migrationResult = {};
+    c.isCompleted = false;
+    c.total = c.getSelectedCount();
+
+    var selectedRecordsByTable = {};
+
+    if (c.selectedTable && c.selectedTable.name) {
+        selectedRecordsByTable[c.selectedTable.name] = [];
+
+        angular.forEach(c.records, function(r) {
+            if (r.selected) {
+                selectedRecordsByTable[c.selectedTable.name].push(r);
+            }
+        });
+    }
+    c.tableCount = Object.keys(selectedRecordsByTable).length;
+    c.logs.push("Starting migration...");
+
+    var progressInterval;
+    /* =========================
+       FAKE PROGRESS
+    ========================== */
+    progressInterval = setInterval(function() {
+
+        if (c.progress < 90) {
+            c.progress += Math.floor(Math.random() * 5) + 1;
+        }
+
+        if (c.progress > 90) {
+            c.progress = 90;
+        }
+
+        $scope.$applyAsync();
+
+    }, 500);
+
+    c.server.get({
+        action: "migrateRecords",
+        totalrecs: c.total,
+        active_conn: sessionStorage.getItem('currentId'),
+        records: Object.keys(selectedRecordsByTable).map(function(table) {
+            return {
+                name: table,
+                records: selectedRecordsByTable[table],
+								state: selectedRecordsByTable[table].state
+            };
+        })
+    })
+
+    .then(function(response) {
+
+        clearInterval(progressInterval);
+        c.progress = 100;
+        c.isMigrating = false;
+
+        if (response.data.success) {
+
+            /* =========================
+               SUCCESS STATE
+            ========================== */
+            c.logs.push("Migration started at " + response.data.sTime);
+            c.logs.push("Migration completed at " + response.data.eTime);
+						console.log(response.data.result);
+
+            c.isCompleted = true;
+            c.conn_name = response.data.instanceName;
+            c.inserted = response.data.inserted;
+            c.updated = response.data.updated;
+					  c.duration = response.data.duration;
+            c.url = response.data.instanceUrl;
+
+            c.migrationResult = {
+                error: false,
+                data: response.data.result
+            };
+
+            angular.forEach(c.records, function(r) {
+                r.selected = false;
+            });
+
+            c.syncSelectionStates();
+
+        } else {
+
+            /* =========================
+               FAILURE (SERVER RESPONSE)
+            ========================== */
+            c.isCompleted = true;
+            c.isMigrating = false;
+
+            c.migrationResult = {
+                error: true,
+                message: response.data.message || "Migration failed"
+            };
+        }
+
+    })
+
+    .catch(function(error) {
+
+        /* =========================
+           ERROR HANDLING (NETWORK / SERVER ERROR)
+        ========================== */
+        clearInterval(progressInterval);
+
+        c.isMigrating = false;
+        c.progress = 0;
+        c.isCompleted = true;
+
+        console.log(error);
+
+        var errMsg = "Unexpected error occurred";
+
+        if (error && error.data && error.data.message) {
+            errMsg = error.data.message;
+        }
+
+        c.migrationResult = {
+            error: true,
+            message: errMsg
+        };
+    });
+
+};
+	
+		
+
+    /* ================= SELECTION ================= */
+
+    c.getSelectedCount = function() {
+        return c.records.filter(function(r) { return r.selected; }).length;
+    };
+
+    c.toggleCurrentPage = function() {
+
+        var filtered = $scope.$eval('(c.records | filter:c.dynamicFilter | filter:c.recordSearchFilter)');
+        var start = (c.currentPage - 1) * c.pageSize;
+        var end = c.currentPage * c.pageSize;
+
+        var currentPageRecords = filtered.slice(start, end);
+
+        var allChecked = currentPageRecords.length && currentPageRecords.every(function(r) {
+            return r.selected;
+        });
+
+        angular.forEach(currentPageRecords, function(r) {
+            r.selected = !allChecked;
+        });
+
+        c.syncSelectionStates();
+    };
+
+    c.selectAllRecords = function() {
+
+        var filtered = $scope.$eval('(c.records | filter:c.dynamicFilter | filter:c.recordSearchFilter)');
+
+        c.allSelected = !c.allSelected;
+
+        angular.forEach(filtered, function(r) {
+            r.selected = c.allSelected;
+        });
+
+        c.syncSelectionStates();
+    };
+
+    c.syncSelectionStates = function() {
+
+        var filtered = $scope.$eval('(c.records | filter:c.dynamicFilter | filter:c.recordSearchFilter)');
+        var start = (c.currentPage - 1) * c.pageSize;
+        var end = c.currentPage * c.pageSize;
+
+        var current = filtered.slice(start, end);
+
+        c.pageSelectAll = current.length > 0 && current.every(function(r) {
+            return r.selected;
+        });
+
+        c.allSelected = filtered.length > 0 && filtered.every(function(r) {
+            return r.selected;
+        });
+    };
+	//store migration results
+	c.storeMigrationResults = function(result) {
+
+    var structured = [];
+
+    for (var table in result) {
+
+        // skip stats if present
+        if (table === 'stats') continue;
+
+        var records = result[table];
+
+        for (var sysId in records) {
+
+            var rec = records[sysId];
+
+            structured.push({
+                table: table,
+                source_sys_id: sysId,
+                target_sys_id: rec.target,
+                status: rec.status
+            });
+        }
+    }
+
+    // store in sessionStorage
+    sessionStorage.setItem(
+        "migration_results",
+        JSON.stringify(structured)
+    );
+};
+
+    /* ================= CART ================= */
+
+    c.addSelectedToCart = function() {
+
+        var cart = JSON.parse(sessionStorage.getItem("migration_cart") || "[]");
+        var existingMap = {};
+
+        angular.forEach(cart, function(item) {
+            existingMap[item.sys_id] = true;
+        });
+
+        var added = 0;
+        var skipped = 0;
+
+        angular.forEach(c.records, function(r) {
+
+            if (r.selected) {
+
+                if (!existingMap[r.sys_id]) {
+                    cart.push(r);
+                    existingMap[r.sys_id] = true;
+                    added++;
+                } else {
+                    skipped++;
+                }
+
+                r.selected = false;
+            }
+        });
+
+        sessionStorage.setItem("migration_cart", JSON.stringify(cart));
+        window.dispatchEvent(new Event("cartUpdated"));
+
+        c.syncSelectionStates();
+
+        if (added > 0 && skipped === 0) c.showToast("Added to queue successfully");
+        if (added > 0 && skipped > 0) c.showToast(added + " added, " + skipped + " already in queue");
+        if (added === 0 && skipped > 0) c.showToast("Selected records already exist in queue");
+    };
+    c.closeModal = function() {
+        c.showModal = false;
+    };
+
+    /* ================= PAGINATION ================= */
+
+    c.getTotalPages = function() {
+        var filtered = $scope.$eval('(c.records | filter:c.dynamicFilter | filter:c.recordSearchFilter)');
+        return Math.ceil(filtered.length / c.pageSize) || 1;
+    };
+
+    c.nextPage = function() {
+        if (c.currentPage < c.getTotalPages()) {
+            c.currentPage++;
+            c.syncSelectionStates();
+        }
+    };
+
+    c.prevPage = function() {
+        if (c.currentPage > 1) {
+            c.currentPage--;
+            c.syncSelectionStates();
+        }
+    };
+
+};
+]]></client_script>
+        <controller_as>c</controller_as>
+        <css>.browse-layout {&#13;
+  display: flex;&#13;
+  max-height: calc(100vh - 64px);&#13;
+position:relative;&#13;
+  background: linear-gradient(&#13;
+    to bottom right,&#13;
+    #ffffff 0%,&#13;
+    rgba(17, 106, 248, 0.05) 50%,&#13;
+    rgba(155, 192, 252, 0.10) 100%&#13;
+  );&#13;
+}&#13;
+&#13;
+.not-connected{&#13;
+	width:100%;&#13;
+  height:calc(100vh - 64px);&#13;
+  display:flex;&#13;
+  flex-direction:column;&#13;
+  //justify-content:center;&#13;
+  align-items:center;&#13;
+}&#13;
+&#13;
+.global-loader {&#13;
+  position: fixed;&#13;
+  inset: 0;&#13;
+  background: rgba(255,255,255,0.95);&#13;
+&#13;
+  display: flex;&#13;
+  flex-direction: column;&#13;
+  align-items: center;&#13;
+  justify-content: center;&#13;
+&#13;
+  z-index: 999999;&#13;
+&#13;
+  color: #116AF8;&#13;
+  font-size: 18px;&#13;
+  font-weight: 600;&#13;
+}&#13;
+&#13;
+.global-loader i {&#13;
+  font-size: 48px;&#13;
+  margin-bottom: 16px;&#13;
+}&#13;
+.dm-sidebar-slot {&#13;
+  flex-basis: 260px;&#13;
+  flex-shrink:0;&#13;
+  height:100%;&#13;
+}&#13;
+&#13;
+.browse-wrapper {&#13;
+  position:relative;&#13;
+  display: flex;&#13;
+  flex-direction: column;&#13;
+  height:100%;&#13;
+  gap:30px;&#13;
+  margin: 0 auto;&#13;
+  overflow-y:auto;&#13;
+  height:calc(100vh - 64px);&#13;
+  width: 100%;&#13;
+  padding: 30px 15%;&#13;
+}&#13;
+@media(max-width:1600px){&#13;
+.browse-wrapper{&#13;
+  	padding:30px;&#13;
+  }&#13;
+}&#13;
+/* ========================= TABLE CARDS ========================= */&#13;
+&#13;
+.cards-grid {&#13;
+    display: grid;&#13;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));&#13;
+    gap: 20px;&#13;
+}&#13;
+&#13;
+.table-card {&#13;
+    background: #fff;&#13;
+    border-radius: 18px;&#13;
+    padding: 22px;&#13;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .05);&#13;
+    transition: all .25s ease;&#13;
+}&#13;
+&#13;
+.table-card:hover {&#13;
+    transform: translateY(-4px);&#13;
+}&#13;
+&#13;
+.card-top {&#13;
+    margin-bottom: 18px;&#13;
+}&#13;
+&#13;
+.count {&#13;
+    font-size: 30px;&#13;
+    font-weight: 700;&#13;
+    color: #116AF8;&#13;
+}&#13;
+&#13;
+.title {&#13;
+    font-size: 18px;&#13;
+    font-weight: 600;&#13;
+    color: #116AF8;&#13;
+}&#13;
+&#13;
+.name {&#13;
+    font-size: 14px;&#13;
+    color: #116AF8;&#13;
+}&#13;
+&#13;
+.browse-btn {&#13;
+    width: 100%;&#13;
+    height: 42px;&#13;
+    border: none;&#13;
+    border-radius: 12px;&#13;
+    background: #116AF8;&#13;
+    color: white;&#13;
+    font-weight: 600;&#13;
+    cursor: pointer;&#13;
+}&#13;
+.browse-btn:hover{&#13;
+   background: linear-gradient(to right, #116AF8, #0A50F5);&#13;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);&#13;
+  transition: all 2s ease-out;&#13;
+}&#13;
+/* ========================= HEADER ========================= */&#13;
+&#13;
+.modern-record-header h1 {&#13;
+    font-size: 44px;&#13;
+    font-weight: 700;&#13;
+    color: #17324d;&#13;
+    margin-bottom: 10px;&#13;
+}&#13;
+&#13;
+.header-badges {&#13;
+    display: flex;&#13;
+    gap: 12px;&#13;
+    margin-bottom: 24px;&#13;
+}&#13;
+&#13;
+.badge-table,&#13;
+.badge-count {&#13;
+    background: #eef3f9;&#13;
+    border-radius: 999px;&#13;
+    padding: 8px 16px;&#13;
+    font-size: 14px;&#13;
+}&#13;
+&#13;
+/* ========================= SELECTION BAR ========================= */&#13;
+&#13;
+.selection-bar {&#13;
+    display: flex;&#13;
+    justify-content: space-between;&#13;
+    align-items: center;&#13;
+    background: #eaf2ff;&#13;
+    border: 1px solid #9BC0FC;&#13;
+    border-radius: 18px;&#13;
+    padding: 20px 26px;&#13;
+    margin-bottom: 24px;&#13;
+}&#13;
+&#13;
+.selection-left {&#13;
+    display: flex;&#13;
+    align-items: center;&#13;
+    gap: 16px;&#13;
+}&#13;
+&#13;
+.selection-count {&#13;
+    width: 46px;&#13;
+    height: 46px;&#13;
+    border-radius: 14px;&#13;
+    background: #116AF8 ;&#13;
+    color: white;&#13;
+    display: flex;&#13;
+    align-items: center;&#13;
+    justify-content: center;&#13;
+    font-weight: 700;&#13;
+}&#13;
+&#13;
+.browse-header-modern {&#13;
+    margin-bottom: 28px;&#13;
+}&#13;
+&#13;
+.browse-header-modern h1 {&#13;
+    font-size: 52px;&#13;
+    font-weight: 700;&#13;
+    color: #081f4d;&#13;
+    margin-bottom: 8px;&#13;
+}&#13;
+&#13;
+.browse-header-modern p {&#13;
+    font-size: 28px;&#13;
+    color: #4d5c74;&#13;
+}&#13;
+&#13;
+.browse-header-modern span {&#13;
+    color: #116AF8;&#13;
+    font-weight: 600;&#13;
+}&#13;
+&#13;
+.table-search-wrapper {&#13;
+    background: #f7f7f9;&#13;
+    padding: 28px;&#13;
+    border-radius: 20px;&#13;
+    margin-bottom: 32px;&#13;
+}&#13;
+&#13;
+.table-search-bar {&#13;
+    display: flex;&#13;
+    align-items: center;&#13;
+    background: #ececef;&#13;
+    border-radius: 14px;&#13;
+    padding: 18px 20px;&#13;
+}&#13;
+&#13;
+.table-search-bar i {&#13;
+    font-size: 24px;&#13;
+    color: #7b8190;&#13;
+    margin-right: 14px;&#13;
+}&#13;
+&#13;
+.table-search-bar input {&#13;
+    border: none;&#13;
+    background: transparent;&#13;
+    width: 100%;&#13;
+    font-size: 24px;&#13;
+    outline: none;&#13;
+}&#13;
+&#13;
+.selection-sub {&#13;
+    font-size: 14px;&#13;
+    color: #556;&#13;
+}&#13;
+&#13;
+.selection-actions {&#13;
+    display: flex;&#13;
+    gap: 14px;&#13;
+}&#13;
+&#13;
+.queue-btn,&#13;
+.migrate-btn {&#13;
+    min-width: 160px;&#13;
+    height: 46px;&#13;
+    border-radius: 14px;&#13;
+    border: none;&#13;
+    font-weight: 600;&#13;
+    cursor: pointer;&#13;
+    white-space: nowrap;&#13;
+}&#13;
+&#13;
+.queue-btn {&#13;
+    background: white;&#13;
+    border: 2px solid #116AF8;&#13;
+    color: #116AF8;&#13;
+}&#13;
+&#13;
+.migrate-btn {&#13;
+background: #116AF8;&#13;
+    color: white;&#13;
+}&#13;
+.queue-btn:hover{&#13;
+   background: linear-gradient(to right, #fff, #D3D3D3);&#13;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);&#13;
+  transition: all 2s ease-out;&#13;
+}&#13;
+.migrate-btn:hover{&#13;
+   background: linear-gradient(to right, #116AF8, #0A50F5);&#13;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);&#13;
+  transition: all 2s ease-out;&#13;
+}&#13;
+&#13;
+button:disabled {&#13;
+    opacity: .6;&#13;
+    cursor: not-allowed;&#13;
+}&#13;
+&#13;
+.back-link-modern i.fa-angle-left {&#13;
+  margin-right: 6px;&#13;
+}&#13;
+&#13;
+/* ========================= FILTER BAR ========================= */&#13;
+&#13;
+.sn-filter-bar {&#13;
+    background: #f8fbff;&#13;
+    border-radius: 18px;&#13;
+    padding: 20px;&#13;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .05);&#13;
+    margin-bottom: 24px;&#13;
+}&#13;
+&#13;
+.filter-title {&#13;
+    font-size: 15px;&#13;
+    font-weight: 600;&#13;
+    color: #116AF8;&#13;
+    display: flex;&#13;
+    align-items: center;&#13;
+    gap: 8px;&#13;
+    margin-bottom: 16px;&#13;
+}&#13;
+&#13;
+.filter-list {&#13;
+    display: flex;&#13;
+    flex-direction: column;&#13;
+    gap: 14px;&#13;
+}&#13;
+&#13;
+.filter-row {&#13;
+    display: flex;&#13;
+    align-items: center;&#13;
+    gap: 12px;&#13;
+}&#13;
+&#13;
+.filter-row select,&#13;
+.filter-row input {&#13;
+    height: 42px;&#13;
+    border: none;&#13;
+    background: #eef3f9;&#13;
+    border-radius: 12px;&#13;
+    padding: 0 14px;&#13;
+    font-size: 14px;&#13;
+}&#13;
+&#13;
+.filter-row select {&#13;
+    min-width: 150px;&#13;
+}&#13;
+&#13;
+.filter-row input {&#13;
+    min-width: 220px;&#13;
+}&#13;
+&#13;
+.logic-line {&#13;
+    min-width: 60px;&#13;
+}&#13;
+&#13;
+.logic-label {&#13;
+    background: #e8f0fe;&#13;
+    color: #0A50F5;&#13;
+    font-size: 12px;&#13;
+    font-weight: 700;&#13;
+    padding: 5px 10px;&#13;
+    border-radius: 999px;&#13;
+}&#13;
+&#13;
+.remove-filter-btn {&#13;
+    border: none;&#13;
+    background: transparent;&#13;
+    color: #d9534f;&#13;
+    font-size: 22px;&#13;
+    cursor: pointer;&#13;
+}&#13;
+&#13;
+.filter-bottom-row {&#13;
+    margin-top: 18px;&#13;
+    display: flex;&#13;
+    justify-content: space-between;&#13;
+    align-items: center;&#13;
+}&#13;
+&#13;
+.filter-actions {&#13;
+    display: flex;&#13;
+    gap: 14px;&#13;
+}&#13;
+&#13;
+.filter-link-btn {&#13;
+    border: none;&#13;
+    background: transparent;&#13;
+    color: #116AF8 ;&#13;
+    font-weight: 600;&#13;
+    cursor: pointer;&#13;
+}&#13;
+&#13;
+&#13;
+/* ========================= SELECT ALL BUTTON ========================= */&#13;
+&#13;
+.select-all-btn {&#13;
+    min-width: 160px;&#13;
+    height: 46px;&#13;
+    border-radius: 14px;&#13;
+    border: none;&#13;
+    background: #116AF8;&#13;
+    color: white;&#13;
+    font-weight: 600;&#13;
+    cursor: pointer;&#13;
+    white-space: nowrap;&#13;
+}&#13;
+.select-all-btn:hover{&#13;
+   background: linear-gradient(to right, #116AF8, #0A50F5);&#13;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);&#13;
+  transition: all 2s ease-out;&#13;
+}&#13;
+/* ========================= RECORD GRID ========================= */&#13;
+&#13;
+.record-header,&#13;
+.record-row {&#13;
+    display: grid !important;&#13;
+    grid-template-columns: &#13;
+        50px                /* checkbox */&#13;
+        repeat(auto-fit, minmax(140px, 1fr)) /* dynamic columns */&#13;
+        70px;               /* preview always last */&#13;
+    &#13;
+    align-items: center;&#13;
+    gap: 12px;&#13;
+    padding: 16px 12px;&#13;
+    width: 100%;&#13;
+    box-sizing: border-box;&#13;
+}&#13;
+&#13;
+.record-header {&#13;
+    font-weight: 700;&#13;
+    color: #17324d;&#13;
+    border-bottom: 2px solid #dce5f0;&#13;
+}&#13;
+&#13;
+.record-row {&#13;
+    border-bottom: 1px solid #e8edf5;&#13;
+    background: white;&#13;
+}&#13;
+&#13;
+.record-row:hover {&#13;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);&#13;
+    transition: all 2s ease-out;&#13;
+}&#13;
+&#13;
+.record-header &gt; div,&#13;
+.record-row &gt; div {&#13;
+    white-space: nowrap;&#13;
+    overflow: hidden;&#13;
+    text-overflow: ellipsis;&#13;
+}&#13;
+&#13;
+.rec-id {&#13;
+    color: #116AF8;&#13;
+    font-weight: 600;&#13;
+}&#13;
+&#13;
+/* ========================= PAGINATION ========================= */&#13;
+&#13;
+.pagination-bar {&#13;
+    display: flex;&#13;
+    justify-content: center;&#13;
+    align-items: center;&#13;
+    gap: 18px;&#13;
+    margin-top: 28px;&#13;
+    padding: 16px 0;&#13;
+}&#13;
+&#13;
+.page-btn {&#13;
+    min-width: 110px;&#13;
+    height: 44px;&#13;
+    border: none;&#13;
+    border-radius: 14px;&#13;
+    background: #116AF8;&#13;
+    color: white;&#13;
+    font-weight: 600;&#13;
+    cursor: pointer;&#13;
+    display: inline-flex;&#13;
+    align-items: center;&#13;
+    justify-content: center;&#13;
+    white-space: nowrap;&#13;
+}&#13;
+&#13;
+.page-btn:disabled {&#13;
+    opacity: .5;&#13;
+    cursor: not-allowed;&#13;
+}&#13;
+&#13;
+/* ========================= LOADER ========================= */&#13;
+&#13;
+.skeleton-wrapper {&#13;
+    padding: 20px;&#13;
+}&#13;
+&#13;
+.skeleton-header {&#13;
+    height: 44px;&#13;
+    width: 220px;&#13;
+    background: #edf2f7;&#13;
+    border-radius: 12px;&#13;
+    margin-bottom: 20px;&#13;
+    animation: pulse 1.2s infinite;&#13;
+}&#13;
+&#13;
+.skeleton-row {&#13;
+    display: grid;&#13;
+    grid-template-columns: repeat(7, 1fr);&#13;
+    gap: 14px;&#13;
+    margin-bottom: 14px;&#13;
+}&#13;
+&#13;
+.sk-cell {&#13;
+    height: 42px;&#13;
+    background: #edf2f7;&#13;
+    border-radius: 10px;&#13;
+    animation: pulse 1.2s infinite;&#13;
+}&#13;
+&#13;
+@keyframes pulse {&#13;
+    0% { opacity: .5; }&#13;
+    50% { opacity: 1; }&#13;
+    100% { opacity: .5; }&#13;
+}&#13;
+&#13;
+.state-pill {&#13;
+    display: inline-block;&#13;
+    padding: 6px 12px;&#13;
+    border-radius: 999px;&#13;
+    background: #eef4fb;&#13;
+    color: #116AF8;&#13;
+    font-size: 13px;&#13;
+    font-weight: 600;&#13;
+}&#13;
+&#13;
+/* ========================= SNACKBAR ========================= */&#13;
+&#13;
+.snackbar {&#13;
+    position: fixed;&#13;
+    bottom: 24px;&#13;
+    right: 24px;&#13;
+    background: #116AF8;&#13;
+    color: white;&#13;
+    padding: 14px 22px;&#13;
+    border-radius: 12px;&#13;
+    z-index: 9999;&#13;
+}&#13;
+&#13;
+/* ========================= PREVIEW ========================= */&#13;
+&#13;
+.preview-cell {&#13;
+    display: flex;&#13;
+    justify-content: center;&#13;
+    align-items: center;&#13;
+}&#13;
+&#13;
+.preview-icon {&#13;
+    cursor: pointer;&#13;
+    font-size: 16px;&#13;
+    color: #116AF8;&#13;
+}&#13;
+&#13;
+.preview-overlay {&#13;
+    position: fixed;&#13;
+    inset: 0;&#13;
+    background: rgba(0, 0, 0, .35);&#13;
+    display: flex;&#13;
+    align-items: center;&#13;
+    justify-content: center;&#13;
+    z-index: 9999;&#13;
+}&#13;
+&#13;
+/* ========================= PREVIEW MODAL ========================= */&#13;
+&#13;
+.preview-modal {&#13;
+    width: 700px;&#13;
+    background: #fff;&#13;
+    border-radius: 18px;&#13;
+    padding: 28px;&#13;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .2);&#13;
+    color: #17324d;&#13;
+}&#13;
+&#13;
+.preview-header {&#13;
+    display: flex;&#13;
+    justify-content: space-between;&#13;
+    align-items: center;&#13;
+    margin-bottom: 24px;&#13;
+}&#13;
+&#13;
+.preview-header h3 {&#13;
+    margin: 0;&#13;
+    font-size: 24px;&#13;
+    font-weight: 700;&#13;
+    color: #116AF8;&#13;
+}&#13;
+&#13;
+.preview-header button {&#13;
+    width: 32px;&#13;
+    height: 32px;&#13;
+    border: none;&#13;
+    background: transparent;&#13;
+    font-size: 22px;&#13;
+    cursor: pointer;&#13;
+    border-radius: 50%;&#13;
+}&#13;
+&#13;
+.preview-header button:hover {&#13;
+    background: #f1f5f9;&#13;
+}&#13;
+&#13;
+.preview-grid {&#13;
+    display: grid;&#13;
+    grid-template-columns: 1fr 1fr;&#13;
+    gap: 18px 24px;&#13;
+}&#13;
+&#13;
+.preview-grid &gt; div {&#13;
+    display: flex;&#13;
+    flex-direction: column;&#13;
+}&#13;
+&#13;
+.preview-grid label {&#13;
+    font-size: 13px;&#13;
+    font-weight: 600;&#13;
+    color: #556;&#13;
+    margin-bottom: 6px;&#13;
+}&#13;
+&#13;
+.preview-grid div &gt; div {&#13;
+    font-size: 15px;&#13;
+    font-weight: 500;&#13;
+    color: #17324d;&#13;
+    padding: 6px 10px;&#13;
+    border-radius: 12px;&#13;
+    background: #eef3f9;&#13;
+    overflow-wrap: break-word;&#13;
+}&#13;
+&#13;
+.full-width {&#13;
+    grid-column: span 2;&#13;
+}&#13;
+&#13;
+/* ========================= TABLE SEARCH BAR ========================= */&#13;
+&#13;
+.table-search-bar {&#13;
+    display: flex;&#13;
+    align-items: center;&#13;
+    background: white;&#13;
+    border-radius: 14px;&#13;
+    padding: 0 14px;&#13;
+    height: 52px;&#13;
+    margin-bottom: 24px;&#13;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .05);&#13;
+    max-width: 420px;&#13;
+}&#13;
+&#13;
+.table-search-bar i {&#13;
+    color: #116AF8;&#13;
+    font-size: 15px;&#13;
+    margin-right: 10px;&#13;
+}&#13;
+&#13;
+.table-search-bar input {&#13;
+    border: none;&#13;
+    outline: none;&#13;
+    width: 100%;&#13;
+    font-size: 14px;&#13;
+    background: transparent;&#13;
+}&#13;
+/* ================= SEARCH BAR MODERN ================= */&#13;
+&#13;
+/* ================= SEARCH AREA EXACT MATCH ================= */&#13;
+&#13;
+.table-search-wrapper {&#13;
+    background: #ffffff;&#13;
+    padding: 28px;&#13;
+    border-radius: 22px;&#13;
+    margin-bottom: 24px;&#13;
+    box-shadow: 0 8px 24px rgba(0,0,0,.05);&#13;
+    width: 100%;&#13;
+}&#13;
+&#13;
+.table-search-bar-modern {&#13;
+    display: flex;&#13;
+    align-items: center;&#13;
+    background: #f3f4f6;&#13;
+    border: 3px solid #b8b8b8;&#13;
+    border-radius: 16px;&#13;
+    height: 60px;&#13;
+    padding: 0 18px;&#13;
+    width: 100%;&#13;
+    box-sizing: border-box;&#13;
+    box-shadow: none;&#13;
+    outline: none;&#13;
+}&#13;
+&#13;
+.table-search-bar-modern:focus-within {&#13;
+    border: 3px solid #b8b8b8;&#13;
+    box-shadow: none;&#13;
+    outline: none;&#13;
+}&#13;
+&#13;
+.table-search-bar-modern i {&#13;
+    font-size: 24px;&#13;
+    color: #8b95a7;&#13;
+    margin-right: 14px;&#13;
+}&#13;
+&#13;
+.table-search-bar-modern input {&#13;
+    border: none;&#13;
+    outline: none !important;&#13;
+    box-shadow: none !important;&#13;
+    width: 100%;&#13;
+    font-size: 18px;&#13;
+    background: transparent;&#13;
+    color: #344054;&#13;
+}&#13;
+&#13;
+.table-search-bar-modern input:focus {&#13;
+    outline: none !important;&#13;
+    box-shadow: none !important;&#13;
+    border: none;&#13;
+}&#13;
+&#13;
+.table-search-bar-modern input::placeholder {&#13;
+    color: #667085;&#13;
+}&#13;
+/* ================= MODERN MIGRATION MODAL ================= */&#13;
+.migration-modal-backdrop {&#13;
+  position: fixed;&#13;
+  inset: 0;&#13;
+  background: rgba(0,0,0,0.55);&#13;
+&#13;
+  display: flex;&#13;
+  align-items: center;&#13;
+  justify-content: center;&#13;
+&#13;
+  z-index: 99999;&#13;
+}&#13;
+.migration-modal.modern {&#13;
+  width: 520px;&#13;
+  padding: 40px 30px 30px;&#13;
+  border-radius: 18px;&#13;
+  text-align: center;&#13;
+  position: relative;&#13;
+  margin:auto;&#13;
+&#13;
+  /* KEEP YOUR COLOR THEME */&#13;
+  background: linear-gradient(&#13;
+    135deg,&#13;
+    #0A50F5,&#13;
+    #116AF8&#13;
+  );&#13;
+&#13;
+  color: #ffffff;&#13;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.4);&#13;
+}&#13;
+&#13;
+/* CLOSE BUTTON */&#13;
+.modal-close {&#13;
+  position: absolute;&#13;
+  top: 14px;&#13;
+  right: 18px;&#13;
+  font-size: 22px;&#13;
+  cursor: pointer;&#13;
+  opacity: 0.7;&#13;
+}&#13;
+.modal-close:hover {&#13;
+  opacity: 1;&#13;
+}&#13;
+&#13;
+&#13;
+&#13;
+/* TITLE */&#13;
+.modal-title {&#13;
+  font-size: 28px;&#13;
+  font-weight: 700;&#13;
+  margin-bottom: 6px;&#13;
+}&#13;
+&#13;
+.modal-subtitle {&#13;
+  font-size: 14px;&#13;
+  opacity: 0.85;&#13;
+  margin-bottom: 28px;&#13;
+}&#13;
+&#13;
+/* STATS */&#13;
+.modal-stats {&#13;
+  display: flex;&#13;
+  gap: 16px;&#13;
+  justify-content: center;&#13;
+  margin-bottom: 24px;&#13;
+}&#13;
+&#13;
+.stat-box {&#13;
+  flex: 1;&#13;
+  background: rgba(255,255,255,0.12);&#13;
+  padding: 18px;&#13;
+  border-radius: 14px;&#13;
+  backdrop-filter: blur(6px);&#13;
+}&#13;
+&#13;
+.stat-label {&#13;
+  font-size: 13px;&#13;
+  opacity: 0.8;&#13;
+  margin-bottom: 6px;&#13;
+}&#13;
+&#13;
+.stat-value {&#13;
+  font-size: 24px;&#13;
+  font-weight: 700;&#13;
+}&#13;
+&#13;
+/* PROGRESS BAR */&#13;
+.modal-progress-bar {&#13;
+  width: 100%;&#13;
+  height: 10px;&#13;
+  background: rgba(255,255,255,0.2);&#13;
+  border-radius: 10px;&#13;
+  overflow: hidden;&#13;
+  margin-bottom: 18px;&#13;
+}&#13;
+&#13;
+.modal-progress-fill {&#13;
+  height: 100%;&#13;
+  background: #9BC0FC;&#13;
+  transition: width 0.4s ease;&#13;
+}&#13;
+&#13;
+/* FOOTER TEXT */&#13;
+.modal-footer-text {&#13;
+  font-size: 12px;&#13;
+  opacity: 0.75;&#13;
+}&#13;
+&#13;
+/* TABLE COUNT */&#13;
+&#13;
+.table-count-line {&#13;
+    font-size: 18px;&#13;
+    color: #4d5c74;&#13;
+    margin-bottom: 26px;&#13;
+}&#13;
+.record-search-wrapper {&#13;
+  width: 100%;&#13;
+  margin: 18px 0 16px;&#13;
+}&#13;
+&#13;
+.record-search-bar {&#13;
+  display: flex;&#13;
+  align-items: center;&#13;
+  width: 100%;&#13;
+  background: #ffffff;&#13;
+  border: 1px solid #dbe3ec;&#13;
+  border-radius: 14px;&#13;
+  height: 50px;&#13;
+  padding: 0 16px;&#13;
+  box-sizing: border-box;&#13;
+}&#13;
+&#13;
+.record-search-bar i {&#13;
+  font-size: 14px;&#13;
+  color: #94a3b8;&#13;
+  margin-right: 12px;&#13;
+}&#13;
+&#13;
+.record-search-bar input {&#13;
+  width: 100%;&#13;
+  border: none;&#13;
+  outline: none;&#13;
+  background: transparent;&#13;
+  font-size: 14px;&#13;
+  color: #0f172a;&#13;
+  box-shadow: none;&#13;
+}&#13;
+&#13;
+.record-search-bar input::placeholder {&#13;
+  color: #94a3b8;&#13;
+}&#13;
+&#13;
+.record-search-bar:focus-within {&#13;
+  border-color: #dbe3ec;&#13;
+  box-shadow: none;&#13;
+}&#13;
+&#13;
+/* ===== SUCCESS MODAL ===== */&#13;
+&#13;
+.success-modal-backdrop {&#13;
+  position: fixed;&#13;
+  inset: 0;&#13;
+  background: rgba(0,0,0,0.5);&#13;
+&#13;
+  display: flex;&#13;
+  align-items: center;&#13;
+  justify-content: center;&#13;
+&#13;
+  z-index: 99999;&#13;
+}&#13;
+&#13;
+.success-modal {&#13;
+  width: 520px;&#13;
+  padding: 40px 30px;&#13;
+  border-radius: 16px;&#13;
+  text-align: center;&#13;
+&#13;
+  background: linear-gradient(135deg, #cfe8df, #a8d5c3);&#13;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.3);&#13;
+  position: relative;&#13;
+}&#13;
+&#13;
+/* CLOSE */&#13;
+.success-close {&#13;
+  position: absolute;&#13;
+  top: 14px;&#13;
+  right: 18px;&#13;
+  font-size: 20px;&#13;
+  cursor: pointer;&#13;
+  opacity: 0.6;&#13;
+}&#13;
+.success-close:hover {&#13;
+  opacity: 1;&#13;
+}&#13;
+.failure-backdrop {&#13;
+  background: rgba(0,0,0,0.65); /* slightly darker for failure */&#13;
+}&#13;
+&#13;
+.failure-modal {&#13;
+  background: linear-gradient(135deg, #f8d7da, #f5b5bb) !important;&#13;
+}&#13;
+/* ICON */&#13;
+.success-icon {&#13;
+  width: 80px;&#13;
+  height: 80px;&#13;
+  background: #16a34a;&#13;
+  color: white;&#13;
+  font-size: 36px;&#13;
+&#13;
+  border-radius: 50%;&#13;
+  display: flex;&#13;
+  align-items: center;&#13;
+  justify-content: center;&#13;
+&#13;
+  margin: 0 auto 20px;&#13;
+}&#13;
+&#13;
+/* TEXT */&#13;
+.success-title {&#13;
+  font-size: 26px;&#13;
+  font-weight: 700;&#13;
+  color: #1e293b;&#13;
+}&#13;
+&#13;
+.success-subtitle {&#13;
+  font-size: 14px;&#13;
+  color: #475569;&#13;
+  margin-bottom: 26px;&#13;
+}&#13;
+&#13;
+/* CARDS */&#13;
+.success-stats {&#13;
+  display: flex;&#13;
+  gap: 16px;&#13;
+  margin-bottom: 26px;&#13;
+}&#13;
+&#13;
+.success-card {&#13;
+  flex: 1;&#13;
+  background: #ffffff;&#13;
+  border-radius: 14px;&#13;
+  padding: 18px;&#13;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.08);&#13;
+}&#13;
+&#13;
+.success-card .icon {&#13;
+  font-size: 20px;&#13;
+  margin-bottom: 6px;&#13;
+}&#13;
+&#13;
+.icon.green { color: #16a34a; }&#13;
+.icon.dark { color: #334155; }&#13;
+.icon.purple { color: #7c3aed; }&#13;
+&#13;
+.success-card .value {&#13;
+  font-size: 22px;&#13;
+  font-weight: 700;&#13;
+}&#13;
+&#13;
+.success-card .label {&#13;
+  font-size: 13px;&#13;
+  color: #64748b;&#13;
+}&#13;
+&#13;
+.success-red {&#13;
+  background: #dc2626 !important;&#13;
+}&#13;
+/* ACTIONS */&#13;
+.success-actions {&#13;
+  display: flex;&#13;
+  justify-content: center;&#13;
+  gap: 12px;&#13;
+}&#13;
+&#13;
+.details-btn {&#13;
+  background: #e5e7eb;&#13;
+  border: none;&#13;
+  padding: 10px 16px;&#13;
+  border-radius: 10px;&#13;
+  cursor: pointer;&#13;
+}&#13;
+&#13;
+.done-btn {&#13;
+  background: #16a34a;&#13;
+  color: white;&#13;
+  border: none;&#13;
+  padding: 10px 18px;&#13;
+  border-radius: 10px;&#13;
+  cursor: pointer;&#13;
+}&#13;
+&#13;
+.done-btn:hover {&#13;
+  background: #15803d;&#13;
+}&#13;
+</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>false</has_preview>
+        <id/>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link>
+        <name>tracenow_browse_tables</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function () {
+
+    data.side = $sp.getWidget('tracenow_sidebar');
+
+    data.instanceName = '';
+    data.instanceUrl = '';
+    data.tables = [];
+    data.records = [];
+		var stats = {
+			inserted: 0,
+			updated: 0,
+			details: []
+		};
+
+    var sTime = 0, eTime = 0, username, password, sourceurl;
+    var totalCount, successRate = 0, partial = 0;
+
+    /* =================== GET CONNECTION DETAILS ========= */
+    var gr = new GlideRecordSecure('x_sysus_tracenow_connection');
+    gr.addQuery('sys_id', $sp.getParameter('sys_id'));
+    gr.query();
+
+    if (gr.next()) {
+        username = gr.getValue('username');
+        password = gr.getValue('password');
+        sourceurl = gr.getValue('url');
+
+        data.instanceName = gr.getValue('name');
+        data.instanceUrl = sourceurl;
+    }
+	
+
+    /* ================= MIGRATE RECORDS ================= */
+
+    if (input && input.action == "migrateRecords") {
+			
+				var record_details = {};
+       	var recordsToMigrate = [];
+
+				(input.records || []).forEach(function(tableGroup) {
+
+						var table = tableGroup.name;
+
+						(tableGroup.records || []).forEach(function(rec) {
+
+								if (rec.sys_id) {
+
+										recordsToMigrate.push({
+											table: table,
+											sysId: String(rec.sys_id).trim(),
+											number: rec.number || '',
+											state: rec.state || '',
+											short_description: rec.short_description || '',
+											migrationStatus: 'pending'
+									});
+								}
+
+						});
+
+				});
+			
+				/* ============= Check Stats of Tables =========== */
+					var existingRecords = {};
+
+					recordsToMigrate.forEach(function(record) {
+
+							var gr = new GlideRecordSecure(record.table);
+
+							if (gr.get(record.sysId)) {
+									existingRecords[
+											record.table + ':' + record.sysId
+									] = true;
+							}
+
+					});
+
+        try {
+						var startTime = new Date().getTime(); // milliseconds
+            var engine = new DM_MigrationCore();
+            var result = engine.migrateMixedRecords(sourceurl, username, password, recordsToMigrate, { sortByTable: true, stopOnError: false });
+						if(result) {
+							data.success = true;
+						}
+						else data.success = false;
+						var endTime = new Date().getTime();
+
+						var durationMs = endTime - startTime;
+
+						var totalSeconds = Math.floor(durationMs / 1000);
+						var minutes = Math.floor(totalSeconds / 60);
+						var seconds = totalSeconds % 60;
+
+						var durationText = minutes + " min " + seconds + " sec";
+
+						gs.info("Migration Duration: " + durationText);
+
+						data.duration = durationText;
+						//check the stats after migration
+						var migrationDetails = [];
+						recordsToMigrate.forEach(function(record) {
+
+								var key = record.table + ':' + record.sysId;
+
+								var action = existingRecords[key]
+										? 'updated'
+										: 'inserted';
+								    migrationDetails.push({
+											table: record.table,
+											sys_id: record.sysId,
+											number: record.number,
+											short_description: record.short_description,
+											state: record.state,
+											status: "success",
+											action: action
+									});
+
+								if (action === 'inserted')
+										stats.inserted++;
+								else
+										stats.updated++;
+
+								stats.details.push({
+										table: record.table,
+										sysId: record.sysId,
+										action: action
+								});
+
+						});
+            data.inserted = stats.inserted;
+            data.updated = stats.updated;
+						/* Safe success rate */
+						if (input.totalrecs > 0) {
+								successRate = ((stats.inserted + stats.updated) / input.totalrecs) * 100;
+						}
+
+						/* Optional rounding */
+						successRate = Math.round(successRate * 100) / 100;
+					var obj = {};
+
+					var mig = new GlideRecordSecure('x_sysus_tracenow_migration_details');
+					mig.initialize();
+					mig.setValue('instance_url', sourceurl);
+					//mig.instance_url = sourceurl;
+					mig.setValue('records_fetched', input.totalrecs);
+					//mig.records_fetched = input.totalrecs;
+					mig.setValue('records_inserted', stats.inserted);
+					//mig.records_inserted = stats.inserted;
+					mig.setValue('records_updated', stats.updated);
+					//mig.records_updated = stats.updated;
+					mig.setValue('records_failed', 0);
+					//mig.records_failed = 0;
+					mig.setValue('partial_record', partial);
+					//mig.partial_record = partial;
+					mig.setValue('success_rate', successRate);
+					//mig.success_rate = successRate;
+					mig.setValue('duration', durationText);
+					//mig.duration = durationText;
+					mig.setValue('target_instance', gs.getProperty('glide.servlet.uri'));
+					//mig.target_instance = gs.getProperty('glide.servlet.uri');
+
+					Object.keys(recordsToMigrate).forEach(function(key){
+							obj[key] = "true";
+					});
+
+					mig.setValue('table', JSON.stringify(migrationDetails));
+					//mig.table = JSON.stringify(migrationDetails);
+
+					/* (You forgot this ❗) */
+					mig.insert();
+					
+        } catch (e) {
+            data.success = false;
+						data.failed = 0;
+						//prepare records for table insert
+						var result_data = {};
+
+						for (var i = 0; i < input.records.length; i++) {
+								var group = input.records[i];
+								var tableName = group.name;
+
+								if (!result_data[tableName]) {
+										result_data[tableName] = {};
+								}
+
+								for (var j = 0; j < group.records.length; j++) {
+										var rc = group.records[j];
+
+										data.failed++;
+
+										result_data[tableName][rc.sys_id] = {
+												status: "failed",
+												rec_number: rc.number,
+												success_rate: "0",
+												state: rc.state,
+												reason: "The source table does not exist in the Target Instance"
+										};
+								}
+						}
+
+						//Failed Migration insert
+							var mig_gr = new GlideRecordSecure('x_sysus_tracenow_migration_details');
+							mig_gr.initialize();
+							mig_gr.setValue('instance_url', sourceurl);
+							mig_gr.setValue('records_fetched', input.totalrecs);
+							mig_gr.setValue('records_inserted', stats.inserted);
+							mig_gr.setValue('records_updated', stats.updated);
+							mig_gr.setValue('records_failed', data.failed);
+							mig_gr.setValue('partial_record', partial);
+							mig_gr.setValue('success_rate', successRate);
+							mig_gr.setValue('duration', '0 min 0 sec');
+							mig_gr.setValue('target_instance', gs.getProperty('glide.servlet.uri'));
+							mig_gr.setValue('table', JSON.stringify(result_data));
+							mig_gr.insert();
+            	data.message = e.toString();
+        }
+
+        return;
+    }
+
+    /* ================= REST API ================= */
+
+    function callRemote(table, query, limit, getCount) {
+        try {
+
+            var r = new sn_ws.RESTMessageV2();
+            r.setHttpMethod('get');
+
+            var endpoint = sourceurl +
+                "/api/now/table/" + table +
+                "?sysparm_query=" + encodeURIComponent(query || '') +
+								"&sysparm_display_value=true" +
+                "&sysparm_limit=" + (limit || 200);
+
+            if (getCount) {
+                endpoint += '&sysparm_count=true';
+            }
+
+            r.setEndpoint(endpoint);
+            r.setBasicAuth(username, password);
+            r.setRequestHeader("Accept", "application/json");
+
+            var response = r.execute();
+            var body = response.getBody();
+
+            var countHeader = response.getHeader("x-total-count");
+            totalCount = parseInt(countHeader, 10) || 0;
+
+            if (getCount) {
+                return { count: totalCount };
+            }
+
+            return JSON.parse(body);
+
+        } catch (ex) {
+            gs.error("REST Error: " + ex);
+            return null;
+        }
+    }
+
+    /* ================= TABLES ================= */
+
+   /* ================= INITIAL TABLE LOAD ================= */
+
+if (!input) {
+
+    var visibleTables = [
+        {name:'incident', label:'Incidents'},
+        {name:'change_request', label:'Change Requests'},
+        {name:'problem', label:'Problems'},
+        {name:'task', label:'Tasks'},
+        {name:'cmdb_ci', label:'Configuration Items'},
+        {name:'sc_req_item', label:'Requested Items'},
+        {name:'alm_asset', label:'Assets'}
+    ];
+
+    for (var i = 0; i < visibleTables.length; i++) {
+
+        callRemote(visibleTables[i].name, '', 1, true);
+
+        data.tables.push({
+            name: visibleTables[i].name,
+            label: visibleTables[i].label,
+            count: totalCount
+        });
+    }
+}
+
+/* ================= SEARCH TABLES ================= */
+
+if (input && input.action == "searchTables") {
+
+    var q = (input.search || '').toLowerCase();
+
+    data.tables = [];
+
+    if (!q) {
+
+        var defaults = [
+            {name:'incident', label:'Incidents'},
+            {name:'change_request', label:'Change Requests'},
+            {name:'problem', label:'Problems'},
+            {name:'task', label:'Tasks'},
+            {name:'cmdb_ci', label:'Configuration Items'},
+            {name:'sc_req_item', label:'Requested Items'},
+            {name:'alm_asset', label:'Assets'}
+        ];
+
+        for (var d = 0; d < defaults.length; d++) {
+
+            callRemote(defaults[d].name, '', 1, true);
+
+            data.tables.push({
+                name: defaults[d].name,
+                label: defaults[d].label,
+                count: totalCount
+            });
+        }
+
+        return;
+    }
+
+    var searchQuery =
+        'nameLIKE' + q +
+        '^ORlabelLIKE' + q;
+
+    var tables = callRemote(
+        'sys_db_object',
+        searchQuery,
+        50
+    );
+
+    if (tables && tables.result) {
+
+        for (var t = 0; t < tables.result.length; t++) {
+
+            var tbl = tables.result[t];
+
+            data.tables.push({
+                name: tbl.name,
+                label: tbl.label || tbl.name,
+                count: null
+            });
+        }
+    }
+
+    return;
+}
+
+    /* ================= RECORDS ================= */
+
+    if (input && input.action === "getRecords") {
+
+        var response = callRemote(input.table, input.query || '', 2000);
+
+        if (response && response.result) {
+            response.result.forEach(function(rec) {
+                data.records.push({
+                    sys_id: rec.sys_id,
+                    number: rec.number,
+                    state: rec.state,
+										name: rec.name,
+										label: rec.label,
+										user_name: rec.user_name,
+                    table: rec.sys_class_name || input.table,
+                    short_description: rec.short_description,
+                    sys_updated_by: rec.sys_updated_by,
+                    sys_updated_on: rec.sys_updated_on,
+                    selected: false
+                });
+            });
+        }
+
+        data.totalCount = totalCount; // ✅ send count lazily
+    }
+
+})();
+]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-05-20 09:57:42</sys_created_on>
+        <sys_id>e27cfd1c3b4d4b10092273c5e4e45a08</sys_id>
+        <sys_mod_count>43</sys_mod_count>
+        <sys_name>tracenow_browse_tables</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_widget_e27cfd1c3b4d4b10092273c5e4e45a08</sys_update_name>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-06-09 09:46:14</sys_updated_on>
+        <template><![CDATA[<div class="browse-layout"> 
+    <!-- SIDEBAR -->
+    <div class="dm-sidebar-slot">
+        <sp-widget widget="data.side"></sp-widget>
+    </div>
+ 
+    <div ng-if="!c.check" class="not-connected">
+      <h1>
+        Oops!
+      </h1>
+      <p>
+        You are not connected to any instance!        
+      </p>
+    </div>
+ 
+    <div class="browse-wrapper" ng-if="c.check">
+
+<!-- TABLE VIEW -->
+<div ng-if="c.view=='tables'">
+
+    <!-- HEADER -->
+    <div class="browse-header-modern">
+        <h1>Browse Records</h1>
+        <p>
+            Select tables from
+            <span>{{c.data.instanceName}}</span>
+        </p>
+    </div>
+
+    <!-- SEARCH CONTAINER -->
+<div class="table-search-wrapper">
+    <div class="table-search-bar-modern">
+
+        <i class="fa fa-search"></i>
+
+<input type="text"
+       ng-model="c.tableSearch"
+       ng-change="c.searchTables()"
+       placeholder="Search tables by name or description...">
+    </div>
+</div>
+
+    <!-- TABLE COUNT -->
+    <div class="table-count-line" ng-if="!c.loadingTables">
+        Showing {{c.getVisibleTables().length}} tables
+    </div>
+
+    <!-- TABLE CARDS -->
+    <div class="cards-grid" ng-if="!c.loadingTables">
+        <div class="table-card" ng-repeat="t in c.getVisibleTables()">
+            <div class="card-top">
+                <div class="count">{{t.count}}</div>
+                <div class="title">{{t.label}}</div>
+                <div class="name">{{t.name}}</div>
+            </div>
+
+            <button class="browse-btn" ng-click="c.openTable(t)">
+                Browse Records
+            </button>
+        </div>
+    </div>
+
+</div>
+          
+ 
+        <!-- RECORD VIEW -->
+        <div ng-if="c.view=='records'" class="records-wrapper">
+ 
+            <!-- LOADER -->
+            <div ng-if="c.loadingRecords" class="skeleton-wrapper">
+                <div class="skeleton-header"></div>
+                <div class="skeleton-row" ng-repeat="n in [1,2,3,4,5,6]">
+                    <div class="sk-cell"></div>
+                    <div class="sk-cell"></div>
+                    <div class="sk-cell"></div>
+                    <div class="sk-cell"></div>
+                    <div class="sk-cell"></div>
+                    <div class="sk-cell"></div>
+                    <div class="sk-cell"></div>
+                </div>
+            </div>
+ 
+            <!-- CONTENT -->
+            <div ng-if="!c.loadingRecords">
+ 
+                <a class="back-link-modern" ng-click="c.backToTables()">
+                    <i class="fa fa-angle-left"> </i>  Back to all tables
+                </a>
+ 
+                <div class="modern-record-header">
+                    <h1>{{c.selectedTable.label}}</h1>
+                    <div class="header-badges">
+                        <span class="badge-table">{{c.selectedTable.name}}</span>
+                        <span class="badge-count">{{c.records.length}} total records</span>
+                    </div>
+                </div>
+ 
+                <!-- SELECTION BAR -->
+                <div class="selection-bar" ng-show="c.getSelectedCount() > 0">
+                    <div class="selection-left">
+                        <div class="selection-count">{{c.getSelectedCount()}}</div>
+                        <div>
+                            <strong>{{c.getSelectedCount()}} record{{c.getSelectedCount()==1?'':'s'}} selected</strong>
+                            <div class="selection-sub">
+                                From table {{c.selectedTable.label}}
+                            </div>
+                        </div>
+                    </div>
+ 
+                    <div class="selection-actions">
+                        <button class="queue-btn"
+                                ng-click="c.addSelectedToCart()"
+                                ng-disabled="c.isMigrating">
+                            <i class="fa fa-shopping-cart"></i> Add to Queue
+                        </button>
+ 
+                        <button class="migrate-btn"
+                                ng-click="!c.isMigrating && c.migrateSelected()"
+                                ng-disabled="c.isMigrating">
+                            <i class="fa"
+                               ng-class="c.isMigrating ? 'fa-spinner fa-spin' : 'fa-bolt'"></i>
+                            {{c.isMigrating ? 'Migrating...' : 'Migrate Now'}}
+                        </button>
+                    </div>
+                </div>
+ 
+                <!-- FILTER -->
+                <div class="sn-filter-bar">
+ 
+                    <div class="filter-title">
+                        <i class="fa fa-filter"></i> Filters
+                    </div>
+ 
+                    <div class="filter-list">
+                        <div class="filter-row" ng-repeat="f in c.filters track by $index">
+ 
+                            <div class="logic-line" ng-if="$index > 0">
+                                <span class="logic-label">{{f.logic}}</span>
+                            </div>
+
+                            <!-- FIELD -->
+                            <select ng-model="f.field"
+                                    ng-options="field.key as field.label for field in c.availableFilterFields">
+                            </select>
+
+                            <!-- OPERATOR -->
+                            <select ng-model="f.operator">
+                                <option value="contains">Contains</option>
+                                <option value="starts">Starts With</option>
+                                <option value="is">Is</option>
+                            </select>
+
+                            <!-- VALUE -->
+                            <input type="text"
+                                   ng-model="f.value"
+                                   placeholder="Value">
+ 
+                            <button class="remove-filter-btn"
+                                    ng-if="c.filters.length > 1"
+                                    ng-click="c.removeFilter($index)">
+                                ×
+                            </button>
+                        </div>
+                    </div>
+ 
+                    <div class="filter-bottom-row">
+                        <div class="filter-actions">
+                            <button class="filter-link-btn" ng-click="c.addFilter('AND')">
+                                + Add AND
+                            </button>
+ 
+                            <button class="filter-link-btn" ng-click="c.addFilter('OR')">
+                                + Add OR
+                            </button>
+                        </div>
+ 
+                        <button class="select-all-btn" ng-click="c.selectAllRecords()">
+                            {{c.allSelected ? 'Deselect All' : 'Select All'}}
+                        </button>
+                    </div>
+                </div>
+  
+                <!-- RECORD SEARCH BAR -->
+                <div class="record-search-wrapper">
+                    <div class="record-search-bar">
+                        <i class="fa fa-search"></i>
+                        <input type="text"
+                               ng-model="c.recordSearch"
+                               placeholder="Search records...">
+                    </div>
+                </div>
+ 
+                <!-- RECORD HEADER -->
+                <div class="record-header">
+
+                    <div>
+                        <input type="checkbox"
+                               ng-checked="c.pageSelectAll"
+                               ng-click="c.toggleCurrentPage()">
+                    </div>
+
+                    <div ng-repeat="col in c.columns">
+                        {{col.label}}
+                    </div>
+
+                    <div>PREVIEW</div>
+                </div>
+
+                <!-- RECORD ROW -->
+                <div class="record-row"
+                     ng-repeat="r in (c.records | filter:c.dynamicFilter | filter:c.recordSearchFilter).slice((c.currentPage-1)*c.pageSize, c.currentPage*c.pageSize)">
+
+                    <div>
+                        <input type="checkbox"
+                               ng-model="r.selected"
+                               ng-change="c.syncSelectionStates()">
+                    </div>
+
+                    <div ng-repeat="col in c.columns">
+
+                        <span ng-if="col.key === 'state'" class="state-pill">
+                            {{c.getStateLabel(r[col.key])}}
+                        </span>
+
+                        <span ng-if="col.key !== 'state'">
+                            {{r[col.key] || '-'}}
+                        </span>
+                    </div>
+
+                    <div class="preview-cell">
+                        <i class="fa fa-eye preview-icon"
+                           ng-click="c.openPreview(r)"></i>
+                    </div>
+                </div>
+
+                <!-- PAGINATION -->
+                <div class="pagination-bar"
+                     ng-if="(c.records | filter:c.dynamicFilter).length > c.pageSize">
+ 
+                    <button class="page-btn"
+                            ng-disabled="c.currentPage==1"
+                            ng-click="c.prevPage()">
+                        Previous
+                    </button>
+ 
+                    <span>
+                        Page {{c.currentPage}} of {{c.getTotalPages()}}
+                    </span>
+ 
+                    <button class="page-btn"
+                            ng-disabled="c.currentPage==c.getTotalPages()"
+                            ng-click="c.nextPage()">
+                        Next
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+  <!-- Migration Modal  -->
+  <div class="migration-modal-backdrop" ng-if="c.showModal && !c.isCompleted">
+  <div class="migration-modal modern">
+
+    <!-- CLOSE -->
+    <div class="modal-close" ng-click="c.closeModal()">×</div>
+
+    <!-- ICON -->
+   <div class="modal-logo">
+  <svg width="150" height="110" viewBox="0 0 133 98" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M93.4217 0H10.2803L37.2925 28.7662H65.3571V57.5325L93.4217 85.5971V0Z" fill="#fff"/>
+<path d="M101.584 0H132.422L101.584 33.8613V0Z" fill="#fff"/>
+<g opacity="0.42" style="mix-blend-mode:multiply">
+<path d="M83.1415 12.0938L0 12.0938L27.0122 40.86L55.0768 40.86L55.0768 69.6262L83.1415 97.6909L83.1415 12.0938Z" fill="#116AF8"/>
+</g>
+</svg>
+ 
+</div>
+
+    <!-- TITLE -->
+    <h2 class="modal-title">Migration in Progress</h2>
+    <p class="modal-subtitle">
+      Migrating your records with intelligent dependency handling
+    </p>
+
+    <!-- STATS -->
+    <div class="modal-stats">
+      <div class="stat-box">
+        <div class="stat-label">Records Processed</div>
+        <div class="stat-value">
+          {{c.inserted + c.updated}} / {{c.total}}
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-label">Progress</div>
+        <div class="stat-value">
+          {{c.progress}}%
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS BAR -->
+    <div class="modal-progress-bar">
+      <div class="modal-progress-fill"
+           ng-style="{'width': c.progress + '%'}">
+      </div>
+    </div>
+
+    <!-- FOOTER TEXT -->
+    <div class="modal-footer-text">
+      Please do not close this window during migration
+    </div>
+
+  </div>
+</div>
+  
+<!--success modal-->
+  <div class="success-modal-backdrop" 
+     ng-if="c.isCompleted && c.showModal"
+     ng-class="{'failure-backdrop': c.migrationResult.error}">
+  <div class="success-modal"
+     ng-class="{'failure-modal': c.migrationResult.error}">
+
+    <!-- CLOSE -->
+    <div class="success-close" ng-click="c.closeModal()">×</div>
+
+    <!-- ICON -->
+    <div class="success-icon"
+     ng-class="{'success-red': c.migrationResult.error}">
+
+  <span ng-if="c.migrationResult.error">✖</span>
+  <span ng-if="!c.migrationResult.error">✓</span>
+
+</div>
+
+    <!-- TITLE -->
+    <h2 class="success-title">
+  {{ c.migrationResult.error ? 'Migration Failed' : 'Migration Completed Successfully!' }}
+</h2>
+    <p class="success-subtitle">
+  <span ng-if="c.migrationResult.error">
+    {{c.migrationResult.message || 'Something went wrong during migration'}}
+  </span>
+
+  <span ng-if="!c.migrationResult.error">
+    All {{c.total}} records have been migrated successfully
+  </span>
+</p>
+
+    <!-- STATS -->
+    <div class="success-stats" ng-if="!c.migrationResult.error">
+
+      <div class="success-card">
+        <div class="icon green">✓</div>
+        <div class="value">{{c.inserted + c.updated}}</div>
+        <div class="label">Successful</div>
+      </div>
+
+      <div class="success-card">
+        <div class="icon dark">⏱</div>
+        <div class="value">{{c.duration || '—'}}</div>
+        <div class="label">Duration</div>
+      </div>
+
+      <div class="success-card">
+        <div class="icon purple">⛁</div>
+        <div class="value">{{c.tableCount || 0}}</div>
+        <div class="label">Tables</div>
+      </div>
+
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="success-actions">
+
+      <a href="/_tracenow?id=tracenow_migration_details" class="details-btn">
+        ]]>📄<![CDATA[ View Details
+      </a>
+
+      <button class="done-btn" ng-click="c.closeModal()">
+        Done →
+      </button>
+
+    </div>
+
+  </div>
+</div>
+  <!-- PREVIEW MODAL -->
+<div class="preview-overlay" ng-if="c.previewOpen">
+
+    <div class="preview-modal">
+
+        <div class="preview-header">
+            <h3>Record Preview</h3>
+            <button ng-click="c.closePreview()">×</button>
+        </div>
+
+        <div class="preview-grid">
+
+            <div ng-repeat="(key,val) in c.previewData">
+
+                <label>{{key.replace('_',' ')}}</label>
+                <div>{{val || '-'}}</div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+    <!-- SNACKBAR -->
+    <div class="snackbar" ng-if="c.showSnackbar">
+        {{c.snackbarMessage}}
+    </div>
+
+</div>
+]]></template>
+    </sp_widget>
+</record_update>
