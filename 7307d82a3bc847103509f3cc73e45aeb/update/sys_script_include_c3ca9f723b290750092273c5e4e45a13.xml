@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_sysus_tracenow.TRACENowImportEngine</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <mobile_callable>false</mobile_callable>
+        <name>TRACENowImportEngine</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[var TRACENowImportEngine = Class.create();
+
+TRACENowImportEngine.prototype = {
+
+    initialize: function(jobSysId) {
+        this.jobSysId = jobSysId;
+        this.cfg      = new TRACENowConfig();
+        this.logger   = new TRACENowLogger(jobSysId, 'ImportEngine');
+        this.results  = { success: 0, skipped: 0, error: 0, details: [] };
+    },
+
+    /**
+     * Main entry. Reads Excel from job attachment and imports all rows.
+     * @param {String} attachSysId  - sys_id of the Excel attachment
+     * @param {String} tableName    - target table name
+     */
+    importFromAttachment: function(attachSysId, tableName) {
+        try {
+            this.logger.info('Reading Excel attachment: ' + attachSysId);
+
+            var sa      = new GlideSysAttachment();
+            var attachGR = new GlideRecord('sys_attachment');
+            if (!attachGR.get(attachSysId)) {
+                throw new Error('Attachment not found: ' + attachSysId);
+            }
+
+            var content = sa.getContent(attachGR);
+            if (!content) {
+                throw new Error('Attachment content is empty.');
+            }
+
+            return this._importFromXml(content, tableName);
+
+        } catch(e) {
+            this.logger.error('importFromAttachment error: ' + e.message);
+            return { success: false, error: e.message };
+        }
+    },
+
+    /** Parses SpreadsheetML XML and imports each row */
+    _importFromXml: function(xmlContent, tableName) {
+        try {
+            var parsed = this._parseXml(xmlContent);
+
+            if (!parsed.success) {
+                throw new Error('XML Parse failed: ' + parsed.error);
+            }
+
+            this.logger.info('Parsed ' + parsed.rows.length + ' rows. Starting import into: ' + tableName);
+
+            for (var i = 0; i < parsed.rows.length; i++) {
+                this._importRow(tableName, parsed.rows[i]);
+            }
+
+            this.logger.info('Import complete | Success: ' + this.results.success +
+                             ' | Skipped: ' + this.results.skipped +
+                             ' | Errors: ' + this.results.error);
+
+            return { success: true, results: this.results };
+
+        } catch(e) {
+            this.logger.error('_importFromXml error: ' + e.message);
+            return { success: false, error: e.message };
+        }
+    },
+
+    /** Processes one data row from the parsed Excel */
+    _importRow: function(tableName, row) {
+        var cfg          = this.cfg;
+        var sourceNumber = row[cfg.COL_NUMBER]     || '';
+        var sourceSysId  = row[cfg.COL_SYS_ID]     || '';
+        var createdOn    = row[cfg.COL_CREATED_ON]  || '';
+        var updatedOn    = row[cfg.COL_UPDATED_ON]  || '';
+        var createdBy    = row[cfg.COL_CREATED_BY]  || '';
+        var updatedBy    = row[cfg.COL_UPDATED_BY]  || '';
+
+        try {
+            // Idempotent: skip if already exists
+            if (this._exists(tableName, sourceNumber)) {
+                this.logger.warn('Already exists, skipping: ' + sourceNumber);
+                this.results.skipped++;
+                this._logRecord(sourceNumber, sourceSysId, '', 'skipped', 'Record already exists');
+                return;
+            }
+
+            // ── Signal NumberPreserver Business Rule via session ──
+            gs.getSession().putClientData(cfg.SESSION_ACTIVE,  'true');
+            gs.getSession().putClientData(cfg.SESSION_NUMBER,  sourceNumber);
+            gs.getSession().putClientData(cfg.SESSION_SYS_ID,  sourceSysId);
+
+            var gr = new GlideRecord(tableName);
+            gr.initialize();
+
+            // Preserve timestamps and audit fields
+            gr.setWorkflow(false);
+            gr.autoSysFields(false);
+
+            // Apply all non-metadata fields from Excel row
+            for (var col in row) {
+                if (!row.hasOwnProperty(col)) continue;
+                if (col.indexOf(cfg.META_PREFIX) === 0) continue;  // skip TRN_ columns
+                if (!gr.isValidField(col))               continue;
+                if (cfg.SKIP_ON_IMPORT.indexOf(col) !== -1) continue;
+
+                this._applyValue(gr, col, row[col]);
+            }
+
+            // Set metadata
+            if (sourceNumber && gr.isValidField('number')) gr.setValue('number', sourceNumber);
+            if (createdOn)                                 gr.setValue('sys_created_on', createdOn);
+            if (updatedOn)                                 gr.setValue('sys_updated_on', updatedOn);
+            if (createdBy)                                 gr.setValue('sys_created_by', createdBy);
+            if (updatedBy)                                 gr.setValue('sys_updated_by', updatedBy);
+
+            var newSysId = gr.insert();
+
+            if (!newSysId) {
+                throw new Error('Insert returned no sys_id for: ' + sourceNumber);
+            }
+
+            // Post-insert number enforcement
+            this._enforceNumber(tableName, newSysId, sourceNumber);
+
+            // Clear session signals
+            gs.getSession().clearClientData(cfg.SESSION_ACTIVE);
+            gs.getSession().clearClientData(cfg.SESSION_NUMBER);
+            gs.getSession().clearClientData(cfg.SESSION_SYS_ID);
+
+            this.results.success++;
+            this._logRecord(sourceNumber, sourceSysId, newSysId, 'created', '');
+            this.logger.info('Created: ' + sourceNumber + ' | Target Sys ID: ' + newSysId);
+
+        } catch(e) {
+            // Always clear session on error
+            gs.getSession().clearClientData(cfg.SESSION_ACTIVE);
+            gs.getSession().clearClientData(cfg.SESSION_NUMBER);
+
+            this.results.error++;
+            this._logRecord(sourceNumber, sourceSysId, '', 'error', e.message);
+            this.logger.error('Failed: ' + sourceNumber + ' | ' + e.message);
+        }
+    },
+
+    /**
+     * Applies a single field value, resolving reference format "Display||sys_id"
+     */
+    _applyValue: function(gr, fieldName, rawValue) {
+        if (!rawValue || rawValue === '') return;
+
+        // Reference format: "Display Value||sys_id"
+        if (String(rawValue).indexOf('||') !== -1) {
+            var parts = String(rawValue).split('||');
+            var refId = (parts[1] || '').trim();
+            if (refId) {
+                gr.setValue(fieldName, refId);
+            }
+            return;
+        }
+
+        // Boolean
+        if (rawValue === 'true')  { gr.setValue(fieldName, true);  return; }
+        if (rawValue === 'false') { gr.setValue(fieldName, false); return; }
+
+        gr.setValue(fieldName, rawValue);
+    },
+
+    /**
+     * THREE-LAYER NUMBER ENFORCEMENT
+     * Layer 1: Business Rule (Before Insert) — handled externally
+     * Layer 2: gr.setValue() above
+     * Layer 3: Post-insert direct update (this method)
+     */
+    _enforceNumber: function(tableName, sysId, desiredNumber) {
+        if (!desiredNumber || !sysId) return;
+
+        var check = new GlideRecord(tableName);
+        check.get(sysId);
+        if (check.getValue('number') === desiredNumber) {
+            this.logger.info('Number confirmed correct: ' + desiredNumber);
+            return;
+        }
+
+        this.logger.warn('Number was overridden by platform. Enforcing via direct update...');
+
+        var fix = new GlideRecord(tableName);
+        fix.get(sysId);
+        fix.setWorkflow(false);
+        fix.autoSysFields(false);
+        fix.setValue('number', desiredNumber);
+        fix.update();
+
+        var verify = new GlideRecord(tableName);
+        verify.get(sysId);
+        var finalNum = verify.getValue('number');
+
+        if (finalNum === desiredNumber) {
+            this.logger.info('Post-insert number enforcement succeeded: ' + desiredNumber);
+        } else {
+            this.logger.error('Post-insert enforcement failed! Got: ' + finalNum + ' | Expected: ' + desiredNumber);
+        }
+    },
+
+    _exists: function(tableName, number) {
+        if (!number) return false;
+        var gr = new GlideRecord(tableName);
+        gr.addQuery('number', number);
+        gr.setLimit(1);
+        gr.query();
+        return gr.next();
+    },
+
+    _logRecord: function(sourceNum, sourceSysId, targetSysId, status, message) {
+        var log = new GlideRecord('u_tracenow_record_log');
+        log.initialize();
+        log.u_job            = this.jobSysId;
+        log.u_source_number  = sourceNum;
+        log.u_source_sys_id  = sourceSysId;
+        log.u_target_sys_id  = targetSysId;
+        log.u_status         = status;
+        log.u_message        = message;
+        log.u_created_on     = new GlideDateTime().getValue();
+        log.insert();
+    },
+
+    /** Parses SpreadsheetML XML content into rows */
+    _parseXml: function(xmlContent) {
+        try {
+            var xmlDoc = new XMLDocument2();
+            if (!xmlDoc.parseXML(xmlContent)) {
+                return { success: false, error: 'XMLDocument2.parseXML failed.' };
+            }
+
+            var rows    = [];
+            var headers = [];
+
+            // Find all Row nodes under the first data Worksheet
+            var rowNodes = xmlDoc.getNodes('//*[local-name()="Worksheet" and @*[local-name()="Name" and .!="TRACENow_Meta"]]//*[local-name()="Row"]');
+
+            if (!rowNodes || rowNodes.size() === 0) {
+                return { success: false, error: 'No Row nodes found in XML.' };
+            }
+
+            for (var r = 0; r < rowNodes.size(); r++) {
+                var rowNode  = rowNodes.get(r);
+                var cellVals = this._parseCells(rowNode, xmlDoc);
+
+                if (r === 0) {
+                    headers = cellVals;
+                } else {
+                    var obj = {};
+                    for (var c = 0; c < headers.length; c++) {
+                        obj[headers[c]] = cellVals[c] || '';
+                    }
+                    rows.push(obj);
+                }
+            }
+
+            return { success: true, rows: rows, headers: headers };
+
+        } catch(e) {
+            return { success: false, error: e.message };
+        }
+    },
+
+    _parseCells: function(rowNode, xmlDoc) {
+        var values   = [];
+        var children = rowNode.getChildNodes();
+
+        for (var i = 0; i < children.size(); i++) {
+            var cell  = children.get(i);
+            var data  = cell.getFirstChild();  // <Data> node
+            if (data) {
+                values.push(data.getTextContent() || '');
+            } else {
+                values.push('');
+            }
+        }
+
+        return values;
+    },
+
+    type: 'TRACENowImportEngine'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-22 07:45:59</sys_created_on>
+        <sys_id>c3ca9f723b290750092273c5e4e45a13</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>TRACENowImportEngine</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_script_include_c3ca9f723b290750092273c5e4e45a13</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-22 07:45:59</sys_updated_on>
+    </sys_script_include>
+</record_update>

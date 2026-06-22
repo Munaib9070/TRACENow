@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
     <sp_widget action="INSERT_OR_UPDATE">
         <category>custom</category>
-        <client_script><![CDATA[api.controller = function($scope, $timeout) {
+        <client_script><![CDATA[api.controller = function($scope, $timeout, $filter) {
 
     var c = this;
 	//c.loadingTables = true;
@@ -313,6 +313,7 @@ c.searchTables = function() {
         }).then(function(response) {
 
             c.records = response.data.records || [];
+						console.log('c.records = ' + JSON.stringify(c.records));
             c.setDynamicColumns(c.records);
             c.recordSearch = '';
             if (response.data.totalCount !== undefined) {
@@ -470,7 +471,6 @@ c.searchTables = function() {
             c.updated = response.data.updated;
 					  c.duration = response.data.duration;
             c.url = response.data.instanceUrl;
-
             c.migrationResult = {
                 error: false,
                 data: response.data.result
@@ -535,7 +535,7 @@ c.searchTables = function() {
 
     c.toggleCurrentPage = function() {
 
-        var filtered = $scope.$eval('(c.records | filter:c.dynamicFilter | filter:c.recordSearchFilter)');
+         var filtered = $filter('filter')($filter('filter')(c.records, c.dynamicFilter), c.recordSearchFilter);
         var start = (c.currentPage - 1) * c.pageSize;
         var end = c.currentPage * c.pageSize;
 
@@ -554,7 +554,7 @@ c.searchTables = function() {
 
     c.selectAllRecords = function() {
 
-        var filtered = $scope.$eval('(c.records | filter:c.dynamicFilter | filter:c.recordSearchFilter)');
+         var filtered = $filter('filter')($filter('filter')(c.records, c.dynamicFilter), c.recordSearchFilter);
 
         c.allSelected = !c.allSelected;
 
@@ -567,7 +567,7 @@ c.searchTables = function() {
 
     c.syncSelectionStates = function() {
 
-        var filtered = $scope.$eval('(c.records | filter:c.dynamicFilter | filter:c.recordSearchFilter)');
+         var filtered = $filter('filter')($filter('filter')(c.records, c.dynamicFilter), c.recordSearchFilter);
         var start = (c.currentPage - 1) * c.pageSize;
         var end = c.currentPage * c.pageSize;
 
@@ -581,37 +581,6 @@ c.searchTables = function() {
             return r.selected;
         });
     };
-	//store migration results
-	c.storeMigrationResults = function(result) {
-
-    var structured = [];
-
-    for (var table in result) {
-
-        // skip stats if present
-        if (table === 'stats') continue;
-
-        var records = result[table];
-
-        for (var sysId in records) {
-
-            var rec = records[sysId];
-
-            structured.push({
-                table: table,
-                source_sys_id: sysId,
-                target_sys_id: rec.target,
-                status: rec.status
-            });
-        }
-    }
-
-    // store in sessionStorage
-    sessionStorage.setItem(
-        "migration_results",
-        JSON.stringify(structured)
-    );
-};
 
     /* ================= CART ================= */
 
@@ -627,7 +596,7 @@ c.searchTables = function() {
         var added = 0;
         var skipped = 0;
 
-        angular.forEach(c.records, function(r) {
+					angular.forEach(c.records, function(r) {
 
             if (r.selected) {
 
@@ -642,7 +611,7 @@ c.searchTables = function() {
                 r.selected = false;
             }
         });
-
+				console.log('cart = ' + JSON.stringify(cart));
         sessionStorage.setItem("migration_cart", JSON.stringify(cart));
         window.dispatchEvent(new Event("cartUpdated"));
 
@@ -659,7 +628,7 @@ c.searchTables = function() {
     /* ================= PAGINATION ================= */
 
     c.getTotalPages = function() {
-        var filtered = $scope.$eval('(c.records | filter:c.dynamicFilter | filter:c.recordSearchFilter)');
+        var filtered = $filter('filter')($filter('filter')(c.records, c.dynamicFilter), c.recordSearchFilter);
         return Math.ceil(filtered.length / c.pageSize) || 1;
     };
 
@@ -1689,381 +1658,586 @@ button:disabled {&#13;
         <name>tracenow_browse_tables</name>
         <option_schema/>
         <public>false</public>
-        <roles/>
+        <roles>admin</roles>
         <script><![CDATA[(function () {
 
-    data.side = $sp.getWidget('tracenow_sidebar');
+	data.side = $sp.getWidget('tracenow_sidebar');
 
-    data.instanceName = '';
-    data.instanceUrl = '';
-    data.tables = [];
-    data.records = [];
-		var stats = {
-			inserted: 0,
-			updated: 0,
-			details: []
-		};
+	data.instanceName = '';
+	data.instanceUrl = '';
+	data.tables = [];
+	data.records = [];
+	var stats = {
+		inserted: 0,
+		updated: 0,
+		failed: 0,
+		details: []
+	};
 
-    var sTime = 0, eTime = 0, username, password, sourceurl;
-    var totalCount, successRate = 0, partial = 0;
+	var migration_logs = [], sTime = 0, eTime = 0, username, password, sourceurl, totalCount, successRate = 0, partial = 0, engine;
 
-    /* =================== GET CONNECTION DETAILS ========= */
-    var gr = new GlideRecordSecure('x_sysus_tracenow_connection');
-    gr.addQuery('sys_id', $sp.getParameter('sys_id'));
-    gr.query();
+	/* =================== GET CONNECTION DETAILS ========= */
+	var gr = new GlideRecordSecure('x_sysus_tracenow_connection');
+	gr.addQuery('sys_id', $sp.getParameter('sys_id'));
+	gr.query();
 
-    if (gr.next()) {
-        username = gr.getValue('username');
-        password = gr.getValue('password');
-        sourceurl = gr.getValue('url');
+	if (gr.next()) {
+		username = gr.getValue('username');
+		password = gr.getValue('password');
+		sourceurl = gr.getValue('url');
 
-        data.instanceName = gr.getValue('name');
-        data.instanceUrl = sourceurl;
-    }
-	
+		data.instanceName = gr.getValue('name');
+		data.instanceUrl = sourceurl;
+	}
 
-    /* ================= MIGRATE RECORDS ================= */
 
-    if (input && input.action == "migrateRecords") {
-			
-				var record_details = {};
-       	var recordsToMigrate = [];
+	/* ================= MIGRATE RECORDS ================= */
 
-				(input.records || []).forEach(function(tableGroup) {
+	if (input && input.action == "migrateRecords") {
 
-						var table = tableGroup.name;
+		var record_details = {};
+		var recordsToMigrate = [];
 
-						(tableGroup.records || []).forEach(function(rec) {
+		(input.records || []).forEach(function(tableGroup) {
+			var table = tableGroup.name;
 
-								if (rec.sys_id) {
+			(tableGroup.records || []).forEach(function(rec) {
 
-										recordsToMigrate.push({
-											table: table,
-											sysId: String(rec.sys_id).trim(),
-											number: rec.number || '',
-											state: rec.state || '',
-											short_description: rec.short_description || '',
-											migrationStatus: 'pending'
-									});
-								}
+				if (rec.sys_id) {
 
-						});
+					recordsToMigrate.push({
+						table: table,
+						sysId: String(rec.sys_id).trim(),
+						number: rec.number || '',
+						state: rec.state || '',
+						short_description: rec.short_description || '',
+						migrationStatus: 'pending'
+					});
+				}
 
+			});
+
+		});
+
+
+		try {
+
+			/* ============= Check Stats of Tables =========== */
+
+			var existingRecords = {};
+
+			recordsToMigrate.forEach(function(record) {
+
+				var gr = new GlideRecordSecure(record.table);
+
+				if (gr.get(record.sysId)) {
+					existingRecords[
+						record.table + ':' + record.sysId
+					] = true;
+				}
+			});
+			var startTime = new Date().getTime(); // milliseconds
+			engine = new DM_MigrationCore();
+			var result = engine.migrateMixedRecords(sourceurl, username, password, recordsToMigrate, { sortByTable: true, stopOnError: false });
+			if(result) {
+				data.success = true;
+				//update number of new inserted record
+			}
+			else data.success = false;
+			migration_logs = engine.executionLogs;
+			migration_logs.push("Migration Completed");
+			var endTime = new Date().getTime();
+
+			var durationMs = endTime - startTime;
+
+			var totalSeconds = Math.floor(durationMs / 1000);
+			var minutes = Math.floor(totalSeconds / 60);
+			var seconds = totalSeconds % 60;
+
+			var durationText = minutes + " min " + seconds + " sec";
+
+			gs.info("Migration Duration: " + durationText);
+
+			data.duration = durationText;
+			//check the stats after migration
+			var migrationDetails = [];
+			recordsToMigrate.forEach(function(record) {
+
+				var key = record.table + ':' + record.sysId;
+
+				var action = existingRecords[key]
+				? 'updated'
+				: 'inserted';
+				migrationDetails.push({
+					table: record.table,
+					sys_id: record.sysId,
+					number: record.number,
+					short_description: record.short_description,
+					state: record.state,
+					status: "success",
+					action: action,
+					duration: data.duration
 				});
+
+				if (action === 'inserted')
+					stats.inserted++;
+				else
+					stats.updated++;
+
+				stats.details.push({
+					table: record.table,
+					sysId: record.sysId,
+					action: action
+				});
+			});
+			data.migrationDetails = migrationDetails;
+			data.inserted = stats.inserted;
+			data.updated = stats.updated;
+			/* Safe success rate */
+			if (input.totalrecs > 0) {
+				successRate = ((stats.inserted + stats.updated) / input.totalrecs) * 100;
+			}
+
+			/* Optional rounding */
+			successRate = Math.round(successRate * 100) / 100;
+			//store overall migration details 
+			var mig = new GlideRecordSecure('x_sysus_tracenow_migration_details');
+			mig.initialize();
+			mig.setValue('instance_url', sourceurl);
+			mig.setValue('records_fetched', input.totalrecs);
+			mig.setValue('records_inserted', stats.inserted);
+			mig.setValue('records_updated', stats.updated);
+			mig.setValue('records_failed', stats.failed);
+			mig.setValue('success_rate', successRate);
+			mig.setValue('target_instance', gs.getProperty('glide.servlet.uri'));
+
+			var migrationSysId = mig.insert();
+
+			//store record logs in migration logs table
+			if (migrationSysId) {
+
+				migrationDetails.forEach(function(rec) {
+
+					var logGr = new GlideRecordSecure(
+						'x_sysus_tracenow_tracenow_migration_record_log'
+					);
+
+					logGr.initialize();
+
+					logGr.setValue(
+						'migration',
+						migrationSysId
+					);
+
+					logGr.setValue(
+						'table',
+						rec.table
+					);
+
+					logGr.setValue(
+						'source_sys_id',
+						rec.sys_id
+					);
+
+					logGr.setValue(
+						'record_number',
+						rec.number
+					);
+
+					logGr.setValue(
+						'status',
+						rec.status
+					);
+
+					logGr.setValue(
+						'action',
+						rec.action
+					);
+
+					logGr.setValue(
+						'duration',
+						rec.duration
+					);
+
+					logGr.setValue(
+						'state',
+						rec.state
+					);
+
+					logGr.setValue(
+						'short_description',
+						rec.short_description
+					);
+
+					/*
+							 * If executionLogs is a single array for the run
+							 */
+					logGr.setValue(
+						'migration_log',
+						JSON.stringify(migration_logs || [])
+					);
+
+					logGr.insert();
+				});
+				// Calculate total duration from all record logs
+
+				var totalDurationSeconds = 0;
+
+				var durGR = new GlideRecordSecure(
+					'x_sysus_tracenow_tracenow_migration_record_log'
+				);
+
+				durGR.addQuery('migration', migrationSysId);
+				durGR.query();
+
+				while (durGR.next()) {
+
+					var dur =
+							durGR.getValue('duration') || '';
+
+					var minMatch =
+							dur.match(/(\d+)\s*min/i);
+
+					var secMatch =
+							dur.match(/(\d+)\s*sec/i);
+
+					var mins =
+							minMatch ? parseInt(minMatch[1], 10) : 0;
+
+					var secs =
+							secMatch ? parseInt(secMatch[1], 10) : 0;
+
+					totalDurationSeconds +=
+						(mins * 60) + secs;
+				}
+
+				var totalMinutes =
+						Math.floor(totalDurationSeconds / 60);
+
+				var remainingSeconds =
+						totalDurationSeconds % 60;
+
+				var totalDurationText =
+						totalMinutes +
+						" min " +
+						remainingSeconds +
+						" sec";
+				//update duration of migration
+				var updateMig =
+						new GlideRecordSecure(
+							'x_sysus_tracenow_migration_details'
+						);
+
+				if (updateMig.get(migrationSysId)) {
+
+					updateMig.setValue(
+						'duration',
+						totalDurationText
+					);
+
+					updateMig.update();
+				}
+
+			}
+
+		}
+
+		catch (e) {
+			data.success = false;
+			data.message = "All " + input.totalrecs + " record(s) failed to migrate.";
+
+			var failedMigrations = [];
+
+			for (var i = 0; i < recordsToMigrate.length; i++) {
+
+				var rec = recordsToMigrate[i];
+
+				failedMigrations.push({
+					table: rec.table,
+					sys_id: rec.sysId,
+					number: rec.number,
+					short_description: rec.short_description,
+					state: rec.state,
+					status: "failed",
+					action: "failed",
+					duration: data.duration || "0 min 0 sec",
+					reason: e.message ? e.message : e.toString()
+				});
+			}
+
+			data.failed = recordsToMigrate.length;
+			data.migrationDetails = failedMigrations;
+
+			try {
+
+				var mig_gr = new GlideRecordSecure(
+					'x_sysus_tracenow_migration_details'
+				);
+
+				mig_gr.initialize();
+
+				mig_gr.setValue('instance_url', sourceurl);
+				mig_gr.setValue('records_fetched', input.totalrecs);
+				mig_gr.setValue('records_inserted', 0);
+				mig_gr.setValue('records_updated', 0);
+				mig_gr.setValue('records_failed', recordsToMigrate.length);
+				mig_gr.setValue('success_rate', 0);
+				mig_gr.setValue('duration', "0 min 0 sec");
+				mig_gr.setValue('target_instance', gs.getProperty('glide.servlet.uri'));
+
+				var failedMigrationsysId = mig_gr.insert();
+				
+				console.log('engine = ' + engine);
 			
-				/* ============= Check Stats of Tables =========== */
-					var existingRecords = {};
+				if (failedMigrationsysId) {
+				
+					try {
+					failedMigrations.forEach(function(rec) {
 
-					recordsToMigrate.forEach(function(record) {
+						var logGr = new GlideRecordSecure(
+							'x_sysus_tracenow_tracenow_migration_record_log'
+						);
 
-							var gr = new GlideRecordSecure(record.table);
+						logGr.initialize();
 
-							if (gr.get(record.sysId)) {
-									existingRecords[
-											record.table + ':' + record.sysId
-									] = true;
-							}
+						logGr.setValue(
+							'migration',
+							failedMigrationsysId
+						);
+
+						logGr.setValue(
+							'table',
+							rec.table
+						);
+
+						logGr.setValue(
+							'source_sys_id',
+							rec.sys_id
+						);
+
+						logGr.setValue(
+							'record_number',
+							rec.number
+						);
+
+						logGr.setValue(
+							'status',
+							rec.status
+						);
+
+						logGr.setValue(
+							'action',
+							rec.action
+						);
+
+						logGr.setValue(
+							'duration',
+							rec.duration
+						);
+						logGr.setValue(
+							'reason',
+							rec.reason
+						);
+
+						logGr.setValue(
+							'state',
+							rec.state
+						);
+
+						logGr.setValue(
+							'short_description',
+							rec.short_description
+						);
+						/*
+							 * If executionLogs is a single array for the run
+							 */
+						logGr.setValue(
+							'migration_log',
+							JSON.stringify(migration_logs || [])
+						 );
+
+						logGr.insert();
 
 					});
-
-        try {
-						var startTime = new Date().getTime(); // milliseconds
-            var engine = new DM_MigrationCore();
-            var result = engine.migrateMixedRecords(sourceurl, username, password, recordsToMigrate, { sortByTable: true, stopOnError: false });
-						if(result) {
-							data.success = true;
-						}
-						else data.success = false;
-						var endTime = new Date().getTime();
-
-						var durationMs = endTime - startTime;
-
-						var totalSeconds = Math.floor(durationMs / 1000);
-						var minutes = Math.floor(totalSeconds / 60);
-						var seconds = totalSeconds % 60;
-
-						var durationText = minutes + " min " + seconds + " sec";
-
-						gs.info("Migration Duration: " + durationText);
-
-						data.duration = durationText;
-						//check the stats after migration
-						var migrationDetails = [];
-						recordsToMigrate.forEach(function(record) {
-
-								var key = record.table + ':' + record.sysId;
-
-								var action = existingRecords[key]
-										? 'updated'
-										: 'inserted';
-								    migrationDetails.push({
-											table: record.table,
-											sys_id: record.sysId,
-											number: record.number,
-											short_description: record.short_description,
-											state: record.state,
-											status: "success",
-											action: action
-									});
-
-								if (action === 'inserted')
-										stats.inserted++;
-								else
-										stats.updated++;
-
-								stats.details.push({
-										table: record.table,
-										sysId: record.sysId,
-										action: action
-								});
-
-						});
-            data.inserted = stats.inserted;
-            data.updated = stats.updated;
-						/* Safe success rate */
-						if (input.totalrecs > 0) {
-								successRate = ((stats.inserted + stats.updated) / input.totalrecs) * 100;
-						}
-
-						/* Optional rounding */
-						successRate = Math.round(successRate * 100) / 100;
-					var obj = {};
-
-					var mig = new GlideRecordSecure('x_sysus_tracenow_migration_details');
-					mig.initialize();
-					mig.setValue('instance_url', sourceurl);
-					//mig.instance_url = sourceurl;
-					mig.setValue('records_fetched', input.totalrecs);
-					//mig.records_fetched = input.totalrecs;
-					mig.setValue('records_inserted', stats.inserted);
-					//mig.records_inserted = stats.inserted;
-					mig.setValue('records_updated', stats.updated);
-					//mig.records_updated = stats.updated;
-					mig.setValue('records_failed', 0);
-					//mig.records_failed = 0;
-					mig.setValue('partial_record', partial);
-					//mig.partial_record = partial;
-					mig.setValue('success_rate', successRate);
-					//mig.success_rate = successRate;
-					mig.setValue('duration', durationText);
-					//mig.duration = durationText;
-					mig.setValue('target_instance', gs.getProperty('glide.servlet.uri'));
-					//mig.target_instance = gs.getProperty('glide.servlet.uri');
-
-					Object.keys(recordsToMigrate).forEach(function(key){
-							obj[key] = "true";
-					});
-
-					mig.setValue('table', JSON.stringify(migrationDetails));
-					//mig.table = JSON.stringify(migrationDetails);
-
-					/* (You forgot this ❗) */
-					mig.insert();
+				}
 					
-        } catch (e) {
-            data.success = false;
-						data.failed = 0;
-						//prepare records for table insert
-						var result_data = {};
+				catch(e) {
+					
+				}
 
-						for (var i = 0; i < input.records.length; i++) {
-								var group = input.records[i];
-								var tableName = group.name;
+				}
 
-								if (!result_data[tableName]) {
-										result_data[tableName] = {};
-								}
+				gs.info(
+					'Failed migration record inserted: ' +
+					failedMigrationsysId
+				);
 
-								for (var j = 0; j < group.records.length; j++) {
-										var rc = group.records[j];
+			} catch (insertEx) {
 
-										data.failed++;
+				gs.error(
+					'Failed to insert migration details: ' +
+					insertEx
+				);
+			}
+		}
 
-										result_data[tableName][rc.sys_id] = {
-												status: "failed",
-												rec_number: rc.number,
-												success_rate: "0",
-												state: rc.state,
-												reason: "The source table does not exist in the Target Instance"
-										};
-								}
-						}
+		return;
+	}
 
-						//Failed Migration insert
-							var mig_gr = new GlideRecordSecure('x_sysus_tracenow_migration_details');
-							mig_gr.initialize();
-							mig_gr.setValue('instance_url', sourceurl);
-							mig_gr.setValue('records_fetched', input.totalrecs);
-							mig_gr.setValue('records_inserted', stats.inserted);
-							mig_gr.setValue('records_updated', stats.updated);
-							mig_gr.setValue('records_failed', data.failed);
-							mig_gr.setValue('partial_record', partial);
-							mig_gr.setValue('success_rate', successRate);
-							mig_gr.setValue('duration', '0 min 0 sec');
-							mig_gr.setValue('target_instance', gs.getProperty('glide.servlet.uri'));
-							mig_gr.setValue('table', JSON.stringify(result_data));
-							mig_gr.insert();
-            	data.message = e.toString();
-        }
+	/* ================= REST API ================= */
 
-        return;
-    }
+	function callRemote(table, query, limit, getCount) {
+		try {
 
-    /* ================= REST API ================= */
+			var r = new sn_ws.RESTMessageV2();
+			r.setHttpMethod('get');
 
-    function callRemote(table, query, limit, getCount) {
-        try {
+			var endpoint = sourceurl +
+					"/api/now/table/" + table +
+					"?sysparm_query=" + encodeURIComponent(query || '') +
+					"&sysparm_limit=" + (limit || 200);
 
-            var r = new sn_ws.RESTMessageV2();
-            r.setHttpMethod('get');
+			if (getCount) {
+				endpoint += '&sysparm_count=true';
+			}
 
-            var endpoint = sourceurl +
-                "/api/now/table/" + table +
-                "?sysparm_query=" + encodeURIComponent(query || '') +
-								"&sysparm_display_value=true" +
-                "&sysparm_limit=" + (limit || 200);
+			r.setEndpoint(endpoint);
+			r.setBasicAuth(username, password);
+			r.setRequestHeader("Accept", "application/json");
 
-            if (getCount) {
-                endpoint += '&sysparm_count=true';
-            }
+			var response = r.execute();
+			var body = response.getBody();
 
-            r.setEndpoint(endpoint);
-            r.setBasicAuth(username, password);
-            r.setRequestHeader("Accept", "application/json");
+			var countHeader = response.getHeader("x-total-count");
+			totalCount = parseInt(countHeader, 10) || 0;
 
-            var response = r.execute();
-            var body = response.getBody();
+			if (getCount) {
+				return { count: totalCount };
+			}
 
-            var countHeader = response.getHeader("x-total-count");
-            totalCount = parseInt(countHeader, 10) || 0;
+			return JSON.parse(body);
 
-            if (getCount) {
-                return { count: totalCount };
-            }
+		} catch (ex) {
+			gs.error("REST Error: " + ex);
+			return null;
+		}
+	}
 
-            return JSON.parse(body);
+	/* ================= TABLES ================= */
 
-        } catch (ex) {
-            gs.error("REST Error: " + ex);
-            return null;
-        }
-    }
+	/* ================= INITIAL TABLE LOAD ================= */
 
-    /* ================= TABLES ================= */
+	if (!input) {
 
-   /* ================= INITIAL TABLE LOAD ================= */
+		var visibleTables = [
+			{name:'incident', label:'Incidents'},
+			{name:'change_request', label:'Change Requests'},
+			{name:'problem', label:'Problems'},
+			{name:'task', label:'Tasks'},
+			{name:'cmdb_ci', label:'Configuration Items'},
+			{name:'sc_req_item', label:'Requested Items'},
+			{name:'alm_asset', label:'Assets'}
+		];
 
-if (!input) {
+		for (var i = 0; i < visibleTables.length; i++) {
 
-    var visibleTables = [
-        {name:'incident', label:'Incidents'},
-        {name:'change_request', label:'Change Requests'},
-        {name:'problem', label:'Problems'},
-        {name:'task', label:'Tasks'},
-        {name:'cmdb_ci', label:'Configuration Items'},
-        {name:'sc_req_item', label:'Requested Items'},
-        {name:'alm_asset', label:'Assets'}
-    ];
+			callRemote(visibleTables[i].name, '', 1, true);
 
-    for (var i = 0; i < visibleTables.length; i++) {
+			data.tables.push({
+				name: visibleTables[i].name,
+				label: visibleTables[i].label,
+				count: totalCount
+			});
+		}
+	}
 
-        callRemote(visibleTables[i].name, '', 1, true);
+	/* ================= SEARCH TABLES ================= */
 
-        data.tables.push({
-            name: visibleTables[i].name,
-            label: visibleTables[i].label,
-            count: totalCount
-        });
-    }
-}
+	if (input && input.action == "searchTables") {
 
-/* ================= SEARCH TABLES ================= */
+		var q = (input.search || '').toLowerCase();
 
-if (input && input.action == "searchTables") {
+		data.tables = [];
 
-    var q = (input.search || '').toLowerCase();
+		if (!q) {
 
-    data.tables = [];
+			var defaults = [
+				{name:'incident', label:'Incidents'},
+				{name:'change_request', label:'Change Requests'},
+				{name:'problem', label:'Problems'},
+				{name:'task', label:'Tasks'},
+				{name:'cmdb_ci', label:'Configuration Items'},
+				{name:'sc_req_item', label:'Requested Items'},
+				{name:'alm_asset', label:'Assets'}
+			];
 
-    if (!q) {
+			for (var d = 0; d < defaults.length; d++) {
 
-        var defaults = [
-            {name:'incident', label:'Incidents'},
-            {name:'change_request', label:'Change Requests'},
-            {name:'problem', label:'Problems'},
-            {name:'task', label:'Tasks'},
-            {name:'cmdb_ci', label:'Configuration Items'},
-            {name:'sc_req_item', label:'Requested Items'},
-            {name:'alm_asset', label:'Assets'}
-        ];
+				callRemote(defaults[d].name, '', 1, true);
 
-        for (var d = 0; d < defaults.length; d++) {
+				data.tables.push({
+					name: defaults[d].name,
+					label: defaults[d].label,
+					count: totalCount
+				});
+			}
 
-            callRemote(defaults[d].name, '', 1, true);
+			return;
+		}
 
-            data.tables.push({
-                name: defaults[d].name,
-                label: defaults[d].label,
-                count: totalCount
-            });
-        }
+		var searchQuery =
+				'nameLIKE' + q +
+				'^ORlabelLIKE' + q;
 
-        return;
-    }
+		var tables = callRemote(
+			'sys_db_object',
+			searchQuery,
+			50
+		);
 
-    var searchQuery =
-        'nameLIKE' + q +
-        '^ORlabelLIKE' + q;
+		if (tables && tables.result) {
 
-    var tables = callRemote(
-        'sys_db_object',
-        searchQuery,
-        50
-    );
+			for (var t = 0; t < tables.result.length; t++) {
 
-    if (tables && tables.result) {
+				var tbl = tables.result[t];
 
-        for (var t = 0; t < tables.result.length; t++) {
+				data.tables.push({
+					name: tbl.name,
+					label: tbl.label || tbl.name,
+					count: null
+				});
+			}
+		}
 
-            var tbl = tables.result[t];
+		return;
+	}
 
-            data.tables.push({
-                name: tbl.name,
-                label: tbl.label || tbl.name,
-                count: null
-            });
-        }
-    }
+	/* ================= RECORDS ================= */
 
-    return;
-}
+	if (input && input.action === "getRecords") {
 
-    /* ================= RECORDS ================= */
+		var response = callRemote(input.table, input.query || '', 2000);
 
-    if (input && input.action === "getRecords") {
+		if (response && response.result) {
+			response.result.forEach(function(rec) {
+				data.records.push({
+					sys_id: rec.sys_id,
+					number: rec.number,
+					state: rec.state,
+					name: rec.name,
+					label: rec.label,
+					user_name: rec.user_name,
+					table: rec.sys_class_name || input.table,
+					short_description: rec.short_description,
+					sys_updated_by: rec.sys_updated_by,
+					sys_updated_on: rec.sys_updated_on,
+					selected: false
+				});
+			});
+		}
 
-        var response = callRemote(input.table, input.query || '', 2000);
-
-        if (response && response.result) {
-            response.result.forEach(function(rec) {
-                data.records.push({
-                    sys_id: rec.sys_id,
-                    number: rec.number,
-                    state: rec.state,
-										name: rec.name,
-										label: rec.label,
-										user_name: rec.user_name,
-                    table: rec.sys_class_name || input.table,
-                    short_description: rec.short_description,
-                    sys_updated_by: rec.sys_updated_by,
-                    sys_updated_on: rec.sys_updated_on,
-                    selected: false
-                });
-            });
-        }
-
-        data.totalCount = totalCount; // ✅ send count lazily
-    }
+		data.totalCount = totalCount; // ✅ send count lazily
+	}
 
 })();
 ]]></script>
@@ -2072,14 +2246,14 @@ if (input && input.action == "searchTables") {
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-20 09:57:42</sys_created_on>
         <sys_id>e27cfd1c3b4d4b10092273c5e4e45a08</sys_id>
-        <sys_mod_count>43</sys_mod_count>
+        <sys_mod_count>134</sys_mod_count>
         <sys_name>tracenow_browse_tables</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_e27cfd1c3b4d4b10092273c5e4e45a08</sys_update_name>
         <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-06-09 09:46:14</sys_updated_on>
+        <sys_updated_on>2026-06-19 10:33:42</sys_updated_on>
         <template><![CDATA[<div class="browse-layout"> 
     <!-- SIDEBAR -->
     <div class="dm-sidebar-slot">
@@ -2343,7 +2517,7 @@ if (input && input.action == "searchTables") {
   <div class="migration-modal modern">
 
     <!-- CLOSE -->
-    <div class="modal-close" ng-click="c.closeModal()">×</div>
+    <!--<div class="modal-close" ng-click="c.closeModal()">×</div>-->
 
     <!-- ICON -->
    <div class="modal-logo">

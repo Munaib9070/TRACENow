@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller = function($scope, $element, $timeout) {
+    var c = this;
+    c.activeSection = 'intro';
+
+    // 1. Setup Intersection Observer
+    $timeout(function() {
+        // Target the specific div that is now scrolling
+        var scrollContainer = document.getElementById('policy-scroll-area');
+        
+        var observerOptions = {
+            root: scrollContainer, // Crucial: Watch this specific container, not the whole window
+            rootMargin: '0px 0px -60% 0px',
+            threshold: 0
+        };
+
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    $scope.$applyAsync(function() {
+                        c.activeSection = entry.target.id;
+                    });
+                }
+            });
+        }, observerOptions);
+
+        // Observe all sections
+        var sections = $element[0].querySelectorAll('section[id]');
+        sections.forEach(function(section) {
+            observer.observe(section);
+        });
+    });
+
+    // 2. Smooth scroll handler
+    c.scrollTo = function(id, event) {
+        if (event) event.preventDefault();
+        
+        c.activeSection = id;
+        var element = document.getElementById(id);
+        
+        if (element) {
+            element.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }
+    };
+};]]></client_script>
+        <controller_as>c</controller_as>
+        <css>/* ===== BACK LINK ===== */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #64748b;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    margin-bottom: 24px;
+    transition: all 0.25s ease;
+}
+
+.back-link i {
+    font-size: 14px;
+    transition: transform 0.25s ease;
+}
+
+.back-link:hover {
+    color: #116AF8;
+}
+
+.back-link:hover i {
+    transform: translateX(-4px); /* Adds a subtle slide animation to the arrow */
+}
+
+.privacy-container {
+    /* Matches your dashboard wrapper background */
+    background: linear-gradient(
+        to bottom right,
+        #ffffff 0%,
+        rgba(13, 124, 143, 0.05) 50%,
+        rgba(23, 162, 184, 0.10) 100%
+    );
+    min-height: calc(100vh - 64px);
+    padding: 30px 15%; /* Matches your dm-dashboard-wrapper padding */
+    color: #1e293b;
+    font-family: inherit;
+}
+
+/* Card Wrapper to emulate the table/hero cards */
+.privacy-card {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(10, 80, 245, 0.06);
+    overflow: hidden;
+    position: relative;
+    max-width: 1400px;
+    margin: 0 auto;
+    /* Set a height so internal scrolling can activate */
+    height: calc(100vh - 120px); 
+    display: flex;
+    flex-direction: column;
+}
+/* HEADER */
+.policy-header {
+    padding: 35px 60px;
+    background-image: linear-gradient(to right, #f9fafb, #ffffff);
+    border-bottom: 1px solid #f1f5f9;
+    flex-shrink: 0; /* Prevents the header from shrinking */
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.tn-brand-icon svg {
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.08));
+    opacity: 0.98;
+}
+
+.policy-header h1 {
+    font-size: 42px;
+    font-weight: 700;
+    margin: 0 0 15px;
+    color: #1e293b;
+}
+
+.header-description {
+    max-width: 760px;
+    font-size: 18px;
+    line-height: 1.6;
+    color: #475569;
+    margin: 0;
+}
+
+/* LAYOUT */
+.content-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden; /* Traps the content so child elements handle scrolling */
+}
+
+/* SIDEBAR / TOC */
+.toc-panel {
+    width: 280px;
+    padding: 40px;
+    border-right: 1px solid #f1f5f9;
+    background: #ffffff;
+    /* Removed sticky positioning; allow scroll only if menu gets very long */
+    overflow-y: auto; 
+}
+
+.toc-title {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-bottom: 20px;
+}
+
+.sidebar-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-nav li {
+    margin-bottom: 6px;
+}
+
+.sidebar-nav a {
+    display: block;
+    text-decoration: none;
+    color: #64748b;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+}
+
+.sidebar-nav a:hover {
+    background: #f8fafc;
+    color: #116AF8;
+}
+
+/* Active State Match (Blue instead of Black) */
+.sidebar-nav a.active {
+    background: #116AF8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 15px rgba(17, 106, 248, 0.25);
+}
+
+/* MAIN CONTENT */
+.policy-content {
+    flex: 1;
+    padding: 40px 60px;
+    overflow-y: auto; /* Magic property to isolate scrolling to the right side */
+    scroll-behavior: smooth;
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 25px;
+}
+
+/* Icon box matching theme blue */
+.icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #E8F1FE, #D4E4FD);
+    color: #116AF8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.section-heading h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.policy-content p {
+    font-size: 16px;
+    line-height: 1.7;
+    color: #475569;
+    margin-bottom: 20px;
+}
+
+section {
+    margin-bottom: 70px;
+    scroll-margin-top: 40px; /* Accounts for sticky offsets when scrolling */
+}
+
+/* LISTS &amp; DATA CATEGORIES */
+.data-category {
+    margin-bottom: 28px;
+}
+
+.data-category h4 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 8px;
+}
+
+.data-category p {
+    font-size: 16px;
+    color: #64748b;
+    margin: 0;
+}
+
+#incident .policy-list {
+    margin: 20px 0 20px 20px;
+    padding: 0;
+    color: #475569;
+}
+
+#incident .policy-list li {
+    font-size: 16px;
+    line-height: 1.7;
+    margin-bottom: 8px;
+}
+
+#incident .contact-line a {
+    color: #116AF8;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+/* CONTACT SECTION */
+.contact-card-container {
+    margin-top: 40px;
+    padding: 35px;
+    border: 1px solid #f1f5f9;
+    border-radius: 20px;
+    background: #f8fafc;
+}
+
+.contact-description {
+    margin: 15px 0 25px;
+    color: #64748b;
+}
+
+.contact-grid {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.contact-box {
+    flex: 1;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+
+.contact-label {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.contact-box a {
+    color: #0f766e; /* Using your view-all color as an accent */
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.contact-address {
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+/* FOOTER */
+.policy-footer {
+    margin-top: 50px;
+    padding-top: 25px;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.policy-version {
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.back-to-top {
+    color: #1e293b;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.back-to-top:hover {
+    color: #116AF8;
+}
+
+/* RESPONSIVE */
+@media(max-width: 1600px){
+    .privacy-container {
+        padding: 30px;
+    }
+}
+@media(max-width: 992px){
+    .content-layout { flex-direction: column; }
+    .toc-panel { width: 100%; height: auto; border-right: none; border-bottom: 1px solid #f1f5f9; position: relative; padding: 30px; }
+    .policy-content { padding: 40px 30px; }
+    .policy-header h1 { font-size: 32px; }
+    .section-heading h2 { font-size: 24px; }
+}
+@media(max-width: 768px){
+    .contact-grid { flex-direction: column; }
+}</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>true</has_preview>
+        <id/>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link>
+        <name>tracenow_privacy_policy</name>
+        <option_schema/>
+        <public>false</public>
+        <roles>admin</roles>
+        <script><![CDATA[(function() {
+  /* populate the 'data' object */
+  /* e.g., data.table = $sp.getValue('table'); */
+
+})();]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-06-10 10:07:09</sys_created_on>
+        <sys_id>01080a879399cf500af5f4e9b903d65e</sys_id>
+        <sys_mod_count>67</sys_mod_count>
+        <sys_name>tracenow_privacy_policy</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sp_widget_01080a879399cf500af5f4e9b903d65e</sys_update_name>
+        <sys_updated_by>numan.shabir</sys_updated_by>
+        <sys_updated_on>2026-06-17 07:07:22</sys_updated_on>
+        <template><![CDATA[<div class="privacy-container">
+  <div class="privacy-card">
+    <!-- Header -->
+    <div class="policy-header">
+      <a href="?id=tracennow_dashboard" class="back-link">
+        <i class="fa fa-arrow-left"></i> Back to Dashboard
+      </a>
+      <!-- <div class="logo">
+        <div class="tn-brand-icon">
+          <svg width="240" viewBox="0 0 630 98" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+            <path d="M169.886 88V27.1047H151.047..." fill="#1e293b"/>
+          </svg>
+        </div>
+      </div> -->
+
+      <h1>Privacy Policy</h1>
+      <p class="header-description">
+        This document describes how TraceNow handles data collected in the course of
+        providing our ServiceNow instance migration platform. We are committed to
+        transparency, data minimization, and the security of your information.
+      </p>
+    </div>
+
+    <div class="content-layout">
+      <!-- Left Navigation -->
+      <div class="toc-panel">
+        <div class="toc-title">CONTENTS</div>
+        <ul class="sidebar-nav">
+          <li>
+            <a href="#intro"
+               ng-class="{'active': c.activeSection === 'intro'}"
+               ng-click="c.scrollTo('intro', $event)">
+              Introduction
+            </a>
+          </li>
+          <li>
+            <a href="#collect"
+               ng-class="{'active': c.activeSection === 'collect'}"
+               ng-click="c.scrollTo('collect', $event)">
+              Data We Collect
+            </a>
+          </li>
+          <li>
+            <a href="#usage"
+               ng-class="{'active': c.activeSection === 'usage'}"
+               ng-click="c.scrollTo('usage', $event)">
+              How We Use Your Data
+            </a>
+          </li>
+          <li>
+            <a href="#security"
+               ng-class="{'active': c.activeSection === 'security'}"
+               ng-click="c.scrollTo('security', $event)">
+              Data Security
+            </a>
+          </li>
+          <li>
+            <a href="#incident"
+               ng-class="{'active': c.activeSection === 'incident'}"
+               ng-click="c.scrollTo('incident', $event)">
+              Security Incident Response
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Content -->
+      <div class="policy-content" id="policy-scroll-area">
+        <section id="intro">
+          <div class="section-heading">
+            <div class="icon-box"><i class="fa fa-shield"></i></div>
+            <h2>Introduction</h2>
+          </div>
+          <p>TraceNow is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use TraceNow, our enterprise data migration tool designed to migrate data between ServiceNow instances.</p>
+          <p>This policy applies to all users of the TraceNow platform, including administrators, migration engineers, and any personnel granted access to the tool within your organization.</p>
+          <p>By using TraceNow, you agree to the collection and use of information in accordance with this policy.</p>
+        </section>
+
+        <section id="collect">
+          <div class="section-heading">
+            <div class="icon-box"><i class="fa fa-database"></i></div>
+            <h2>Data We Collect</h2>
+          </div>
+          <p>We collect the following categories of information in connection with your use of TraceNow:</p>
+          <div class="data-category">
+            <h4>Account &amp; Authentication Data</h4>
+            <p>Name, email address, job title, organization name, and authentication credentials used to access the TraceNow platform.</p>
+          </div>
+          <div class="data-category">
+            <h4>ServiceNow Instance Metadata</h4>
+            <p>Instance URLs, connection credentials (stored encrypted), API endpoint configurations, and instance version information.</p>
+          </div>
+          <div class="data-category">
+            <h4>Usage &amp; Telemetry Data</h4>
+            <p>Feature usage patterns, session duration, error events, and performance metrics collected to improve platform reliability and support diagnostics.</p>
+          </div>
+        </section>
+
+        <section id="usage">
+          <div class="section-heading">
+            <div class="icon-box"><i class="fa fa-eye"></i></div>
+            <h2>How We Use Your Data</h2>
+          </div>
+          <div class="data-category">
+            <h4>Service Delivery</h4>
+            <p>To authenticate users, execute migration jobs between ServiceNow instances, and deliver the core functionality of TraceNow.</p>
+          </div>
+          <div class="data-category">
+            <h4>Platform Improvement</h4>
+            <p>To analyze usage patterns, diagnose performance issues, and develop new features that improve the migration experience.</p>
+          </div>
+        </section>
+
+        <section id="security">
+          <div class="section-heading">
+            <div class="icon-box"><i class="fa fa-lock"></i></div>
+            <h2>Data Security</h2>
+          </div>
+          <div class="data-category">
+            <h4>Encryption in Transit &amp; at Rest</h4>
+            <p>All data transmitted between your environment and TraceNow is encrypted using TLS 1.2 or higher. Credentials and sensitive configuration values are encrypted at rest using AES-256.</p>
+          </div>
+          <div class="data-category">
+            <h4>Access Controls</h4>
+            <p>Role-based access controls (RBAC) restrict platform access to authorized personnel within your organization. Administrative functions require multi-factor authentication (MFA).</p>
+          </div>
+        </section>
+
+        <section id="incident">
+          <div class="section-heading">
+            <div class="icon-box"><i class="fa fa-exclamation-circle"></i></div>
+            <h2>Security Incident Response</h2>
+          </div>
+          <p>In the event of a security incident affecting your data, TraceNow will:</p>
+          <ol class="policy-list">
+            <li>Contain and investigate the incident promptly upon discovery.</li>
+            <li>Notify affected customers within 72 hours of confirming a breach that poses a risk to personal data.</li>
+            <li>Provide a detailed incident report including the nature of the breach, data categories affected, likely consequences, and remediation steps taken.</li>
+          </ol>
+          <p class="contact-line">To report a security concern, contact: <a href="mailto:security@tracenow.io">security@tracenow.io</a></p>
+        </section>
+
+        <!-------CONTACT DETAILS----->
+        <div class="contact-card-container">
+          <div class="section-heading">
+            <div class="icon-box"><i class="fa fa-envelope-o"></i></div>
+            <h2>Contact Us</h2>
+          </div>
+          <p class="contact-description">If you have questions, concerns, or requests related to this Privacy Policy or the handling of your data, please contact our Privacy team:</p>
+          <div class="contact-grid">
+            <div class="contact-box">
+              <div class="contact-label">General Privacy</div>
+              <a href="mailto:privacy@tracenow.io">privacy@tracenow.io <i class="fa fa-external-link"></i></a>
+            </div>
+            <div class="contact-box">
+              <div class="contact-label">Security Incidents</div>
+              <a href="mailto:security@tracenow.io">security@tracenow.io <i class="fa fa-external-link"></i></a>
+            </div>
+          </div>
+        </div>
+
+        <!------FOOTER------>
+        <div class="policy-footer">
+          <div class="policy-version">Policy version 2.0 · Effective June 9, 2026</div>
+          <a href="#" ng-click="c.scrollTo('intro', $event)" class="back-to-top">
+            <i class="fa fa-angle-up"></i> Back to top
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>]]></template>
+    </sp_widget>
+</record_update>

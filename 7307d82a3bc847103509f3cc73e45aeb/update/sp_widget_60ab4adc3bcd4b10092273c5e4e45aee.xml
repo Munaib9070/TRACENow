@@ -335,7 +335,7 @@ c.startBrowse = function() {
         <name>tracenow_sidebar</name>
         <option_schema/>
         <public>false</public>
-        <roles/>
+        <roles>admin</roles>
         <script><![CDATA[(function() {
   /* populate the 'data' object */
   /* e.g., data.table = $sp.getValue('table'); */
@@ -346,14 +346,14 @@ c.startBrowse = function() {
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 11:03:56</sys_created_on>
         <sys_id>60ab4adc3bcd4b10092273c5e4e45aee</sys_id>
-        <sys_mod_count>15</sys_mod_count>
+        <sys_mod_count>17</sys_mod_count>
         <sys_name>tracenow_sidebar</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_60ab4adc3bcd4b10092273c5e4e45aee</sys_update_name>
-        <sys_updated_by>munaib.ashraf</sys_updated_by>
-        <sys_updated_on>2026-06-03 08:00:07</sys_updated_on>
+        <sys_updated_by>muslim.altaf</sys_updated_by>
+        <sys_updated_on>2026-06-16 08:04:41</sys_updated_on>
         <template><![CDATA[<div class="dm-sidebar">
 
   <ul class="dm-menu">
@@ -479,6 +479,19 @@ c.startBrowse = function() {
       </a>
     </li>  
 
+    <li ng-class="{active: c.isActive('tracenow_privacy_policy')}">
+      <a href="/_tracenow?id=tracenow_privacy_policy">
+        <span class="dm-icon-box">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-alert-icon lucide-shield-alert"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        </span>
+        <span class="dm-text">Privacy Policy</span>
+        <div class="dm-right">
+          <svg class="dm-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </div>
+      </a>
+    </li> 
 <!-- <li ng-class="{active: c.isActive('dm_setting')}">
       <a href="/datamigration?id=dm_setting">
         <span class="dm-icon-box">

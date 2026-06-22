@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_user_role">
+    <sys_user_role action="INSERT_OR_UPDATE">
+        <assignable_by/>
+        <can_delegate>true</can_delegate>
+        <description/>
+        <elevated_privilege>false</elevated_privilege>
+        <encryption_context/>
+        <federated_id>yeK1XKVzPQC7iMnEhDtmEs4NJ+cpXT6F9XuTzFejWSE=</federated_id>
+        <grantable>true</grantable>
+        <includes_roles/>
+        <name>x_sysus_tracenow.tracenow_migration_record_log_user</name>
+        <scoped_admin>false</scoped_admin>
+        <suffix>tracenow_migration_record_log_user</suffix>
+        <sys_class_name>sys_user_role</sys_class_name>
+        <sys_created_by>faizan.latief</sys_created_by>
+        <sys_created_on>2026-06-15 08:31:14</sys_created_on>
+        <sys_id>7112af6893ed07100af5f4e9b903d6ee</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>x_sysus_tracenow.tracenow_migration_record_log_user</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_user_role_7112af6893ed07100af5f4e9b903d6ee</sys_update_name>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-06-15 08:31:14</sys_updated_on>
+    </sys_user_role>
+</record_update>

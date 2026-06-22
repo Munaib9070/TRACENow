@@ -1,0 +1,1792 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_cb_topic">
+    <sys_cb_topic action="INSERT_OR_UPDATE">
+        <applicability/>
+        <applicability_mode>query</applicability_mode>
+        <autopilot_topic>false</autopilot_topic>
+        <category/>
+        <channels/>
+        <connect_queue/>
+        <context_profiles/>
+        <description>Instance Migration Assistant.</description>
+        <dialog_acts_enabled>false</dialog_acts_enabled>
+        <expose_on_palette>false</expose_on_palette>
+        <flexible_conversation_switching>false</flexible_conversation_switching>
+        <foundational>false</foundational>
+        <graph>{
+  "graph_api_version": "1.0.82",
+  "goals": {
+    "primary": {
+      "id": "primary",
+      "trigger": {
+        "type": "primary"
+      },
+      "name": "primary",
+      "applicability": "",
+      "description": "",
+      "nodes": {
+        "560e5d4ea7084699bebd239263ba9304": {
+          "id": "560e5d4ea7084699bebd239263ba9304",
+          "stepType": "Start",
+          "name": "Start",
+          "greetingResponse": {
+            "mode": "simple",
+            "value": ""
+          }
+        },
+        "607c8288ec4446c497442e9b408fd778": {
+          "id": "607c8288ec4446c497442e9b408fd778",
+          "stepType": "TerminateGoal",
+          "name": "End",
+          "confirmationMessage": {
+            "mode": "simple",
+            "value": ""
+          }
+        },
+        "36c9d4be40c14e2d8e726ef4610236f1": {
+          "name": "Hey, How can i help you?",
+          "prompt": {
+            "value": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "Hey, How can i help you?"
+                  }
+                ]
+              }
+            ],
+            "mode": "simple"
+          },
+          "confirmMessage": {
+            "value": "",
+            "mode": "simple"
+          },
+          "acknowledgeMsg": {
+            "value": "",
+            "mode": "simple"
+          },
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          },
+          "skippable": {
+            "value": "",
+            "mode": "query"
+          },
+          "skipReprompt": {
+            "value": "",
+            "mode": "query"
+          },
+          "defaultValue": {
+            "value": "",
+            "mode": "simple"
+          },
+          "variableId": "9349ca4f1cfa44bd8d9c4a7ee2803ab1",
+          "detailDescription": "",
+          "id": "36c9d4be40c14e2d8e726ef4610236f1",
+          "stepType": "ChoicePrompt",
+          "hasCardHeader": false,
+          "cardMetadata": {
+            "mode": "card",
+            "metadataScript": "",
+            "cardTemplate": "",
+            "cardFields": {},
+            "cardDefinition": {}
+          },
+          "withNluUserInput": false,
+          "skipIfFulfilled": false
+        },
+        "604de0008a0d4b22b8bfe9037234f54c": {
+          "id": "604de0008a0d4b22b8bfe9037234f54c",
+          "stepType": "Decision",
+          "name": "Decision"
+        },
+        "fcea49f31b11445685655c5f46f116fa": {
+          "id": "fcea49f31b11445685655c5f46f116fa",
+          "stepType": "TextPrompt",
+          "name": "URL",
+          "prompt": {
+            "value": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "Enter URL of source Instance"
+                  }
+                ]
+              }
+            ],
+            "mode": "simple"
+          },
+          "confirmMessage": {
+            "value": "",
+            "mode": "simple"
+          },
+          "acknowledgeMsg": {
+            "value": "",
+            "mode": "simple"
+          },
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          },
+          "skippable": {
+            "value": "",
+            "mode": "query"
+          },
+          "skipReprompt": {
+            "value": "",
+            "mode": "query"
+          },
+          "defaultValue": {
+            "value": "",
+            "mode": "simple"
+          },
+          "hasCardHeader": false,
+          "cardMetadata": {
+            "mode": "card",
+            "metadataScript": "",
+            "cardTemplate": "",
+            "cardFields": {},
+            "cardDefinition": {}
+          },
+          "withNluUserInput": false,
+          "skipIfFulfilled": false,
+          "variableId": "6c110319097a468f8d6791ad3177aa81",
+          "detailDescription": "",
+          "inputType": {
+            "format": "Text",
+            "script": ""
+          },
+          "requestFeedback": true
+        },
+        "963f61bf080447528ea04f03f4c4ba05": {
+          "id": "963f61bf080447528ea04f03f4c4ba05",
+          "stepType": "TextPrompt",
+          "name": "UserName",
+          "prompt": {
+            "value": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "Enter UserName of source Instance"
+                  }
+                ]
+              }
+            ],
+            "mode": "simple"
+          },
+          "confirmMessage": {
+            "value": "",
+            "mode": "simple"
+          },
+          "acknowledgeMsg": {
+            "value": "",
+            "mode": "simple"
+          },
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          },
+          "skippable": {
+            "value": "",
+            "mode": "query"
+          },
+          "skipReprompt": {
+            "value": "",
+            "mode": "query"
+          },
+          "defaultValue": {
+            "value": "",
+            "mode": "simple"
+          },
+          "hasCardHeader": false,
+          "cardMetadata": {
+            "mode": "card",
+            "metadataScript": "",
+            "cardTemplate": "",
+            "cardFields": {},
+            "cardDefinition": {}
+          },
+          "withNluUserInput": false,
+          "skipIfFulfilled": false,
+          "variableId": "d64606fe743d4c4ca73410dacdac664f",
+          "detailDescription": "",
+          "inputType": {
+            "format": "Text",
+            "script": ""
+          },
+          "requestFeedback": true
+        },
+        "8c24e62c30aa4834bbc62bad5cfd198b": {
+          "id": "8c24e62c30aa4834bbc62bad5cfd198b",
+          "stepType": "TextPrompt",
+          "name": "Password",
+          "prompt": {
+            "value": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "Enter Password of source Instance"
+                  }
+                ]
+              }
+            ],
+            "mode": "simple"
+          },
+          "confirmMessage": {
+            "value": "",
+            "mode": "simple"
+          },
+          "acknowledgeMsg": {
+            "value": "",
+            "mode": "simple"
+          },
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          },
+          "skippable": {
+            "value": "",
+            "mode": "query"
+          },
+          "skipReprompt": {
+            "value": "",
+            "mode": "query"
+          },
+          "defaultValue": {
+            "value": "",
+            "mode": "simple"
+          },
+          "hasCardHeader": false,
+          "cardMetadata": {
+            "mode": "card",
+            "metadataScript": "",
+            "cardTemplate": "",
+            "cardFields": {},
+            "cardDefinition": {}
+          },
+          "withNluUserInput": false,
+          "skipIfFulfilled": false,
+          "variableId": "6d8e104aa82f4565bcb506815b9b43e0",
+          "detailDescription": "",
+          "inputType": {
+            "format": "Text",
+            "script": ""
+          },
+          "requestFeedback": true
+        },
+        "51209999cd50443ea2f255e3869592ab": {
+          "id": "51209999cd50443ea2f255e3869592ab",
+          "name": "Validate connection",
+          "script": "(function execute() {\n    try {\n        var conn = new GlideRecord('x_sysus_tracenow_connection');\n        conn.addQuery('sys_created_by', gs.getUserName());\n        conn.addQuery('state', true);                 // the active connection\n        conn.orderByDesc('sys_updated_on');\n        conn.setLimit(1);\n        conn.query();\n\n        if (!conn.next()) { vaVars.connection_status = 'NO_ACTIVE_CONNECTION'; return; }\n\n        vaVars.url      = conn.getValue('url');\n        vaVars.username = conn.getValue('username');\n        vaVars.password = conn.getValue('password');  // see caveat below\n\n        var r = new sn_ws.RESTMessageV2();\n        r.setHttpMethod('get');\n        r.setEndpoint(vaVars.url + '/api/now/table/sys_user?sysparm_limit=1&amp;sysparm_fields=sys_id');\n        r.setBasicAuth(vaVars.username, vaVars.password);\n        r.setRequestHeader('Accept', 'application/json');\n        vaInputs.connection_status = String(r.execute().getStatusCode());\n    } catch (e) {\n        vaInputs.connection_status = 'ERROR: ' + e.message;\n    }\n})()",
+          "stepType": "ScriptAction",
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          }
+        },
+        "cb3bed1edb754b4cad2ddc9241d7a4ed": {
+          "id": "cb3bed1edb754b4cad2ddc9241d7a4ed",
+          "stepType": "Decision",
+          "name": "Decision"
+        },
+        "6286d849ecf5484f8ed572071697026a": {
+          "id": "6286d849ecf5484f8ed572071697026a",
+          "stepType": "TextOutput",
+          "name": "Connection status",
+          "secure": false,
+          "value": [
+            {
+              "value": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "text": "Connection Status: "
+                    },
+                    {
+                      "type": "datapill",
+                      "dataPill": {
+                        "value": "{{vaInputs.connection_status}}",
+                        "displayValue": "Input Variables➛Connection_status"
+                      },
+                      "children": [
+                        {
+                          "text": ""
+                        }
+                      ]
+                    },
+                    {
+                      "text": ""
+                    }
+                  ]
+                }
+              ],
+              "mode": "simple",
+              "_key": "4b8e57fa13534744836236b130540c5c"
+            }
+          ],
+          "isCollapsible": true,
+          "requestFeedback": true,
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          }
+        },
+        "5ba0830d96054e44b84e4e87345125d6": {
+          "id": "5ba0830d96054e44b84e4e87345125d6",
+          "stepType": "SlotFillPrompt",
+          "name": "connection_status",
+          "type": "string",
+          "withNluUserInput": false,
+          "skipIfFulfilled": true,
+          "variableId": "842d367e300e459cba41f3932bc68e10",
+          "values": {
+            "supportedControlNote": "",
+            "name": "",
+            "variableName": "",
+            "label": "Text 15",
+            "prompt": {
+              "mode": "simple",
+              "value": "Set by NLU"
+            },
+            "inputType": {
+              "format": "Text",
+              "script": ""
+            },
+            "detailDescription": "",
+            "skipIfFulfilled": false,
+            "node_id": "",
+            "variable_name": "",
+            "headerCardNote": "Add cards which may include images or YouTube videos.",
+            "hasCardHeader": false,
+            "cardMetadata": {
+              "mode": "card",
+              "metadataScript": "",
+              "cardTemplate": "",
+              "cardFields": {},
+              "cardDefinition": {}
+            },
+            "helpTextNote": "Add help text that will display from an icon next to the message.",
+            "helpText": false,
+            "helpTextMessage": {
+              "mode": "simple",
+              "value": ""
+            },
+            "secureNote": "User input will be securely masked. For passwords, please use Action inputs instead.",
+            "secure": false,
+            "encryptionHashFunction": "SHA-256",
+            "encryptionSalt": {
+              "value": "MTc4MTA3NzAzMjM5NyBWQSBEZXNpZ25lciBpcyBhd2Vzb21l",
+              "mode": "simple"
+            },
+            "defaultValueNote": "Define a value for the user response to the prompt. For example, if we already know the user name, the default value might be (Script Variables &gt; Last username).",
+            "defaultValue": {
+              "value": "",
+              "mode": "simple"
+            },
+            "acknowledgeMsg": {
+              "value": "",
+              "mode": "simple"
+            },
+            "confirmMessage": {
+              "value": "",
+              "mode": "simple"
+            },
+            "withNluUserInput": false,
+            "applicabilityNote": "By default, this node will be shown in the conversation and input from the user will be required.",
+            "applicability": {
+              "mode": "script",
+              "value": "(function() { return false; })()"
+            },
+            "skippable": {
+              "value": "",
+              "mode": "query"
+            },
+            "skipReprompt": {
+              "value": "",
+              "mode": "query"
+            }
+          },
+          "hidden": true,
+          "detailDescription": ""
+        },
+        "f7558796b84a4df69148a4224c9eea56": {
+          "id": "f7558796b84a4df69148a4224c9eea56",
+          "stepType": "TextOutput",
+          "name": "Connection failed",
+          "secure": false,
+          "value": [
+            {
+              "value": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "text": "Connection failed. "
+                    },
+                    {
+                      "type": "datapill",
+                      "dataPill": {
+                        "value": "{{vaInputs.connection_status}}",
+                        "displayValue": "Input Variables➛Connection_status"
+                      },
+                      "children": [
+                        {
+                          "text": ""
+                        }
+                      ]
+                    },
+                    {
+                      "text": ""
+                    }
+                  ]
+                }
+              ],
+              "mode": "simple",
+              "_key": "7f50f946c1024d0faea9c1b91147fb0d"
+            }
+          ],
+          "isCollapsible": true,
+          "requestFeedback": true,
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          }
+        },
+        "b56bc599c57a4644b611474d9c69ee00": {
+          "id": "b56bc599c57a4644b611474d9c69ee00",
+          "stepType": "TextPrompt",
+          "name": "Migration",
+          "prompt": {
+            "value": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "Let's just start migration. Type anything to start"
+                  }
+                ]
+              }
+            ],
+            "mode": "simple"
+          },
+          "confirmMessage": {
+            "value": "",
+            "mode": "simple"
+          },
+          "acknowledgeMsg": {
+            "value": "",
+            "mode": "simple"
+          },
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          },
+          "skippable": {
+            "value": "",
+            "mode": "query"
+          },
+          "skipReprompt": {
+            "value": "",
+            "mode": "query"
+          },
+          "defaultValue": {
+            "value": "",
+            "mode": "simple"
+          },
+          "hasCardHeader": false,
+          "cardMetadata": {
+            "mode": "card",
+            "metadataScript": "",
+            "cardTemplate": "",
+            "cardFields": {},
+            "cardDefinition": {}
+          },
+          "withNluUserInput": false,
+          "skipIfFulfilled": false,
+          "variableId": "c6684c0f1fe84bc99e8d9b0d2defbad1",
+          "detailDescription": "",
+          "inputType": {
+            "format": "Text",
+            "script": ""
+          },
+          "requestFeedback": true
+        },
+        "9e0ce9c74bb444749851bed459c4ee45": {
+          "id": "9e0ce9c74bb444749851bed459c4ee45",
+          "name": "table_status",
+          "script": "(function execute() {\n\n    try {\n\n        var table = String(vaInputs.table || '').trim();\n\n        if (!table) {\n            vaInputs.table_status = 'no_table';\n            return;\n        }\n\n        var gr = new GlideRecord('sys_db_object');\n        gr.addQuery('name', table);\n        gr.query();\n\n        if (gr.next()) {\n            vaInputs.table_status = 'found';\n        } else {\n            vaInputs.table_status = 'not_found';\n        }\n\n    } catch (e) {\n\n        vaInputs.table_status = 'error';\n\n    }\n\n})();",
+          "stepType": "ScriptAction",
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          }
+        },
+        "d6b6171613fd41ccb8e5ea173adb8c95": {
+          "id": "d6b6171613fd41ccb8e5ea173adb8c95",
+          "stepType": "SlotFillPrompt",
+          "name": "table_status",
+          "type": "string",
+          "withNluUserInput": false,
+          "skipIfFulfilled": true,
+          "variableId": "a4b5a1a13dd44291b6dfb88bc49693f0",
+          "values": {
+            "supportedControlNote": "",
+            "name": "",
+            "variableName": "",
+            "label": "Text 72",
+            "prompt": {
+              "mode": "simple",
+              "value": "Set by NLU"
+            },
+            "inputType": {
+              "format": "Text",
+              "script": ""
+            },
+            "detailDescription": "",
+            "skipIfFulfilled": false,
+            "node_id": "",
+            "variable_name": "",
+            "headerCardNote": "Add cards which may include images or YouTube videos.",
+            "hasCardHeader": false,
+            "cardMetadata": {
+              "mode": "card",
+              "metadataScript": "",
+              "cardTemplate": "",
+              "cardFields": {},
+              "cardDefinition": {}
+            },
+            "helpTextNote": "Add help text that will display from an icon next to the message.",
+            "helpText": false,
+            "helpTextMessage": {
+              "mode": "simple",
+              "value": ""
+            },
+            "secureNote": "User input will be securely masked. For passwords, please use Action inputs instead.",
+            "secure": false,
+            "encryptionHashFunction": "SHA-256",
+            "encryptionSalt": {
+              "value": "MTc4MTA3ODIwMzI3NiBWQSBEZXNpZ25lciBpcyBhd2Vzb21l",
+              "mode": "simple"
+            },
+            "defaultValueNote": "Define a value for the user response to the prompt. For example, if we already know the user name, the default value might be (Script Variables &gt; Last username).",
+            "defaultValue": {
+              "value": "",
+              "mode": "simple"
+            },
+            "acknowledgeMsg": {
+              "value": "",
+              "mode": "simple"
+            },
+            "confirmMessage": {
+              "value": "",
+              "mode": "simple"
+            },
+            "withNluUserInput": false,
+            "applicabilityNote": "By default, this node will be shown in the conversation and input from the user will be required.",
+            "applicability": {
+              "mode": "script",
+              "value": "(function() { return false; })()"
+            },
+            "skippable": {
+              "value": "",
+              "mode": "query"
+            },
+            "skipReprompt": {
+              "value": "",
+              "mode": "query"
+            }
+          },
+          "hidden": true,
+          "detailDescription": ""
+        },
+        "acc6c5c9f06d4da4b12bb91d88e28d5c": {
+          "id": "acc6c5c9f06d4da4b12bb91d88e28d5c",
+          "stepType": "TextOutput",
+          "name": "table_status",
+          "secure": false,
+          "value": [
+            {
+              "value": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "text": "Table "
+                    },
+                    {
+                      "type": "datapill",
+                      "dataPill": {
+                        "value": "{{vaInputs.table_status}}",
+                        "displayValue": "Input Variables➛Table_status"
+                      },
+                      "children": [
+                        {
+                          "text": ""
+                        }
+                      ]
+                    },
+                    {
+                      "text": ""
+                    }
+                  ]
+                }
+              ],
+              "mode": "simple",
+              "_key": "2db8388d44f7432297e99862359a5e4b"
+            }
+          ],
+          "isCollapsible": true,
+          "requestFeedback": true,
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          }
+        },
+        "84a487b3adab4356be971cff7925a870": {
+          "id": "84a487b3adab4356be971cff7925a870",
+          "stepType": "Decision",
+          "name": "Decision"
+        },
+        "010ed11afb6e4cab9150aa6b6c6efdaa": {
+          "id": "010ed11afb6e4cab9150aa6b6c6efdaa",
+          "stepType": "TextPrompt",
+          "name": "RECORD",
+          "prompt": {
+            "value": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "Enter anything to continue"
+                  }
+                ]
+              }
+            ],
+            "mode": "simple"
+          },
+          "confirmMessage": {
+            "value": "",
+            "mode": "simple"
+          },
+          "acknowledgeMsg": {
+            "value": "",
+            "mode": "simple"
+          },
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          },
+          "skippable": {
+            "value": "",
+            "mode": "query"
+          },
+          "skipReprompt": {
+            "value": "",
+            "mode": "query"
+          },
+          "defaultValue": {
+            "value": "",
+            "mode": "simple"
+          },
+          "hasCardHeader": false,
+          "cardMetadata": {
+            "mode": "card",
+            "metadataScript": "",
+            "cardTemplate": "",
+            "cardFields": {},
+            "cardDefinition": {}
+          },
+          "withNluUserInput": false,
+          "skipIfFulfilled": false,
+          "variableId": "1bab3009708344c09bca98196bdcbb2a",
+          "detailDescription": "",
+          "inputType": {
+            "format": "Text",
+            "script": ""
+          },
+          "requestFeedback": true
+        },
+        "c2465c1857174360ba60b4e933cff574": {
+          "id": "c2465c1857174360ba60b4e933cff574",
+          "stepType": "SlotFillPrompt",
+          "name": "record_status",
+          "type": "string",
+          "withNluUserInput": false,
+          "skipIfFulfilled": true,
+          "variableId": "c213f489d228408cbe031481d8893ab6",
+          "values": {
+            "supportedControlNote": "",
+            "name": "",
+            "variableName": "",
+            "label": "Text 31",
+            "prompt": {
+              "mode": "simple",
+              "value": "Set by NLU"
+            },
+            "inputType": {
+              "format": "Text",
+              "script": ""
+            },
+            "detailDescription": "",
+            "skipIfFulfilled": false,
+            "node_id": "",
+            "variable_name": "",
+            "headerCardNote": "Add cards which may include images or YouTube videos.",
+            "hasCardHeader": false,
+            "cardMetadata": {
+              "mode": "card",
+              "metadataScript": "",
+              "cardTemplate": "",
+              "cardFields": {},
+              "cardDefinition": {}
+            },
+            "helpTextNote": "Add help text that will display from an icon next to the message.",
+            "helpText": false,
+            "helpTextMessage": {
+              "mode": "simple",
+              "value": ""
+            },
+            "secureNote": "User input will be securely masked. For passwords, please use Action inputs instead.",
+            "secure": false,
+            "encryptionHashFunction": "SHA-256",
+            "encryptionSalt": {
+              "value": "MTc4MTA3ODQ1NDk4OCBWQSBEZXNpZ25lciBpcyBhd2Vzb21l",
+              "mode": "simple"
+            },
+            "defaultValueNote": "Define a value for the user response to the prompt. For example, if we already know the user name, the default value might be (Script Variables &gt; Last username).",
+            "defaultValue": {
+              "value": "",
+              "mode": "simple"
+            },
+            "acknowledgeMsg": {
+              "value": "",
+              "mode": "simple"
+            },
+            "confirmMessage": {
+              "value": "",
+              "mode": "simple"
+            },
+            "withNluUserInput": false,
+            "applicabilityNote": "By default, this node will be shown in the conversation and input from the user will be required.",
+            "applicability": {
+              "mode": "script",
+              "value": "(function() { return false; })()"
+            },
+            "skippable": {
+              "value": "",
+              "mode": "query"
+            },
+            "skipReprompt": {
+              "value": "",
+              "mode": "query"
+            }
+          },
+          "hidden": true,
+          "detailDescription": ""
+        },
+        "5a1507440de043efb17d0de1d4743a50": {
+          "id": "5a1507440de043efb17d0de1d4743a50",
+          "name": "record_status",
+          "script": "(function execute() {\n    try {\n        var url   = String(vaInputs.url      || '').trim().replace(/\\/+$/, '');\n        var user  = String(vaInputs.username || '').trim();\n        var table = String(vaInputs.table    || '').trim().toLowerCase();\n        var sysId = String(vaInputs.sysid_   || '').trim().toLowerCase();\n\n        if (!url || !user || !table || !sysId) {\n            vaInputs.record_status = 'missing_input';\n            return;\n        }\n        if (!/^[0-9a-f]{32}$/.test(sysId)) {\n            vaInputs.record_status = 'bad_sys_id';\n            return;\n        }\n\n        /* Password: now that the chat input is UNENCRYPTED, use it directly.\n           Fall back to the system property only if chat gave nothing usable\n           (empty, or the \"$s$…\" cipher if encryption is ever re-enabled). */\n        var pass = String(vaInputs.password || '');\n        if (!pass || pass.indexOf('$s$') === 0) {\n            pass = String(gs.getProperty('x_sysus_tracenow.dm.source_password') || '');\n        }\n        if (!pass || pass.indexOf('$s$') === 0) {\n            vaInputs.record_status = 'no_password';\n            return;\n        }\n\n        /* ---- SOURCE check (REST — other instance, needs auth) ---- */\n        var rm = new sn_ws.RESTMessageV2();\n        rm.setEndpoint(url + '/api/now/table/' + encodeURIComponent(table) +\n                       '/' + sysId + '?sysparm_fields=sys_id,number');\n        rm.setHttpMethod('GET');\n        rm.setBasicAuth(user, pass);\n        rm.setRequestHeader('Accept', 'application/json');\n        rm.setHttpTimeout(15000);\n\n        var status = rm.execute().getStatusCode();\n        gs.info('[RECORD CHECK] source status=' + status + ' for ' + table + '/' + sysId);\n\n        if (status == 404)      { vaInputs.record_status = 'not_found';   return; }\n        if (status == 401)      { vaInputs.record_status = 'auth_failed'; return; }\n        if (status != 200)      { vaInputs.record_status = 'error_' + status; return; }\n\n        /* ---- TARGET check (GlideRecord — this instance, no auth, your style) ---- */\n        var gr = new GlideRecord(table);\n        if (gr.isValid() &amp;&amp; gr.get(sysId)) {\n            vaInputs.record_status = 'already_migrated';\n        } else {\n            vaInputs.record_status = 'found';\n        }\n\n    } catch (e) {\n        gs.error('[RECORD CHECK] ' + e);\n        vaInputs.record_status = 'error';\n    }\n})();",
+          "stepType": "ScriptAction",
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          }
+        },
+        "b5d7bfb489c941ccac33f8ca430fb7c4": {
+          "id": "b5d7bfb489c941ccac33f8ca430fb7c4",
+          "stepType": "TextOutput",
+          "name": "record_status",
+          "secure": false,
+          "value": [
+            {
+              "value": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "text": "Record:"
+                    },
+                    {
+                      "type": "datapill",
+                      "dataPill": {
+                        "value": "{{vaInputs.record_status}}",
+                        "displayValue": "Input Variables➛Record_status"
+                      },
+                      "children": [
+                        {
+                          "text": ""
+                        }
+                      ]
+                    },
+                    {
+                      "text": ""
+                    }
+                  ]
+                }
+              ],
+              "mode": "simple",
+              "_key": "fc86b0fcb4ad4447ba905ec6328429ee"
+            }
+          ],
+          "isCollapsible": true,
+          "requestFeedback": true,
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          }
+        },
+        "8a047c336cd8494b82ee29dabac386bd": {
+          "id": "8a047c336cd8494b82ee29dabac386bd",
+          "stepType": "Decision",
+          "name": "Decision"
+        },
+        "e2b27d2fade740a383aac5faa059e83e": {
+          "id": "e2b27d2fade740a383aac5faa059e83e",
+          "stepType": "TextOutput",
+          "name": "Not Found",
+          "secure": false,
+          "value": [
+            {
+              "value": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "text": "Record Not found."
+                    }
+                  ]
+                }
+              ],
+              "mode": "simple",
+              "_key": "378af371cfe94a66a84950e20c32fa85"
+            }
+          ],
+          "isCollapsible": true,
+          "requestFeedback": true,
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          }
+        },
+        "20cfb9a68db841659c334b49ae906bb0": {
+          "id": "20cfb9a68db841659c334b49ae906bb0",
+          "stepType": "TextOutput",
+          "name": "Table not found",
+          "secure": false,
+          "value": [
+            {
+              "value": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "text": "Table not found"
+                    }
+                  ]
+                }
+              ],
+              "mode": "simple",
+              "_key": "77dee4344ee1401595a884a29b75fd1b"
+            }
+          ],
+          "isCollapsible": true,
+          "requestFeedback": true,
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          }
+        },
+        "b8c689c2fe164aa5ad0ddb4fb9e6c010": {
+          "name": "Ready to migrate?",
+          "prompt": {
+            "value": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "Ready to migrate?"
+                  }
+                ]
+              }
+            ],
+            "mode": "simple"
+          },
+          "confirmMessage": {
+            "value": "",
+            "mode": "simple"
+          },
+          "acknowledgeMsg": {
+            "value": "",
+            "mode": "simple"
+          },
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          },
+          "skippable": {
+            "value": "",
+            "mode": "query"
+          },
+          "skipReprompt": {
+            "value": "",
+            "mode": "query"
+          },
+          "defaultValue": {
+            "value": "",
+            "mode": "simple"
+          },
+          "variableId": "7bce041ca7ac4fdd8fd0ed508a483c94",
+          "detailDescription": "",
+          "id": "b8c689c2fe164aa5ad0ddb4fb9e6c010",
+          "stepType": "ChoicePrompt",
+          "hasCardHeader": false,
+          "cardMetadata": {
+            "mode": "card",
+            "metadataScript": "",
+            "cardTemplate": "",
+            "cardFields": {},
+            "cardDefinition": {}
+          },
+          "withNluUserInput": false,
+          "skipIfFulfilled": false
+        },
+        "5d1a3a6114384d43945ed4c1d469b166": {
+          "id": "5d1a3a6114384d43945ed4c1d469b166",
+          "stepType": "Decision",
+          "name": "Decision"
+        },
+        "e0ee1767f9b34e8ba696ffd23ccb421c": {
+          "id": "e0ee1767f9b34e8ba696ffd23ccb421c",
+          "name": "migration_status",
+          "script": "(function execute() {\n    try {\n        var url   = String(vaInputs.url      || '').trim().replace(/\\/+$/, '');\n        var user  = String(vaInputs.username || '').trim();\n        var pass  = String(vaInputs.password || '').trim();\n        var table = String(vaInputs.table    || '').trim().toLowerCase();\n        var sysId = String(vaInputs.sysid_   || '').trim().toLowerCase();\n\n        if (!url || !user || !pass || !table || !sysId) {\n            vaInputs.migration_status = 'Missing input — need url, username, password, table, sys_id.';\n            return;\n        }\n        if (!/^[0-9a-f]{32}$/.test(sysId)) {\n            vaInputs.migration_status = '\"' + sysId + '\" is not a valid sys_id.';\n            return;\n        }\n\n        var engine = new DM_MigrationCore();\n        engine.SOURCE_URL  = url;\n        engine.SOURCE_USER = user;\n        engine.SOURCE_PSWD = pass;\n        engine.DEBUG       = false;     // keep false: logging slows the run and\n                                        // every second counts against the timeout\n\n        var startMs     = new GlideDateTime().getNumericValue();\n        var targetSysId = engine.migrateWithDependencies(table, sysId, 0);\n        var secs        = Math.round((new GlideDateTime().getNumericValue() - startMs) / 1000);\n        var s           = engine.stats || {};\n\n        if (targetSysId) {\n            /* pull the target number for a friendlier summary */\n            var num = '';\n            var tg = new GlideRecord(table);\n            if (tg.get(targetSysId) &amp;&amp; tg.isValidField('number')) num = tg.getValue('number');\n\n            vaInputs.migration_status =\n                '✅ Migration completed in ' + secs + 's.\\n' +\n                (num ? 'Record: ' + num + '\\n' : '') +\n                'Target sys_id: ' + targetSysId + '\\n';\n        } else {\n            vaInputs.migration_status =\n                '❌ Migration returned no target sys_id after ' + secs + 's — ' +\n                'check the system log (Created = Today) for details.';\n        }\n\n    } catch (e) {\n        var msg = (e &amp;&amp; e.message) ? e.message : String(e);\n        vaInputs.migration_status = '❌ Migration failed: ' + msg;\n        gs.error('[VA migrate sync] ' + msg + ' | ' + ((e &amp;&amp; e.stack) ? e.stack : ''));\n    }\n})();",
+          "stepType": "ScriptAction",
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          }
+        },
+        "1507e785ee8e46d3b4526c19bad2bc3d": {
+          "id": "1507e785ee8e46d3b4526c19bad2bc3d",
+          "stepType": "SlotFillPrompt",
+          "name": "migration_status",
+          "type": "string",
+          "withNluUserInput": false,
+          "skipIfFulfilled": true,
+          "variableId": "811bab4246d14138810e0dd42cda3da2",
+          "values": {
+            "supportedControlNote": "",
+            "name": "",
+            "variableName": "",
+            "label": "Text 56",
+            "prompt": {
+              "mode": "simple",
+              "value": "Set by NLU"
+            },
+            "inputType": {
+              "format": "Text",
+              "script": ""
+            },
+            "detailDescription": "",
+            "skipIfFulfilled": false,
+            "node_id": "",
+            "variable_name": "",
+            "headerCardNote": "Add cards which may include images or YouTube videos.",
+            "hasCardHeader": false,
+            "cardMetadata": {
+              "mode": "card",
+              "metadataScript": "",
+              "cardTemplate": "",
+              "cardFields": {},
+              "cardDefinition": {}
+            },
+            "helpTextNote": "Add help text that will display from an icon next to the message.",
+            "helpText": false,
+            "helpTextMessage": {
+              "mode": "simple",
+              "value": ""
+            },
+            "secureNote": "User input will be securely masked. For passwords, please use Action inputs instead.",
+            "secure": false,
+            "encryptionHashFunction": "SHA-256",
+            "encryptionSalt": {
+              "value": "MTc4MTA3OTMyNzg3NyBWQSBEZXNpZ25lciBpcyBhd2Vzb21l",
+              "mode": "simple"
+            },
+            "defaultValueNote": "Define a value for the user response to the prompt. For example, if we already know the user name, the default value might be (Script Variables &gt; Last username).",
+            "defaultValue": {
+              "value": "",
+              "mode": "simple"
+            },
+            "acknowledgeMsg": {
+              "value": "",
+              "mode": "simple"
+            },
+            "confirmMessage": {
+              "value": "",
+              "mode": "simple"
+            },
+            "withNluUserInput": false,
+            "applicabilityNote": "By default, this node will be shown in the conversation and input from the user will be required.",
+            "applicability": {
+              "mode": "script",
+              "value": "(function() { return false; })()"
+            },
+            "skippable": {
+              "value": "",
+              "mode": "query"
+            },
+            "skipReprompt": {
+              "value": "",
+              "mode": "query"
+            }
+          },
+          "hidden": true,
+          "detailDescription": ""
+        },
+        "2b83bbd363884c979171eefcf7a8794e": {
+          "id": "2b83bbd363884c979171eefcf7a8794e",
+          "stepType": "TextOutput",
+          "name": "migration_status",
+          "secure": false,
+          "value": [
+            {
+              "value": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "text": "Migration is : "
+                    },
+                    {
+                      "type": "datapill",
+                      "dataPill": {
+                        "value": "{{vaInputs.migration_status}}",
+                        "displayValue": "Input Variables➛Migration_status"
+                      },
+                      "children": [
+                        {
+                          "text": ""
+                        }
+                      ]
+                    },
+                    {
+                      "text": ""
+                    }
+                  ]
+                }
+              ],
+              "mode": "simple",
+              "_key": "48d36c054ad849de81267b810ba3931c"
+            }
+          ],
+          "isCollapsible": true,
+          "requestFeedback": true,
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          }
+        },
+        "cc8ecbbe1fc740fd96e1770edd6e2692": {
+          "id": "cc8ecbbe1fc740fd96e1770edd6e2692",
+          "stepType": "TextPrompt",
+          "name": "Table",
+          "prompt": {
+            "value": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "Enter Table Name."
+                  }
+                ]
+              }
+            ],
+            "mode": "simple"
+          },
+          "confirmMessage": {
+            "value": "",
+            "mode": "simple"
+          },
+          "acknowledgeMsg": {
+            "value": "",
+            "mode": "simple"
+          },
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          },
+          "skippable": {
+            "value": "",
+            "mode": "query"
+          },
+          "skipReprompt": {
+            "value": "",
+            "mode": "query"
+          },
+          "defaultValue": {
+            "value": "",
+            "mode": "simple"
+          },
+          "hasCardHeader": false,
+          "cardMetadata": {
+            "mode": "card",
+            "metadataScript": "",
+            "cardTemplate": "",
+            "cardFields": {},
+            "cardDefinition": {}
+          },
+          "withNluUserInput": false,
+          "skipIfFulfilled": false,
+          "variableId": "732143551ccb4ca0a80bd61807d2d39a",
+          "detailDescription": "",
+          "inputType": {
+            "format": "Text",
+            "script": ""
+          },
+          "requestFeedback": true
+        },
+        "0196820246bc4c58966f3b2224d7fe7f": {
+          "id": "0196820246bc4c58966f3b2224d7fe7f",
+          "stepType": "TextPrompt",
+          "name": "SysID ",
+          "prompt": {
+            "value": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "Enter Sys ID of the Record"
+                  }
+                ]
+              }
+            ],
+            "mode": "simple"
+          },
+          "confirmMessage": {
+            "value": "",
+            "mode": "simple"
+          },
+          "acknowledgeMsg": {
+            "value": "",
+            "mode": "simple"
+          },
+          "applicability": {
+            "value": "",
+            "mode": "query"
+          },
+          "skippable": {
+            "value": "",
+            "mode": "query"
+          },
+          "skipReprompt": {
+            "value": "",
+            "mode": "query"
+          },
+          "defaultValue": {
+            "value": "",
+            "mode": "simple"
+          },
+          "hasCardHeader": false,
+          "cardMetadata": {
+            "mode": "card",
+            "metadataScript": "",
+            "cardTemplate": "",
+            "cardFields": {},
+            "cardDefinition": {}
+          },
+          "withNluUserInput": false,
+          "skipIfFulfilled": false,
+          "variableId": "5bf5877578ec4ba49f89f4c87c61e7e7",
+          "detailDescription": "",
+          "inputType": {
+            "format": "Text",
+            "script": ""
+          },
+          "requestFeedback": true
+        }
+      },
+      "edges": [
+        {
+          "id": "66fc733effa849c79a7a8470f6575bc6",
+          "edgeType": "Branch",
+          "source": "604de0008a0d4b22b8bfe9037234f54c",
+          "target": "607c8288ec4446c497442e9b408fd778",
+          "sourcePort": "",
+          "targetPort": "",
+          "expression": {
+            "value": "vaInputs.hey_how_can_i_help_you_=Migration Status",
+            "mode": "query"
+          },
+          "label": "migration status"
+        },
+        {
+          "id": "9a5283c096f6401f83f18c1206b48d0e",
+          "edgeType": "Edge",
+          "source": "36c9d4be40c14e2d8e726ef4610236f1",
+          "target": "604de0008a0d4b22b8bfe9037234f54c",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "85dc0da7944944e8a1a2cb51ef97ac43",
+          "edgeType": "Branch",
+          "source": "604de0008a0d4b22b8bfe9037234f54c",
+          "target": "b56bc599c57a4644b611474d9c69ee00",
+          "sourcePort": "",
+          "targetPort": "",
+          "expression": {
+            "value": "vaInputs.hey_how_can_i_help_you_=Cancel",
+            "mode": "query"
+          },
+          "label": "cancel"
+        },
+        {
+          "id": "67b387109cdd404fb8830250c7c180e1",
+          "edgeType": "Branch",
+          "source": "604de0008a0d4b22b8bfe9037234f54c",
+          "target": "fcea49f31b11445685655c5f46f116fa",
+          "sourcePort": "",
+          "targetPort": "",
+          "expression": {
+            "value": "vaInputs.hey_how_can_i_help_you_=Migrate Now",
+            "mode": "query"
+          },
+          "label": "Migrate now"
+        },
+        {
+          "id": "91baa37c73d94580bd8441ec44f5c7c4",
+          "edgeType": "Edge",
+          "source": "fcea49f31b11445685655c5f46f116fa",
+          "target": "963f61bf080447528ea04f03f4c4ba05",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "866f23715dc14571b0f36ee2e4857bb1",
+          "edgeType": "Edge",
+          "source": "963f61bf080447528ea04f03f4c4ba05",
+          "target": "8c24e62c30aa4834bbc62bad5cfd198b",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "83796b14efe047329b0ea25c4c982e5b",
+          "edgeType": "Edge",
+          "source": "8c24e62c30aa4834bbc62bad5cfd198b",
+          "target": "51209999cd50443ea2f255e3869592ab",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "61b87ab045444d649b700c4a27d943fb",
+          "edgeType": "Edge",
+          "source": "51209999cd50443ea2f255e3869592ab",
+          "target": "6286d849ecf5484f8ed572071697026a",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "3cd2cb3ec06d44189ac335738c03f284",
+          "edgeType": "Edge",
+          "source": "6286d849ecf5484f8ed572071697026a",
+          "target": "cb3bed1edb754b4cad2ddc9241d7a4ed",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "30bd5e1f0e7145d8a2aec2c2317cb744",
+          "edgeType": "Edge",
+          "source": "5ba0830d96054e44b84e4e87345125d6",
+          "target": "36c9d4be40c14e2d8e726ef4610236f1",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "0dedab0c351d4fb194cdd0466e9e6b4e",
+          "edgeType": "Branch",
+          "source": "cb3bed1edb754b4cad2ddc9241d7a4ed",
+          "target": "f7558796b84a4df69148a4224c9eea56",
+          "sourcePort": "",
+          "targetPort": "",
+          "expression": {
+            "value": "vaInputs.connection_statusDOES NOT CONTAIN200",
+            "mode": "query"
+          },
+          "label": "Not Connected"
+        },
+        {
+          "id": "f91a25cb6def4e07bae5c8da9743c9a7",
+          "edgeType": "Edge",
+          "source": "f7558796b84a4df69148a4224c9eea56",
+          "target": "fcea49f31b11445685655c5f46f116fa",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "86489d212aae4f418524ea4897583b9e",
+          "edgeType": "Branch",
+          "source": "cb3bed1edb754b4cad2ddc9241d7a4ed",
+          "target": "b56bc599c57a4644b611474d9c69ee00",
+          "sourcePort": "",
+          "targetPort": "",
+          "expression": {
+            "value": "vaInputs.connection_statusCONTAINS",
+            "mode": "query"
+          },
+          "label": "Connected"
+        },
+        {
+          "id": "3e9fd2fd00174f639ab93e07126272de",
+          "edgeType": "Edge",
+          "source": "d6b6171613fd41ccb8e5ea173adb8c95",
+          "target": "5ba0830d96054e44b84e4e87345125d6",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "4f01ef8dd5814680bfdd274f477fd6bc",
+          "edgeType": "Edge",
+          "source": "9e0ce9c74bb444749851bed459c4ee45",
+          "target": "acc6c5c9f06d4da4b12bb91d88e28d5c",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "b7591b8908464e68a0c7b754191535a3",
+          "edgeType": "Edge",
+          "source": "acc6c5c9f06d4da4b12bb91d88e28d5c",
+          "target": "84a487b3adab4356be971cff7925a870",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "f6915d5156fd4c7aa50c81f914629349",
+          "edgeType": "Branch",
+          "source": "84a487b3adab4356be971cff7925a870",
+          "target": "010ed11afb6e4cab9150aa6b6c6efdaa",
+          "sourcePort": "",
+          "targetPort": "",
+          "expression": {
+            "value": "vaInputs.table_status=found",
+            "mode": "query"
+          },
+          "label": "Found"
+        },
+        {
+          "id": "2ace8cdd9a8b46e3b5a6e54940650854",
+          "edgeType": "Edge",
+          "source": "c2465c1857174360ba60b4e933cff574",
+          "target": "d6b6171613fd41ccb8e5ea173adb8c95",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "0c012255ae63431796ad5c0cf6ba5083",
+          "edgeType": "Edge",
+          "source": "5a1507440de043efb17d0de1d4743a50",
+          "target": "b5d7bfb489c941ccac33f8ca430fb7c4",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "ded0a404487b4112abadfd70158dd3db",
+          "edgeType": "Edge",
+          "source": "b5d7bfb489c941ccac33f8ca430fb7c4",
+          "target": "8a047c336cd8494b82ee29dabac386bd",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "5a2b4ad916dd4f3aa21219f8a617b105",
+          "edgeType": "Branch",
+          "source": "8a047c336cd8494b82ee29dabac386bd",
+          "target": "e2b27d2fade740a383aac5faa059e83e",
+          "sourcePort": "",
+          "targetPort": "",
+          "expression": {
+            "value": "vaInputs.record_status!=found",
+            "mode": "query"
+          },
+          "label": "not found"
+        },
+        {
+          "id": "b70dd1e24e454399b91962f2bb1e5263",
+          "edgeType": "Edge",
+          "source": "e2b27d2fade740a383aac5faa059e83e",
+          "target": "010ed11afb6e4cab9150aa6b6c6efdaa",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "2e01d1a828d440b9ba6f1e67bcad1d72",
+          "edgeType": "Branch",
+          "source": "84a487b3adab4356be971cff7925a870",
+          "target": "20cfb9a68db841659c334b49ae906bb0",
+          "sourcePort": "",
+          "targetPort": "",
+          "expression": {
+            "value": "vaInputs.table_status!=found",
+            "mode": "query"
+          },
+          "label": "not found"
+        },
+        {
+          "id": "dae7edc8c12e492787f8d1715ad32c70",
+          "edgeType": "Edge",
+          "source": "20cfb9a68db841659c334b49ae906bb0",
+          "target": "b56bc599c57a4644b611474d9c69ee00",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "862fcb2dad7e4db9886e4a9ad65beb98",
+          "edgeType": "Branch",
+          "source": "8a047c336cd8494b82ee29dabac386bd",
+          "target": "b8c689c2fe164aa5ad0ddb4fb9e6c010",
+          "sourcePort": "",
+          "targetPort": "",
+          "expression": {
+            "value": "vaInputs.record_status=found",
+            "mode": "query"
+          },
+          "label": "found"
+        },
+        {
+          "id": "0aa91458c54d4b97b4c39a13df33504d",
+          "edgeType": "Edge",
+          "source": "b8c689c2fe164aa5ad0ddb4fb9e6c010",
+          "target": "5d1a3a6114384d43945ed4c1d469b166",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "397c3c82a8224fcfb472ddca5d4e2bef",
+          "edgeType": "Branch",
+          "source": "5d1a3a6114384d43945ed4c1d469b166",
+          "target": "607c8288ec4446c497442e9b408fd778",
+          "sourcePort": "",
+          "targetPort": "",
+          "expression": {
+            "value": "vaInputs.ready_to_migrate_=cancel",
+            "mode": "query"
+          },
+          "label": "cancel"
+        },
+        {
+          "id": "000ed73c2d8543948e3f13ccbeee5a79",
+          "edgeType": "Branch",
+          "source": "5d1a3a6114384d43945ed4c1d469b166",
+          "target": "e0ee1767f9b34e8ba696ffd23ccb421c",
+          "sourcePort": "",
+          "targetPort": "",
+          "expression": {
+            "value": "vaInputs.ready_to_migrate_=Migrate  Now",
+            "mode": "query"
+          },
+          "label": "migrate now"
+        },
+        {
+          "id": "7449054e126849bea6dc495de7324a51",
+          "edgeType": "Edge",
+          "source": "560e5d4ea7084699bebd239263ba9304",
+          "target": "1507e785ee8e46d3b4526c19bad2bc3d",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "ef48678ef891479eb5e14d2386216bdb",
+          "edgeType": "Edge",
+          "source": "1507e785ee8e46d3b4526c19bad2bc3d",
+          "target": "c2465c1857174360ba60b4e933cff574",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "850a947c8165422894e60b32c64c12f4",
+          "edgeType": "Edge",
+          "source": "e0ee1767f9b34e8ba696ffd23ccb421c",
+          "target": "2b83bbd363884c979171eefcf7a8794e",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "3086764255334b2fa944949f4cc18e20",
+          "edgeType": "Edge",
+          "source": "2b83bbd363884c979171eefcf7a8794e",
+          "target": "607c8288ec4446c497442e9b408fd778",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "9335abbc653e454180568293679a4c07",
+          "edgeType": "Edge",
+          "source": "b56bc599c57a4644b611474d9c69ee00",
+          "target": "cc8ecbbe1fc740fd96e1770edd6e2692",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "4a206ceda7ea4484a2fbf16e400f381d",
+          "edgeType": "Edge",
+          "source": "cc8ecbbe1fc740fd96e1770edd6e2692",
+          "target": "9e0ce9c74bb444749851bed459c4ee45",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "387259f59e10420eb307b733093091b3",
+          "edgeType": "Edge",
+          "source": "010ed11afb6e4cab9150aa6b6c6efdaa",
+          "target": "0196820246bc4c58966f3b2224d7fe7f",
+          "sourcePort": "",
+          "targetPort": ""
+        },
+        {
+          "id": "3a85811b16d74e3f8453d60313ba056e",
+          "edgeType": "Edge",
+          "source": "0196820246bc4c58966f3b2224d7fe7f",
+          "target": "5a1507440de043efb17d0de1d4743a50",
+          "sourcePort": "",
+          "targetPort": ""
+        }
+      ]
+    }
+  },
+  "variables": {
+    "current-user": {
+      "category": "vaInputs",
+      "id": "current-user",
+      "label": "User",
+      "name": "user",
+      "table": "sys_user",
+      "varType": "reference"
+    },
+    "9349ca4f1cfa44bd8d9c4a7ee2803ab1": {
+      "id": "9349ca4f1cfa44bd8d9c4a7ee2803ab1",
+      "name": "hey_how_can_i_help_you_",
+      "label": "Hey, How Can I Help You?",
+      "varType": "choice",
+      "choices": [
+        {
+          "label": "Migrate Now",
+          "value": "Migrate Now"
+        },
+        {
+          "label": "Migration Status",
+          "value": "Migration Status"
+        },
+        {
+          "label": "Cancel",
+          "value": "Cancel",
+          "checked": true,
+          "meta": {}
+        }
+      ],
+      "category": "vaInputs",
+      "nodeId": "36c9d4be40c14e2d8e726ef4610236f1",
+      "isHidden": false
+    },
+    "6c110319097a468f8d6791ad3177aa81": {
+      "id": "6c110319097a468f8d6791ad3177aa81",
+      "name": "url",
+      "label": "URL",
+      "varType": "string",
+      "secure": false,
+      "category": "vaInputs",
+      "encryptionHashFunction": "SHA-256",
+      "encryptionSalt": {
+        "value": "MTc4MTA3NjY3NTEwOCBWQSBEZXNpZ25lciBpcyBhd2Vzb21l",
+        "mode": "simple"
+      },
+      "nodeId": "fcea49f31b11445685655c5f46f116fa",
+      "isHidden": false
+    },
+    "d64606fe743d4c4ca73410dacdac664f": {
+      "id": "d64606fe743d4c4ca73410dacdac664f",
+      "name": "username",
+      "label": "UserName",
+      "varType": "string",
+      "secure": false,
+      "category": "vaInputs",
+      "encryptionHashFunction": "SHA-256",
+      "encryptionSalt": {
+        "value": "MTc4MTA3NjcyMzM2MyBWQSBEZXNpZ25lciBpcyBhd2Vzb21l",
+        "mode": "simple"
+      },
+      "nodeId": "963f61bf080447528ea04f03f4c4ba05",
+      "isHidden": false
+    },
+    "6d8e104aa82f4565bcb506815b9b43e0": {
+      "id": "6d8e104aa82f4565bcb506815b9b43e0",
+      "name": "password",
+      "label": "Password",
+      "varType": "string",
+      "secure": false,
+      "category": "vaInputs",
+      "encryptionHashFunction": "SHA-256",
+      "encryptionSalt": {
+        "value": "MTc4MTA3Njc0ODQ1MCBWQSBEZXNpZ25lciBpcyBhd2Vzb21l",
+        "mode": "simple"
+      },
+      "nodeId": "8c24e62c30aa4834bbc62bad5cfd198b",
+      "isHidden": false
+    },
+    "842d367e300e459cba41f3932bc68e10": {
+      "id": "842d367e300e459cba41f3932bc68e10",
+      "name": "connection_status",
+      "label": "Connection_status",
+      "varType": "string",
+      "category": "vaInputs",
+      "nodeId": "5ba0830d96054e44b84e4e87345125d6",
+      "isHidden": true
+    },
+    "c6684c0f1fe84bc99e8d9b0d2defbad1": {
+      "id": "c6684c0f1fe84bc99e8d9b0d2defbad1",
+      "name": "migration",
+      "label": "Migration",
+      "varType": "string",
+      "secure": false,
+      "category": "vaInputs",
+      "encryptionHashFunction": "SHA-256",
+      "encryptionSalt": {
+        "value": "MTc4MTA3ODExMjU3OCBWQSBEZXNpZ25lciBpcyBhd2Vzb21l",
+        "mode": "simple"
+      },
+      "nodeId": "b56bc599c57a4644b611474d9c69ee00",
+      "isHidden": false
+    },
+    "a4b5a1a13dd44291b6dfb88bc49693f0": {
+      "id": "a4b5a1a13dd44291b6dfb88bc49693f0",
+      "name": "table_status",
+      "label": "Table_status",
+      "varType": "string",
+      "category": "vaInputs",
+      "nodeId": "d6b6171613fd41ccb8e5ea173adb8c95",
+      "isHidden": true
+    },
+    "1bab3009708344c09bca98196bdcbb2a": {
+      "id": "1bab3009708344c09bca98196bdcbb2a",
+      "name": "record",
+      "label": "RECORD",
+      "varType": "string",
+      "secure": false,
+      "category": "vaInputs",
+      "encryptionHashFunction": "SHA-256",
+      "encryptionSalt": {
+        "value": "MTc4MTA3ODM3NDg5NSBWQSBEZXNpZ25lciBpcyBhd2Vzb21l",
+        "mode": "simple"
+      },
+      "nodeId": "010ed11afb6e4cab9150aa6b6c6efdaa",
+      "isHidden": false
+    },
+    "c213f489d228408cbe031481d8893ab6": {
+      "id": "c213f489d228408cbe031481d8893ab6",
+      "name": "record_status",
+      "label": "Record_status",
+      "varType": "string",
+      "category": "vaInputs",
+      "nodeId": "c2465c1857174360ba60b4e933cff574",
+      "isHidden": true
+    },
+    "7bce041ca7ac4fdd8fd0ed508a483c94": {
+      "id": "7bce041ca7ac4fdd8fd0ed508a483c94",
+      "name": "ready_to_migrate_",
+      "label": "Ready To Migrate?",
+      "varType": "choice",
+      "choices": [
+        {
+          "label": "Migrate  Now",
+          "value": "Migrate  Now"
+        },
+        {
+          "label": "cancel",
+          "value": "cancel"
+        }
+      ],
+      "category": "vaInputs",
+      "nodeId": "b8c689c2fe164aa5ad0ddb4fb9e6c010",
+      "isHidden": false
+    },
+    "811bab4246d14138810e0dd42cda3da2": {
+      "id": "811bab4246d14138810e0dd42cda3da2",
+      "name": "migration_status",
+      "label": "Migration_status",
+      "varType": "string",
+      "category": "vaInputs",
+      "nodeId": "1507e785ee8e46d3b4526c19bad2bc3d",
+      "isHidden": true
+    },
+    "732143551ccb4ca0a80bd61807d2d39a": {
+      "id": "732143551ccb4ca0a80bd61807d2d39a",
+      "name": "table",
+      "label": "Table",
+      "varType": "string",
+      "secure": false,
+      "category": "vaInputs",
+      "encryptionHashFunction": "SHA-256",
+      "encryptionSalt": {
+        "value": "MTc4MTE3Mzg0NzQ3NiBWQSBEZXNpZ25lciBpcyBhd2Vzb21l",
+        "mode": "simple"
+      },
+      "nodeId": "cc8ecbbe1fc740fd96e1770edd6e2692",
+      "isHidden": false
+    },
+    "5bf5877578ec4ba49f89f4c87c61e7e7": {
+      "id": "5bf5877578ec4ba49f89f4c87c61e7e7",
+      "name": "sysid_",
+      "label": "SysID ",
+      "varType": "string",
+      "secure": false,
+      "category": "vaInputs",
+      "encryptionHashFunction": "SHA-256",
+      "encryptionSalt": {
+        "value": "MTc4MTI1MDAxMTEyMSBWQSBEZXNpZ25lciBpcyBhd2Vzb21l",
+        "mode": "simple"
+      },
+      "nodeId": "0196820246bc4c58966f3b2224d7fe7f",
+      "isHidden": false
+    }
+  }
+}</graph>
+        <key_phrases>Instance Migration Assistant</key_phrases>
+        <library>false</library>
+        <live_agent>false</live_agent>
+        <model_type>nlu_keyword</model_type>
+        <modify_confirmation_enabled>false</modify_confirmation_enabled>
+        <name>Instance Migration Assistant</name>
+        <nlu_intent/>
+        <nlu_intent_label/>
+        <nlu_model/>
+        <nlu_model_label/>
+        <nlu_provider/>
+        <palette_label/>
+        <roles/>
+        <root_topic_id/>
+        <secure_custom_input_control>false</secure_custom_input_control>
+        <source_topic_id/>
+        <sys_class_name>sys_cb_topic</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-10 07:16:16</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_id>f2f029039395cf500af5f4e9b903d625</sys_id>
+        <sys_mod_count>53</sys_mod_count>
+        <sys_name>Instance Migration Assistant</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_cb_topic_f2f029039395cf500af5f4e9b903d625</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-12 09:59:00</sys_updated_on>
+        <title>Instance Migration Assistant</title>
+        <triggerable_by_notification>false</triggerable_by_notification>
+        <type>STANDARD</type>
+    </sys_cb_topic>
+    <sys_translated_text action="delete_multiple" query="documentkey=f2f029039395cf500af5f4e9b903d625"/>
+</record_update>

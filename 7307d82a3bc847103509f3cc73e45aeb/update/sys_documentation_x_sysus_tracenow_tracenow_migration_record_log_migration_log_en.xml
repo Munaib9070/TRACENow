@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update>
+    <sys_documentation element="migration_log" label="Migration Log" language="en" table="x_sysus_tracenow_tracenow_migration_record_log">
+        <sys_documentation action="INSERT_OR_UPDATE">
+            <element>migration_log</element>
+            <help/>
+            <hint/>
+            <label>Migration Log</label>
+            <language>en</language>
+            <name>x_sysus_tracenow_tracenow_migration_record_log</name>
+            <plural/>
+            <sys_class_name>sys_documentation</sys_class_name>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-15 08:39:03</sys_created_on>
+            <sys_mod_count>3</sys_mod_count>
+            <sys_name>Migration Log</sys_name>
+            <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+            <sys_policy/>
+            <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+            <sys_update_name>sys_documentation_x_sysus_tracenow_tracenow_migration_record_log_migration_log_en</sys_update_name>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-15 08:39:05</sys_updated_on>
+            <url/>
+            <url_target/>
+        </sys_documentation>
+    </sys_documentation>
+</record_update>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sp_header_footer">
     <sp_header_footer action="INSERT_OR_UPDATE">
         <category>custom</category>
-        <client_script><![CDATA[api.controller = function($scope, $timeout) {
+        <client_script><![CDATA[api.controller = function($scope,$location, $timeout) {
 
     var c = this;
 
@@ -74,8 +74,8 @@
     ====================== */
 
     $scope.openProfile = function() {
-
-        window.location.href = "/datamigration?id=dm_profile";
+        $location.href('/datamigration?id=dm_profile');
+        //  window.location.href = "/datamigration?id=dm_profile";
 
     };
 
@@ -85,8 +85,8 @@
     ====================== */
 
     $scope.logout = function() {
-
-        window.location.href = "/logout.do";
+        $location.href("/logout.do");
+        // window.location.href = "/logout.do";
 
     };
 
@@ -323,9 +323,8 @@
     c.openCartPage = function() {
 
         var conn = sessionStorage.getItem("currentId");
-
-        window.location.href =
-            "?id=dm_cart&sys_id=" + conn;
+  		$location.href("?id=dm_cart&sys_id=" + conn);
+       
 
     };
 
@@ -902,7 +901,7 @@
         <name>tracenow_header</name>
         <option_schema/>
         <public>false</public>
-        <roles/>
+        <roles>itil</roles>
         <script><![CDATA[(function() {
 
     data.dt = "";
@@ -935,7 +934,7 @@
 
         data.notifications = [];
 
-        var notif = new GlideRecord("x_sysus_tracenow_notifications");
+        var notif = new GlideRecordSecure("x_sysus_tracenow_notifications");
 
         notif.addQuery("user", gs.getUserID());
 
@@ -969,7 +968,7 @@
 
     if (input && input.action == "markNotificationRead") {
 
-        var rec = new GlideRecord("x_sysus_tracenow_notifications");
+        var rec = new GlideRecordSecure("x_sysus_tracenow_notifications");
 
         if (rec.get(input.id)) {
 
@@ -987,7 +986,7 @@
 
     if (input && input.action == "markAllNotificationsRead") {
 
-        var recAll = new GlideRecord("x_sysus_tracenow_notifications");
+        var recAll = new GlideRecordSecure("x_sysus_tracenow_notifications");
 
         recAll.addQuery("user", gs.getUserID());
 
@@ -1007,22 +1006,11 @@
     }
 
 
-    /* CONNECTION STATUS 
-
-    var chk = new GlideRecord('x_sysus_tracenow_connection');
-    	chk.addQuery('state',true);
-    	chk.addQuery('sys_created_by',gs.getUserName());
-    	chk.query();
-    	if(chk.next()){
-    		data.dt = chk.getValue('name');
-    	}
-
-    */
     /* DEMO FALLBACK */
 
     data.notifications = [];
 
-    var gr = new GlideRecord("sys_journal_field");
+    var gr = new GlideRecordSecure("sys_journal_field");
 
     gr.addQuery("sys_created_by", user.getName());
 
@@ -1050,14 +1038,14 @@
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 09:47:14</sys_created_on>
         <sys_id>8ee97d54930587100af5f4e9b903d693</sys_id>
-        <sys_mod_count>3</sys_mod_count>
+        <sys_mod_count>9</sys_mod_count>
         <sys_name>tracenow_header</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_header_footer_8ee97d54930587100af5f4e9b903d693</sys_update_name>
-        <sys_updated_by>munaib.ashraf</sys_updated_by>
-        <sys_updated_on>2026-06-03 07:23:37</sys_updated_on>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-17 07:53:07</sys_updated_on>
         <template><![CDATA[<header class="dm-header">
 
 <a class="dm-logo" href="/_tracenow">

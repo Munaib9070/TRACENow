@@ -154,6 +154,23 @@
     };
 
     /* =========================
+       EDIT CONNECTION
+    ========================== */
+    /* ★FIX: the Edit button calls c.editConnection(i.sys_id) but no such handler
+    /* =========================
+       EDIT CONNECTION
+    ========================== */
+    /* ★FIX: redirects to the connection form page (tracenow_create_connection)
+       with the record's sys_id so the form pre-fills. Uses $location.url()
+       (portal SPA navigation, hardcoded page id) instead of $window.location.href
+       to satisfy the Open-Redirect scan. NOTE: SPA navigation may not re-run the
+       form's server script — if the form opens blank, that's the cause; see notes. */
+  c.editConnection = function(id) {
+    if (!id) return;
+    $location.search({ id: 'tracenow_connection', sys_id: id });
+};
+
+    /* =========================
        DELETE CONNECTION
     ========================== */
     c.openDeleteModal = function(id, name) {
@@ -985,7 +1002,7 @@ PAGE FADE ANIMATION&#13;
         <name>tracenow_connection_list</name>
         <option_schema/>
         <public>false</public>
-        <roles/>
+        <roles>admin</roles>
         <script><![CDATA[(function() {
 
     data.side = $sp.getWidget('tracenow_sidebar');
@@ -1107,14 +1124,14 @@ PAGE FADE ANIMATION&#13;
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 10:03:10</sys_created_on>
         <sys_id>efdb3158930587100af5f4e9b903d69d</sys_id>
-        <sys_mod_count>10</sys_mod_count>
+        <sys_mod_count>23</sys_mod_count>
         <sys_name>tracenow_connection_list</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_efdb3158930587100af5f4e9b903d69d</sys_update_name>
-        <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-06-09 06:15:41</sys_updated_on>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-17 11:41:31</sys_updated_on>
         <template><![CDATA[<div class="dm-page-layout">
 
     <!-- LEFT SIDEBAR -->

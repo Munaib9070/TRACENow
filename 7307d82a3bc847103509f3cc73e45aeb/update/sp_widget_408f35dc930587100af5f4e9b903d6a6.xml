@@ -2,833 +2,884 @@
     <sp_widget action="INSERT_OR_UPDATE">
         <category>custom</category>
         <client_script><![CDATA[api.controller = function ($scope, $timeout) {
-  var c = this;
+	var c = this;
+
+	var lineChart;
+	var donutChart;
+	var barChart;
+	var instanceDistributionChart;
+	var statusTrendChart;
+
+	/* ================= INIT ================= */
+
+	c.$onInit = function () {
+		c.statusFilter   = 'all';
+		c.instanceFilter = 'all';
+		c.dateFilter     = 'all';
+		c.tableSearch    = '';       // NEW: table name search
+
+		c.pageSize       = 5;
+		c.currentPage    = 1;
+		c.totalPages     = 1;
+		c.paginatedTables  = [];
+		c.tablePerformance = [];
+
+		$timeout(function () {
+			if (!window.Chart) {
+				console.error('ChartJS not loaded');
+				return;
+			}
+
+			/* ★FIX (chart animation): the line/bar charts have forced pixel heights
+			   in CSS (!important). With responsive+maintainAspectRatio:false, Chart.js
+			   fires a RESIZE right after creation to reconcile that height, and resize
+			   renders are instant by default (duration 0) — which snaps the chart to
+			   its final state and eats the entrance animation. (Pie/doughnut survive
+			   because their rotation animation is resize-robust.) Making the resize
+			   transition animate keeps the entrance visible. */
+			try {
+				if (window.Chart.defaults && window.Chart.defaults.transitions &&
+				    window.Chart.defaults.transitions.resize) {
+					window.Chart.defaults.transitions.resize.animation.duration = 1600;
+				}
+			} catch (e) { /* older Chart.js without transitions.resize — ignore */ }
+
+			c.refreshDashboard();
+		}, 900);
+	};
+
+	c.refreshDashboard = function () {
+		buildCharts();
+		c.getTablePerformance();
+		c.updatePagination();
+	};
+
+	/* ================= ACTIVE FILTER COUNT ================= */
+
+	c.activeFilterCount = function () {
+		var count = 0;
+		if (c.dateFilter     !== 'all') count++;
+		if (c.statusFilter   !== 'all') count++;
+		if (c.instanceFilter !== 'all') count++;
+		if (c.tableSearch && c.tableSearch.trim()) count++;
+		return count;
+	};
+
+	/* ================= CLEAR ALL FILTERS ================= */
+
+	c.clearFilters = function () {
+		c.dateFilter     = 'all';
+		c.statusFilter   = 'all';
+		c.instanceFilter = 'all';
+		c.tableSearch    = '';
+	};
+
+	/* ================= FILTERED RUNS ================= */
+
+	c.filteredRuns = function () {
+		var runs = c.data.runs || [];
+
+		return runs.filter(function (run) {
+
+			/* STATUS FILTER */
+			if (c.statusFilter !== 'all' && run.status !== c.statusFilter)
+				return false;
+
+			/* INSTANCE FILTER — both sides already normalized on server */
+			if (c.instanceFilter !== 'all') {
+				var runURL    = String(run.instance    || '').trim().replace(/\/$/, '').toLowerCase();
+				var filterURL = String(c.instanceFilter || '').trim().replace(/\/$/, '').toLowerCase();
+				if (runURL !== filterURL) return false;
+			}
+
+			/* TABLE SEARCH FILTER */
+			if (c.tableSearch && c.tableSearch.trim()) {
+				var needle   = c.tableSearch.trim().toLowerCase();
+				var haystack = (run.tables || []).join(' ').toLowerCase();
+				if (haystack.indexOf(needle) === -1) return false;
+			}
+
+			/* DATE FILTER — use created_raw (ISO) for reliable cross-browser parsing */
+			if (c.dateFilter !== 'all') {
+				var rawStr = run.created_raw || run.created || '';
+
+				/* Normalize: replace space separator with T so Safari/Firefox parse correctly */
+				var isoStr  = rawStr.replace(' ', 'T');
+				var created = new Date(isoStr);
 
-  var lineChart;
-  var donutChart;
-  var barChart;
-  var instanceDistributionChart;
-  var statusTrendChart;
+				/* If date can't be parsed, include the record rather than silently dropping it */
+				if (isNaN(created.getTime())) return true;
 
-  /* ================= INIT ================= */
+				var now = new Date();
 
-  c.$onInit = function () {
-    c.statusFilter   = 'all';
-    c.instanceFilter = 'all';
-    c.dateFilter     = 'all';
-    c.tableSearch    = '';       // NEW: table name search
+				if (c.dateFilter === 'today') {
+					var dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+					var dayEnd   = new Date(dayStart.getTime() + 86400000);
+					if (created < dayStart || created >= dayEnd) return false;
+				}
 
-    c.pageSize       = 5;
-    c.currentPage    = 1;
-    c.totalPages     = 1;
-    c.paginatedTables  = [];
-    c.tablePerformance = [];
+				if (c.dateFilter === 'last7') {
+					var cutoff7 = new Date(now.getTime() - 7 * 86400000);
+					if (created < cutoff7) return false;
+				}
 
-    $timeout(function () {
-      if (!window.Chart) {
-        console.error('ChartJS not loaded');
-        return;
-      }
-      c.refreshDashboard();
-    }, 900);
-  };
+				if (c.dateFilter === 'lastMonth') {
+					var cutoffMonth = new Date(now.getTime() - 30 * 86400000);
+					if (created < cutoffMonth) return false;
+				}
+			}
 
-  c.refreshDashboard = function () {
-    buildCharts();
-    c.getTablePerformance();
-    c.updatePagination();
-  };
+			return true;
+		});
+	};
 
-  /* ================= ACTIVE FILTER COUNT ================= */
+	/* ================= FILTERED KPI STATS ================= */
 
-  c.activeFilterCount = function () {
-    var count = 0;
-    if (c.dateFilter     !== 'all') count++;
-    if (c.statusFilter   !== 'all') count++;
-    if (c.instanceFilter !== 'all') count++;
-    if (c.tableSearch && c.tableSearch.trim()) count++;
-    return count;
-  };
+	c.filteredStats = function () {
+		var runs = c.filteredRuns();
 
-  /* ================= CLEAR ALL FILTERS ================= */
+		var totalRuns           = runs.length;
+		var successRuns         = 0;
+		var failedRuns          = 0;
+		var totalRecords        = 0;
+		var totalDurationSeconds = 0;
 
-  c.clearFilters = function () {
-    c.dateFilter     = 'all';
-    c.statusFilter   = 'all';
-    c.instanceFilter = 'all';
-    c.tableSearch    = '';
-  };
-
-  /* ================= FILTERED RUNS ================= */
-
-  c.filteredRuns = function () {
-    var runs = c.data.runs || [];
-
-    return runs.filter(function (run) {
-
-      /* STATUS FILTER */
-      if (c.statusFilter !== 'all' && run.status !== c.statusFilter)
-        return false;
-
-      /* INSTANCE FILTER — both sides already normalized on server */
-      if (c.instanceFilter !== 'all') {
-        var runURL    = String(run.instance    || '').trim().replace(/\/$/, '').toLowerCase();
-        var filterURL = String(c.instanceFilter || '').trim().replace(/\/$/, '').toLowerCase();
-        if (runURL !== filterURL) return false;
-      }
-
-      /* TABLE SEARCH FILTER */
-      if (c.tableSearch && c.tableSearch.trim()) {
-        var needle   = c.tableSearch.trim().toLowerCase();
-        var haystack = (run.tables || []).join(' ').toLowerCase();
-        if (haystack.indexOf(needle) === -1) return false;
-      }
-
-      /* DATE FILTER — use created_raw (ISO) for reliable cross-browser parsing */
-      if (c.dateFilter !== 'all') {
-        var rawStr = run.created_raw || run.created || '';
-
-        /* Normalize: replace space separator with T so Safari/Firefox parse correctly */
-        var isoStr  = rawStr.replace(' ', 'T');
-        var created = new Date(isoStr);
-
-        /* If date can't be parsed, include the record rather than silently dropping it */
-        if (isNaN(created.getTime())) return true;
-
-        var now = new Date();
-
-        if (c.dateFilter === 'today') {
-          var dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          var dayEnd   = new Date(dayStart.getTime() + 86400000);
-          if (created < dayStart || created >= dayEnd) return false;
-        }
-
-        if (c.dateFilter === 'last7') {
-          var cutoff7 = new Date(now.getTime() - 7 * 86400000);
-          if (created < cutoff7) return false;
-        }
-
-        if (c.dateFilter === 'lastMonth') {
-          var cutoffMonth = new Date(now.getTime() - 30 * 86400000);
-          if (created < cutoffMonth) return false;
-        }
-      }
-
-      return true;
-    });
-  };
-
-  /* ================= FILTERED KPI STATS ================= */
-
-  c.filteredStats = function () {
-    var runs = c.filteredRuns();
-
-    var totalRuns           = runs.length;
-    var successRuns         = 0;
-    var failedRuns          = 0;
-    var totalRecords        = 0;
-    var totalDurationSeconds = 0;
-
-    runs.forEach(function (run) {
-      if (run.status === 'success') successRuns++;
-      if (run.status === 'failed')  failedRuns++;
-
-      totalRecords += parseInt(run.records || 0, 10);
-
-      if (run.duration) {
-        var match = run.duration.match(/(\d+)\s*min\s*(\d+)\s*sec/i);
-        if (match) {
-          totalDurationSeconds +=
-            (parseInt(match[1], 10) * 60) + parseInt(match[2], 10);
-        }
-      }
-    });
-
-    var avgSeconds       = totalRuns ? Math.round(totalDurationSeconds / totalRuns) : 0;
-    var avgMinutes       = Math.floor(avgSeconds / 60);
-    var remainingSeconds = avgSeconds % 60;
-
-    return {
-      total:        totalRuns,
-      success:      successRuns,
-      failed:       failedRuns,
-      records:      totalRecords,
-      avg_duration: avgMinutes + ' min ' + remainingSeconds + ' sec',
-      avg_seconds:  avgSeconds   // raw seconds used by kpiTrend
-    };
-  };
-
-  /* ================= CSV EXPORT ================= */
-
-  c.exportCSV = function () {
-    var runs = c.filteredRuns();
-    var csv  = [];
-
-    csv.push(['Run ID', 'Tables', 'Records', 'Status', 'Duration', 'Created'].join(','));
-
-    runs.forEach(function (run) {
-      csv.push([
-        run.number   || run.run_id || '',
-        (run.tables  || []).join(' | '),
-        run.records  || 0,
-        run.status   || '',
-        run.duration || '',
-        run.created  || ''
-      ].join(','));
-    });
-
-    var blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    var link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'migration-report.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  /* ================= PDF EXPORT ================= */
-
-  c.exportPDF = function () {
-    var wrapper  = document.querySelector('.ra-wrapper');
-    var canvases = wrapper.querySelectorAll('canvas');
-    var replacements = [];
-
-    canvases.forEach(function (cv) {
-      var img    = document.createElement('img');
-      img.src    = cv.toDataURL('image/png');
-      img.style.width  = '100%';
-      img.style.height = '295.5px';
-
-      replacements.push({ canvas: cv, img: img });
-
-      cv.parentNode.insertBefore(img, cv);
-      cv.style.display = 'none';
-    });
-
-    requestAnimationFrame(function () {
-      html2pdf()
-        .set({
-          margin:     15,
-          filename:   'migration-report.pdf',
-          image:      { type: 'jpeg', quality: 1 },
-          html2canvas: { scale: 9, useCORS: true },
-          jsPDF:      { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        })
-        .from(wrapper)
-        .save()
-        .then(function () {
-          replacements.forEach(function (r) {
-            r.canvas.style.display = 'block';
-            if (r.img && r.img.parentNode) {
-              r.img.parentNode.removeChild(r.img);
-            }
-          });
-        });
-    });
-  };
-
-  /* ================= BUILD CHARTS ================= */
-
-  function buildCharts() {
-    var runs = c.filteredRuns();
-
-    if (lineChart)                 lineChart.destroy();
-    if (donutChart)                donutChart.destroy();
-    if (barChart)                  barChart.destroy();
-    if (instanceDistributionChart) instanceDistributionChart.destroy();
-    if (statusTrendChart)          statusTrendChart.destroy();
-
-   var primary = '#116AF8';
-var success = '#116AF8';
-    var danger  = '#ef4444';
-    var partial = '#FFFF00';
-
-    if (!runs.length) {
-      renderEmptyCharts(primary, success, danger);
-      return;
-    }
-
-    /* ================= LINE CHART DATA ================= */
-
-    var recordsByDate  = {};
-    var successByDate  = {};
-
-    runs.forEach(function (run) {
-      if (!run.created) return;
-
-      var safeDate = String(run.created_raw || run.created).substring(0, 10).replace(/\//g, '-');
-
-      recordsByDate[safeDate] = (recordsByDate[safeDate] || 0) + Number(run.records || 0);
-
-      if (run.status === 'success') {
-        successByDate[safeDate] = (successByDate[safeDate] || 0) + Number(run.records || 0);
-      }
-    });
-
-    var dates = Object.keys(recordsByDate).sort();
-
-    if (!dates.length) {
-      renderEmptyCharts(primary, success, danger);
-      return;
-    }
-
-    var startDate = new Date(dates[0]);
-    var endDate   = new Date(dates[dates.length - 1]);
-
-    var labels        = [];
-    var recordValues  = [];
-    var successValues = [];
-
-    var current = new Date(startDate);
-    while (current <= endDate) {
-      var isoDate =
-        current.getFullYear() + '-' +
-        String(current.getMonth() + 1).padStart(2, '0') + '-' +
-        String(current.getDate()).padStart(2, '0');
-
-      var displayLabel =
-        current.toLocaleString('default', { month: 'short' }) + ' ' + current.getDate();
-
-      labels.push(displayLabel);
-      recordValues.push(recordsByDate[isoDate] || 0);
-      successValues.push(successByDate[isoDate] || 0);
-
-      current.setDate(current.getDate() + 1);
-    }
-
-    var ctxLine = document.getElementById('recordsLineChart').getContext('2d');
-    lineChart = new Chart(ctxLine, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'records',
-            data:  recordValues,
-           borderColor:'#116AF8',
-backgroundColor:'rgba(17,106,248,0.18)',
-            borderWidth: 3,
-            fill:        true,
-            tension:     0.45,
-            pointRadius: 4
-          },
-          {
-            label: 'successful',
-            data:  successValues,
-            borderColor:     '#22c55e',
-            backgroundColor: 'rgba(34,197,94,0.12)',
-            borderWidth: 3,
-            fill:        false,
-            tension:     0.45,
-            pointRadius: 4
-          }
-        ]
-      },
-      options: {
-        responsive:          true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: true, position: 'bottom', labels: { usePointStyle: true } }
-        },
-        scales: {
-          y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#e5e7eb' } },
-          x: { grid: { display: false } }
-        },
-        animation: { duration: 1600 }
-      }
-    });
-
-    /* ================= SUCCESS DISTRIBUTION DONUT — FIX: use run.status consistently ================= */
-
-    var successRuns = 0;
-    var partialRuns = 0;
-    var failedRuns  = 0;
-
-    runs.forEach(function (r) {
-      if (r.status === 'success') successRuns++;
-      else if (r.status === 'partial') partialRuns++;
-      else if (r.status === 'failed')  failedRuns++;
-    });
-
-    donutChart = new Chart(document.getElementById('successDonutChart'), {
-      type: 'doughnut',
-      data: {
-        labels: ['Success', 'Partial', 'Failed'],
-        datasets: [{
-          data:            [successRuns, partialRuns, failedRuns],
-          backgroundColor: [success, '#f59e0b', danger],
-          borderWidth:     0
-        }]
-      },
-      options: {
-        responsive:          true,
-        maintainAspectRatio: false,
-        cutout: '68%',
-        plugins: {
-          legend: {
-            display:  true,
-            position: 'bottom',
-            labels:   { usePointStyle: true, padding: 18 }
-          },
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                var total   = successRuns + partialRuns + failedRuns;
-                var value   = context.raw || 0;
-                var percent = total ? ((value / total) * 100).toFixed(1) : 0;
-                return context.label + ': ' + value + ' runs (' + percent + '%)';
-              }
-            }
-          }
-        },
-        animation: { duration: 1600, easing: 'easeOutQuart' }
-      }
-    });
-
-    /* ================= INSTANCE DISTRIBUTION ================= */
-
-    var connectionCounts = {};
-
-    (c.data.connections || []).forEach(function (conn) {
-      if (!connectionCounts[conn.name]) connectionCounts[conn.name] = 0;
-      connectionCounts[conn.name]++;
-    });
-
-    var instanceLabels = Object.keys(connectionCounts);
-    var instanceValues = Object.values(connectionCounts);
-
-    if (!instanceLabels.length) {
-      instanceLabels = ['No Data'];
-      instanceValues = [1];
-    }
-
-    instanceDistributionChart = new Chart(
-      document.getElementById('instanceDistributionChart'),
-      {
-        type: 'pie',
-        data: {
-          labels: instanceLabels,
-          datasets: [{
-            data:            instanceValues,
-backgroundColor: [
-'#116AF8',  // primary
-'#BDD6FE',  // secondary
-'#3D82FA',
-'#5A97FB',
-'#7AACFC',
-'#9BC0FC',  // accent
-'#0A50F5'
-],
-            borderColor:     '#ffffff',
-            borderWidth:     2,
-            hoverOffset:     10
-          }]
-        },
-        options: {
-          responsive:          true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          animation: { duration: 1600 }
-        }
-      }
-    );
-
-    /* ================= MIGRATIONS ACROSS TABLES OVER TIME ================= */
-
-    var recordsByDateAndTable = {};
-    var allDates  = {};
-    var allTables = {};
-
-    runs.forEach(function (run) {
-      if (!run.created) return;
-
-      var dateKey = String(run.created_raw || run.created).substring(0, 10).replace(/\//g, '-');
-
-      allDates[dateKey] = true;
-
-      (run.tables || []).forEach(function (tbl) {
-        allTables[tbl] = true;
-
-        if (!recordsByDateAndTable[tbl])
-          recordsByDateAndTable[tbl] = {};
-
-        recordsByDateAndTable[tbl][dateKey] =
-          (recordsByDateAndTable[tbl][dateKey] || 0) + Number(run.records || 0);
-      });
-    });
-
-    var sortedDates   = Object.keys(allDates).sort();
-    var displayLabels = sortedDates.map(function (d) {
-      var dt = new Date(d);
-      return dt.toLocaleString('default', { month: 'short' }) + ' ' + dt.getDate();
-    });
-
-    var lineShadowPlugin = {
-      id: 'lineShadow',
-      beforeDatasetDraw: function (chart) {
-        var ctx = chart.ctx;
-        ctx.save();
-        ctx.shadowColor   = 'rgba(0,0,0,0.25)';
-        ctx.shadowBlur    = 10;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 4;
-      },
-      afterDatasetDraw: function (chart) {
-        chart.ctx.restore();
-      }
-    };
-
-    var datasets = [];
-
-    Object.keys(allTables).forEach(function (tbl, index) {
-      var values = sortedDates.map(function (d) {
-        return (recordsByDateAndTable[tbl] && recordsByDateAndTable[tbl][d]) || 0;
-      });
-
-      var hue = (index * 60) % 360;
-
-      datasets.push({
-        label:           tbl,
-        data:            values,
-        borderColor:     'hsl(' + hue + ',65%,45%)',
-        backgroundColor: 'hsla(' + hue + ',65%,45%,0.12)',
-        fill:            true,
-        tension:         0.4,
-        pointRadius:     4,
-        pointHoverRadius:7,
-        borderWidth:     3
-      });
-    });
-
-    var ctxTrend = document.getElementById('statusTrendChart').getContext('2d');
-
-    statusTrendChart = new Chart(ctxTrend, {
-      type: 'line',
-      data: { labels: displayLabels, datasets: datasets },
-      plugins: [lineShadowPlugin],
-      options: {
-        responsive:          true,
-        maintainAspectRatio: false,
-        interaction:         { mode: 'nearest', intersect: false },
-        animation:           { duration: 1800, easing: 'easeOutQuart' },
-        plugins: {
-          legend:  { position: 'top', labels: { usePointStyle: true, padding: 18 } },
-          tooltip: { mode: 'index', intersect: false }
-        },
-        elements: {
-          line:  { borderWidth: 3 },
-          point: { radius: 4, hoverRadius: 7 }
-        },
-        scales: {
-          y: { beginAtZero: true, grid: { color: '#e5e7eb' } },
-          x: { grid: { display: false } }
-        }
-      }
-    });
-
-    /* ================= TOP 5 MIGRATED TABLES ================= */
-
-    var tableCounts = {};
-
-    runs.forEach(function (r) {
-      (r.tables || []).forEach(function (tbl) {
-        if (!tableCounts[tbl]) tableCounts[tbl] = 0;
-        tableCounts[tbl] += Number(r.records || 0);
-      });
-    });
-
-    var sortedTables = Object.keys(tableCounts).sort(function (a, b) {
-      return tableCounts[b] - tableCounts[a];
-    });
-
-    var top5Tables  = sortedTables.slice(0, 5);
-    var barLabels   = top5Tables;
-    var barValues   = top5Tables.map(function (tbl) { return tableCounts[tbl]; });
-
-    barChart = new Chart(document.getElementById('tablesBarChart'), {
-      type: 'bar',
-      data: {
-        labels:   barLabels,
-        datasets: [{ data: barValues, backgroundColor: primary, borderRadius: 10 }]
-      },
-      options: {
-        indexAxis:           'y',
-        responsive:          true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        animation: { duration: 1600 }
-      }
-    });
-  }
-
-  /* ================= EMPTY CHARTS ================= */
-
-  function renderEmptyCharts(primary, success, danger) {
-    var ctxLine = document.getElementById('recordsLineChart').getContext('2d');
-    lineChart = new Chart(ctxLine, {
-      type: 'line',
-      data: {
-        labels:   ['No Data'],
-        datasets: [{ label: 'records', data: [0], borderColor: primary, backgroundColor: 'rgba(31,140,149,0.18)', fill: true, tension: 0.4, pointRadius: 4 }]
-      },
-      options: { responsive: true, maintainAspectRatio: false }
-    });
-
-    donutChart = new Chart(document.getElementById('successDonutChart'), {
-      type: 'doughnut',
-      data: {
-        labels:   ['Success', 'Failed'],
-        datasets: [{ data: [0, 0], backgroundColor: [success, danger] }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '68%' }
-    });
-
-    instanceDistributionChart = new Chart(document.getElementById('instanceDistributionChart'), {
-      type: 'pie',
-      data: {
-        labels:   ['No Data'],
-        datasets: [{ data: [1], backgroundColor: ['#94A6A8'] }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-    });
-
-    var ctxTrend = document.getElementById('statusTrendChart').getContext('2d');
-    statusTrendChart = new Chart(ctxTrend, {
-      type: 'line',
-      data: {
-        labels:   ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-        datasets: [
-          { label: 'Success', data: [0,0,0,0], borderColor: success, fill: true },
-          { label: 'Failed',  data: [0,0,0,0], borderColor: danger,  fill: true }
-        ]
-      },
-      options: { responsive: true, maintainAspectRatio: false }
-    });
-
-    barChart = new Chart(document.getElementById('tablesBarChart'), {
-      type: 'bar',
-      data: {
-        labels:   ['No Data'],
-        datasets: [{ data: [0], backgroundColor: primary, borderRadius: 10 }]
-      },
-      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-    });
-  }
-
-  /* ================= TABLE PERFORMANCE ================= */
-
-  c.getTablePerformance = function () {
-    var runs       = c.filteredRuns();
-    var tableStats = {};
 		runs.forEach(function (run) {
-      (run.tables || []).forEach(function (tbl) {
-        if (!tableStats[tbl]) {
-          tableStats[tbl] = {
-            name:          tbl,
-            records:       0,
-            runs:          0,
-            durationTotal: 0,
-            successRuns:   0,
-            failedRuns:    0
-          };
-        }
+			if (run.status === 'success') successRuns++;
+			if (run.status === 'failed')  failedRuns++;
 
-        tableStats[tbl].records += parseInt(run.records || 0, 10);
-        tableStats[tbl].runs++;
+			totalRecords += parseInt(run.records || 0, 10);
 
-        if (run.status === 'success') tableStats[tbl].successRuns++;
-        if (run.status === 'failed')  tableStats[tbl].failedRuns++;
+			/* ★FIX (duration): average the FULL run duration. Prefer the parsed
+			   run-level duration_seconds; fall back to avg_record_duration for
+			   older runs that don't carry it. */
+			var runDur = parseFloat(run.duration_seconds);
+			if (isNaN(runDur)) runDur = parseFloat(run.avg_record_duration || 0) || 0;
+			totalDurationSeconds += runDur;
+		});
 
-        var match = (run.duration || '').match(/(\d+)\s*min\s*(\d+)\s*sec/i);
-        if (match) {
-          tableStats[tbl].durationTotal +=
-            (parseInt(match[1], 10) * 60) + parseInt(match[2], 10);
-        }
-      });
-    });
+		var avgSeconds =			totalRuns	? (totalDurationSeconds / totalRuns)	: 0;
 
-    c.tablePerformance = Object.keys(tableStats).map(function (tbl) {
-      var avgSeconds = Math.round(tableStats[tbl].durationTotal / (tableStats[tbl].runs || 1));
-      var avgMin     = Math.floor(avgSeconds / 60);
-      var avgSec     = avgSeconds % 60;
+		/* ★FIX (Issue 1): round avgSeconds ONCE before splitting min/sec, so the
+		   raw decimal (e.g. 0.16666…) never reaches the displayed string. */
+		var roundedSeconds   = Math.round(avgSeconds);
+		var avgMinutes       = Math.floor(roundedSeconds / 60);
+		var remainingSeconds = roundedSeconds % 60;
 
-      var totalSeconds  = tableStats[tbl].durationTotal;
-      var totalRecords  = tableStats[tbl].records;
-      var recordsPerSec = totalSeconds > 0 ? totalRecords / totalSeconds : 0;
+		return {
+			total:        totalRuns,
+			success:      successRuns,
+			failed:       failedRuns,
+			records:      totalRecords,
+			avg_duration: avgMinutes + ' min ' + remainingSeconds + ' sec',
+			avg_seconds:  avgSeconds   // raw seconds used by kpiTrend
+		};
+	};
 
-      var performance = 'Excellent';
-      if      (recordsPerSec < 0.02) performance = 'Slow';
-      else if (recordsPerSec < 0.2)  performance = 'Good';
+	/* ================= CSV EXPORT ================= */
 
-      var status = 'Success';
-      if (tableStats[tbl].successRuns > 0 && tableStats[tbl].failedRuns > 0) {
-        status = 'Partial';
-      } else if (tableStats[tbl].successRuns === 0 && tableStats[tbl].failedRuns > 0) {
-        status = 'Failed';
-      }
+	c.exportCSV = function () {
+		var runs = c.filteredRuns();
+		var csv  = [];
 
-      return {
-        name:         tbl,
-        records:      tableStats[tbl].records,
-        runs:         tableStats[tbl].runs,
-        status:       status,
-        avg_duration: avgMin + 'm ' + avgSec + 's',
-        performance:  performance
-      };
-    });
+		csv.push(['Run ID', 'Tables', 'Records', 'Status', 'Duration', 'Created'].join(','));
 
-    c.currentPage = 1;
-    c.updatePagination();
-    return c.tablePerformance;
-  };
+		runs.forEach(function (run) {
+			csv.push([
+				run.number   || run.run_id || '',
+				(run.tables  || []).join(' | '),
+				run.records  || 0,
+				run.status   || '',
+				run.duration || '',
+				run.created  || ''
+			].join(','));
+		});
 
-  /* ================= PAGINATION ================= */
+		var blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+		var link = document.createElement('a');
+		link.href = URL.createObjectURL(blob);
+		link.download = 'migration-report.csv';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	};
 
-  c.pageSize    = 5;
-  c.currentPage = 1;
-  c.totalPages  = 1;
-  c.paginatedTables = [];
+	/* ================= PDF EXPORT ================= */
 
-  c.updatePagination = function () {
-    if (!c.tablePerformance || !c.tablePerformance.length) {
-      c.paginatedTables = [];
-      c.totalPages      = 1;
-      return;
-    }
+	c.exportPDF = function () {
+		var wrapper  = document.querySelector('.ra-wrapper');
+		var canvases = wrapper.querySelectorAll('canvas');
+		var replacements = [];
 
-    c.totalPages = Math.ceil(c.tablePerformance.length / c.pageSize) || 1;
+		canvases.forEach(function (cv) {
+			var img    = document.createElement('img');
+			img.src    = cv.toDataURL('image/png');
+			img.style.width  = '100%';
+			img.style.height = '295.5px';
 
-    var start = (c.currentPage - 1) * c.pageSize;
-    var end   = start + c.pageSize;
+			replacements.push({ canvas: cv, img: img });
 
-    c.paginatedTables = c.tablePerformance.slice(start, end);
-  };
-	
-  c.nextPage = function () {
-    if (c.currentPage < c.totalPages) {
-      c.currentPage++;
-      c.updatePagination();
-    }
-  };
+			cv.parentNode.insertBefore(img, cv);
+			cv.style.display = 'none';
+		});
 
-  c.prevPage = function () {
-    if (c.currentPage > 1) {
-      c.currentPage--;
-      c.updatePagination();
-    }
-  };
+		requestAnimationFrame(function () {
+			html2pdf()
+				.set({
+				margin:     15,
+				filename:   'migration-report.pdf',
+				image:      { type: 'jpeg', quality: 1 },
+				html2canvas: { scale: 9, useCORS: true },
+				jsPDF:      { unit: 'mm', format: 'a4', orientation: 'portrait' }
+			})
+				.from(wrapper)
+				.save()
+				.then(function () {
+				replacements.forEach(function (r) {
+					r.canvas.style.display = 'block';
+					if (r.img && r.img.parentNode) {
+						r.img.parentNode.removeChild(r.img);
+					}
+				});
+			});
+		});
+	};
 
- /* ================= KPI TREND ================= */
+	/* ================= BUILD CHARTS ================= */
 
-c.kpiTrend = function (metric) {
+	function buildCharts() {
+		var runs = c.filteredRuns();
 
-  var runs    = c.filteredRuns();
-  var allRuns = c.data.runs || [];
+		if (lineChart)                 lineChart.destroy();
+		if (donutChart)                donutChart.destroy();
+		if (barChart)                  barChart.destroy();
+		if (instanceDistributionChart) instanceDistributionChart.destroy();
+		if (statusTrendChart)          statusTrendChart.destroy();
 
-  if (!runs.length) return { direction: 'up', color: 'green', value: 0 };
+		var primary = '#116AF8';
+		var success = '#116AF8';
+		var danger  = '#ef4444';
+		var partial = '#FFFF00';
 
-  /* All Time has no previous period to compare — return neutral zero */
-  if (c.dateFilter === 'all') {
-    return { direction: 'up', color: 'green', value: 0 };
-  }
+		if (!runs.length) {
+			renderEmptyCharts(primary, success, danger);
+			return;
+		}
 
-  var today    = new Date();
-  var prevRuns = [];
+		/* ================= LINE CHART DATA ================= */
 
-  if (c.dateFilter === 'today') {
-    var yday    = new Date(today);
-    yday.setDate(today.getDate() - 1);
-    var ydayStr = yday.toDateString();
+		var recordsByDate  = {};
+		var successByDate  = {};
 
-    prevRuns = allRuns.filter(function (r) {
-      var rawStr = (r.created_raw || r.created || '').replace(' ', 'T');
-      var d      = new Date(rawStr);
-      return !isNaN(d.getTime()) && d.toDateString() === ydayStr;
-    });
-  }
+		runs.forEach(function (run) {
+			if (!run.created) return;
 
-  else if (c.dateFilter === 'last7') {
-    var last14 = new Date(today.getTime() - 14 * 86400000);
-    var last7  = new Date(today.getTime() - 7  * 86400000);
+			var safeDate = String(run.created_raw || run.created).substring(0, 10).replace(/\//g, '-');
 
-    prevRuns = allRuns.filter(function (r) {
-      var rawStr = (r.created_raw || r.created || '').replace(' ', 'T');
-      var d      = new Date(rawStr);
-      return !isNaN(d.getTime()) && d >= last14 && d < last7;
-    });
-  }
+			recordsByDate[safeDate] = (recordsByDate[safeDate] || 0) + Number(run.records || 0);
 
-  else if (c.dateFilter === 'lastMonth') {
-    var prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 2, 1);
-    var prevMonthEnd   = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+			if (run.status === 'success') {
+				successByDate[safeDate] = (successByDate[safeDate] || 0) + Number(run.records || 0);
+			}
+		});
 
-    prevRuns = allRuns.filter(function (r) {
-      var rawStr = (r.created_raw || r.created || '').replace(' ', 'T');
-      var d      = new Date(rawStr);
-      return !isNaN(d.getTime()) && d >= prevMonthStart && d < prevMonthEnd;
-    });
-  }
+		var dates = Object.keys(recordsByDate).sort();
 
-  /* ---- Previous period stats ---- */
+		if (!dates.length) {
+			renderEmptyCharts(primary, success, danger);
+			return;
+		}
 
-  var prevDurationTotal = prevRuns.reduce(function (sum, r) {
-    var match = (r.duration || '').match(/(\d+)\s*min\s*(\d+)\s*sec/i);
-    if (match) return sum + (parseInt(match[1], 10) * 60) + parseInt(match[2], 10);
-    return sum;
-  }, 0);
+		var startDate = new Date(dates[0]);
+		var endDate   = new Date(dates[dates.length - 1]);
 
-  var prevStats = {
-    total:      prevRuns.length,
-    success:    prevRuns.filter(function (r) { return r.status === 'success'; }).length,
-    avgSeconds: prevRuns.length ? Math.round(prevDurationTotal / prevRuns.length) : 0
-  };
+		var labels        = [];
+		var recordValues  = [];
+		var successValues = [];
 
-  var currentStats = c.filteredStats();
+		var current = new Date(startDate);
+		while (current <= endDate) {
+			var isoDate =
+					current.getFullYear() + '-' +
+					String(current.getMonth() + 1).padStart(2, '0') + '-' +
+					String(current.getDate()).padStart(2, '0');
 
-  var currentValue = 0;
-  var prevValue    = 0;
+			var displayLabel =
+					current.toLocaleString('default', { month: 'short' }) + ' ' + current.getDate();
 
-  if (metric === 'runs') {
-    currentValue = currentStats.total;
-    prevValue    = prevStats.total;
-  }
+			labels.push(displayLabel);
+			recordValues.push(recordsByDate[isoDate] || 0);
+			successValues.push(successByDate[isoDate] || 0);
 
-  else if (metric === 'success') {
-    currentValue = currentStats.success;
-    prevValue    = prevStats.success;
-  }
+			current.setDate(current.getDate() + 1);
+		}
 
-  else if (metric === 'duration') {
-    /* FIX: use raw seconds not formatted string */
-    currentValue = currentStats.avg_seconds || 0;
-    prevValue    = prevStats.avgSeconds;
-  }
+		var ctxLine = document.getElementById('recordsLineChart').getContext('2d');
+		lineChart = new Chart(ctxLine, {
+			type: 'line',
+			data: {
+				labels: labels,
+				datasets: [
+					{
+						label: 'records',
+						data:  recordValues,
+						borderColor:'#116AF8',
+						backgroundColor:'rgba(17,106,248,0.18)',
+						borderWidth: 3,
+						fill:        true,
+						tension:     0.45,
+						pointRadius: 4
+					},
+					{
+						label: 'successful',
+						data:  successValues,
+						borderColor:     '#22c55e',
+						backgroundColor: 'rgba(34,197,94,0.12)',
+						borderWidth: 3,
+						fill:        false,
+						tension:     0.45,
+						pointRadius: 4
+					}
+				]
+			},
+			options: {
+				responsive:          true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: { display: true, position: 'bottom', labels: { usePointStyle: true } }
+				},
+				scales: {
+					y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#e5e7eb' } },
+					x: { grid: { display: false } }
+				},
+				animation: { duration: 1600 }
+			}
+		});
 
-  var delta    = currentValue - prevValue;
-  var improved = metric === 'duration' ? delta < 0 : delta > 0;
+		/* ================= SUCCESS DISTRIBUTION DONUT — uses run.status ================= */
 
-  return {
-    direction: improved ? 'up' : 'down',
-    color:     improved ? 'green' : 'red',
-    value:     Math.abs(delta)
-  };
+		var successRuns = 0;
+		var partialRuns = 0;
+		var failedRuns  = 0;
 
-};
+		runs.forEach(function (r) {
+			if (r.status === 'success') successRuns++;
+			else if (r.status === 'partial') partialRuns++;
+			else if (r.status === 'failed')  failedRuns++;
+		});
 
-  /* ================= FILTER WATCH — FIX: 50ms delay so digest completes before rebuild ================= */
+		donutChart = new Chart(document.getElementById('successDonutChart'), {
+			type: 'doughnut',
+			data: {
+				labels: ['Success', 'Partial', 'Failed'],
+				datasets: [{
+					data:            [successRuns, partialRuns, failedRuns],
+					backgroundColor: [success, '#f59e0b', danger],
+					borderWidth:     0
+				}]
+			},
+			options: {
+				responsive:          true,
+				maintainAspectRatio: false,
+				cutout: '68%',
+				plugins: {
+					legend: {
+						display:  true,
+						position: 'bottom',
+						labels:   { usePointStyle: true, padding: 18 }
+					},
+					tooltip: {
+						callbacks: {
+							label: function (context) {
+								var total   = successRuns + partialRuns + failedRuns;
+								var value   = context.raw || 0;
+								var percent = total ? ((value / total) * 100).toFixed(1) : 0;
+								return context.label + ': ' + value + ' runs (' + percent + '%)';
+							}
+						}
+					}
+				},
+				animation: { duration: 1600, easing: 'easeOutQuart' }
+			}
+		});
 
-  $scope.$watch(
-    function () {
-      return [c.statusFilter, c.instanceFilter, c.dateFilter, c.tableSearch];
-    },
-    function (newVal, oldVal) {
-      if (!newVal || angular.equals(newVal, oldVal)) return;
-      $timeout(function () {
-        c.refreshDashboard();
-      }, 50);
-    },
-    true
-  );
+		/* ================= INSTANCE DISTRIBUTION ================= */
+		/* ★FIX (Issue 3a): count RUNS per instance from the filtered runs.
+		   GROUP BY run.instance (the instance_url) so the slices match exactly
+		   what the instance filter dropdown selects. We still show a friendly
+		   label (host name, or the connection name if we can map it). Was:
+		   counted c.data.connections (one row each → equal slices, ignored filters). */
+
+		/* map instance_url → friendly name from the connections list (best effort) */
+		var urlToName = {};
+		(c.data.connections || []).forEach(function (conn) {
+			if (conn.url) urlToName[conn.url] = conn.name || conn.url;
+		});
+
+		function prettyInstance(url) {
+			if (!url) return 'Unknown';
+			if (urlToName[url]) return urlToName[url];
+			/* fall back to the host portion of the URL, e.g. sysusademo10 */
+			var m = String(url).replace(/^https?:\/\//, '').split('.')[0];
+			return m || url;
+		}
+
+		var connectionCounts = {};   // key = instance_url (matches the filter)
+
+		runs.forEach(function (run) {
+			var key = run.instance || 'Unknown';
+			if (!connectionCounts[key]) connectionCounts[key] = 0;
+			connectionCounts[key]++;
+		});
+
+		var instanceKeys   = Object.keys(connectionCounts);
+		var instanceLabels = instanceKeys.map(function (k) { return prettyInstance(k); });
+		var instanceValues = instanceKeys.map(function (k) { return connectionCounts[k]; });
+
+		if (!instanceLabels.length) {
+			instanceLabels = ['No Data'];
+			instanceValues = [1];
+		}
+
+		instanceDistributionChart = new Chart(
+			document.getElementById('instanceDistributionChart'),
+			{
+				type: 'pie',
+				data: {
+					labels: instanceLabels,
+					datasets: [{
+						data:            instanceValues,
+						backgroundColor: [
+							'#116AF8',  // primary
+							'#BDD6FE',  // secondary
+							'#3D82FA',
+							'#5A97FB',
+							'#7AACFC',
+							'#9BC0FC',  // accent
+							'#0A50F5'
+						],
+						borderColor:     '#ffffff',
+						borderWidth:     2,
+						hoverOffset:     10
+					}]
+				},
+				options: {
+					responsive:          true,
+					maintainAspectRatio: false,
+					plugins: {
+						legend: { display: true, position: 'bottom', labels: { usePointStyle: true, padding: 14 } },
+						tooltip: {
+							callbacks: {
+								label: function (context) {
+									var total = instanceValues.reduce(function (a, b) { return a + b; }, 0);
+									var value = context.raw || 0;
+									var pct   = total ? ((value / total) * 100).toFixed(1) : 0;
+									return context.label + ': ' + value + ' runs (' + pct + '%)';
+								}
+							}
+						}
+					},
+					animation: { duration: 1600 }
+				}
+			}
+		);
+
+		/* ================= MIGRATIONS ACROSS TABLES OVER TIME ================= */
+
+		var recordsByDateAndTable = {};
+		var allDates  = {};
+		var allTables = {};
+
+		runs.forEach(function (run) {
+			if (!run.created) return;
+
+			var dateKey = String(run.created_raw || run.created).substring(0, 10).replace(/\//g, '-');
+
+			allDates[dateKey] = true;
+
+			(run.tables || []).forEach(function (tbl) {
+				allTables[tbl] = true;
+
+				if (!recordsByDateAndTable[tbl])
+					recordsByDateAndTable[tbl] = {};
+
+				recordsByDateAndTable[tbl][dateKey] =
+					(recordsByDateAndTable[tbl][dateKey] || 0) + Number(run.records || 0);
+			});
+		});
+
+		var sortedDates   = Object.keys(allDates).sort();
+		var displayLabels = sortedDates.map(function (d) {
+			var dt = new Date(d);
+			return dt.toLocaleString('default', { month: 'short' }) + ' ' + dt.getDate();
+		});
+
+		var lineShadowPlugin = {
+			id: 'lineShadow',
+			beforeDatasetDraw: function (chart) {
+				var ctx = chart.ctx;
+				ctx.save();
+				ctx.shadowColor   = 'rgba(0,0,0,0.25)';
+				ctx.shadowBlur    = 10;
+				ctx.shadowOffsetX = 0;
+				ctx.shadowOffsetY = 4;
+			},
+			afterDatasetDraw: function (chart) {
+				chart.ctx.restore();
+			}
+		};
+
+		var datasets = [];
+
+		Object.keys(allTables).forEach(function (tbl, index) {
+			var values = sortedDates.map(function (d) {
+				return (recordsByDateAndTable[tbl] && recordsByDateAndTable[tbl][d]) || 0;
+			});
+
+			var hue = (index * 60) % 360;
+
+			datasets.push({
+				label:           tbl,
+				data:            values,
+				borderColor:     'hsl(' + hue + ',65%,45%)',
+				backgroundColor: 'hsla(' + hue + ',65%,45%,0.12)',
+				fill:            true,
+				tension:         0.4,
+				pointRadius:     4,
+				pointHoverRadius:7,
+				borderWidth:     3
+			});
+		});
+
+		var ctxTrend = document.getElementById('statusTrendChart').getContext('2d');
+
+		statusTrendChart = new Chart(ctxTrend, {
+			type: 'line',
+			data: { labels: displayLabels, datasets: datasets },
+			plugins: [lineShadowPlugin],
+			options: {
+				responsive:          true,
+				maintainAspectRatio: false,
+				interaction:         { mode: 'nearest', intersect: false },
+				animation:           { duration: 1800, easing: 'easeOutQuart' },
+				plugins: {
+					legend:  { position: 'top', labels: { usePointStyle: true, padding: 18 } },
+					tooltip: { mode: 'index', intersect: false }
+				},
+				elements: {
+					line:  { borderWidth: 3 },
+					point: { radius: 4, hoverRadius: 7 }
+				},
+				scales: {
+					y: { beginAtZero: true, grid: { color: '#e5e7eb' } },
+					x: { grid: { display: false } }
+				}
+			}
+		});
+
+		/* ================= TOP 5 MIGRATED TABLES ================= */
+
+		var tableCounts = {};
+
+		runs.forEach(function (r) {
+			(r.tables || []).forEach(function (tbl) {
+				if (!tableCounts[tbl]) tableCounts[tbl] = 0;
+				tableCounts[tbl] += Number(r.records || 0);
+			});
+		});
+
+		var sortedTables = Object.keys(tableCounts).sort(function (a, b) {
+			return tableCounts[b] - tableCounts[a];
+		});
+
+		var top5Tables  = sortedTables.slice(0, 5);
+		var barLabels   = top5Tables;
+		var barValues   = top5Tables.map(function (tbl) { return tableCounts[tbl]; });
+
+		barChart = new Chart(document.getElementById('tablesBarChart'), {
+			type: 'bar',
+			data: {
+				labels:   barLabels,
+				datasets: [{ data: barValues, backgroundColor: primary, borderRadius: 10 }]
+			},
+			options: {
+				indexAxis:           'y',
+				responsive:          true,
+				maintainAspectRatio: false,
+				plugins: { legend: { display: false } },
+				animation: { duration: 1600 }
+			}
+		});
+	}
+
+	/* ================= EMPTY CHARTS ================= */
+
+	function renderEmptyCharts(primary, success, danger) {
+		var ctxLine = document.getElementById('recordsLineChart').getContext('2d');
+		lineChart = new Chart(ctxLine, {
+			type: 'line',
+			data: {
+				labels:   ['No Data'],
+				datasets: [{ label: 'records', data: [0], borderColor: primary, backgroundColor: 'rgba(31,140,149,0.18)', fill: true, tension: 0.4, pointRadius: 4 }]
+			},
+			options: { responsive: true, maintainAspectRatio: false }
+		});
+
+		donutChart = new Chart(document.getElementById('successDonutChart'), {
+			type: 'doughnut',
+			data: {
+				labels:   ['Success', 'Failed'],
+				datasets: [{ data: [0, 0], backgroundColor: [success, danger] }]
+			},
+			options: { responsive: true, maintainAspectRatio: false, cutout: '68%' }
+		});
+
+		instanceDistributionChart = new Chart(document.getElementById('instanceDistributionChart'), {
+			type: 'pie',
+			data: {
+				labels:   ['No Data'],
+				datasets: [{ data: [1], backgroundColor: ['#94A6A8'] }]
+			},
+			options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+		});
+
+		var ctxTrend = document.getElementById('statusTrendChart').getContext('2d');
+		statusTrendChart = new Chart(ctxTrend, {
+			type: 'line',
+			data: {
+				labels:   ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+				datasets: [
+					{ label: 'Success', data: [0,0,0,0], borderColor: success, fill: true },
+					{ label: 'Failed',  data: [0,0,0,0], borderColor: danger,  fill: true }
+				]
+			},
+			options: { responsive: true, maintainAspectRatio: false }
+		});
+
+		barChart = new Chart(document.getElementById('tablesBarChart'), {
+			type: 'bar',
+			data: {
+				labels:   ['No Data'],
+				datasets: [{ data: [0], backgroundColor: primary, borderRadius: 10 }]
+			},
+			options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+		});
+	}
+
+	/* ================= TABLE PERFORMANCE ================= */
+	/* UNCHANGED from your original — status here is computed from the mix of
+	   success/failed RUNS per table. (This is the definition that can differ
+	   from the donut; left as-is per "don't change existing functionality".) */
+
+	c.getTablePerformance = function () {
+		var runs       = c.filteredRuns();
+		var tableStats = {};
+		runs.forEach(function (run) {
+			(run.tables || []).forEach(function (tbl) {
+				if (!tableStats[tbl]) {
+					tableStats[tbl] = {
+						name:          tbl,
+						records:       0,
+						runs:          0,
+						durationTotal: 0,
+						successRuns:   0,
+						failedRuns:    0
+					};
+				}
+
+				tableStats[tbl].records += parseInt(run.records || 0, 10);
+				tableStats[tbl].runs++;
+
+				if (run.status === 'success') tableStats[tbl].successRuns++;
+				if (run.status === 'failed')  tableStats[tbl].failedRuns++;
+
+				tableStats[tbl].durationTotal =	c.data.tableDurations &&	c.data.tableDurations[tbl]	? c.data.tableDurations[tbl] : 0;
+			});
+		});
+
+		c.tablePerformance = Object.keys(tableStats).map(function (tbl) {
+			var avgSeconds =
+					tableStats[tbl].durationTotal;
+			var avgMin     = Math.floor(avgSeconds / 60);
+			var avgSec     = avgSeconds % 60;
+
+			var totalSeconds  = tableStats[tbl].durationTotal;
+			var totalRecords  = tableStats[tbl].records;
+			var recordsPerSec = totalSeconds > 0 ? totalRecords / totalSeconds : 0;
+
+			var performance = 'Excellent';
+			if      (recordsPerSec < 0.02) performance = 'Slow';
+			else if (recordsPerSec < 0.002)  performance = 'Good';
+
+			var status = 'Success';
+			if (tableStats[tbl].successRuns > 0 && tableStats[tbl].failedRuns > 0) {
+				status = 'Partial';
+			} else if (tableStats[tbl].successRuns === 0 && tableStats[tbl].failedRuns > 0) {
+				status = 'Failed';
+			}
+
+			return {
+				name:         tbl,
+				records:      tableStats[tbl].records,
+				runs:         tableStats[tbl].runs,
+				status:       status,
+				avg_duration: avgMin + 'm ' + avgSec + 's',
+				performance:  performance
+			};
+		});
+
+		c.currentPage = 1;
+		c.updatePagination();
+		return c.tablePerformance;
+	};
+
+	/* ================= PAGINATION ================= */
+
+	c.pageSize    = 5;
+	c.currentPage = 1;
+	c.totalPages  = 1;
+	c.paginatedTables = [];
+
+	c.updatePagination = function () {
+		if (!c.tablePerformance || !c.tablePerformance.length) {
+			c.paginatedTables = [];
+			c.totalPages      = 1;
+			return;
+		}
+
+		c.totalPages = Math.ceil(c.tablePerformance.length / c.pageSize) || 1;
+
+		var start = (c.currentPage - 1) * c.pageSize;
+		var end   = start + c.pageSize;
+
+		c.paginatedTables = c.tablePerformance.slice(start, end);
+	};
+
+	c.nextPage = function () {
+		if (c.currentPage < c.totalPages) {
+			c.currentPage++;
+			c.updatePagination();
+		}
+	};
+
+	c.prevPage = function () {
+		if (c.currentPage > 1) {
+			c.currentPage--;
+			c.updatePagination();
+		}
+	};
+
+	/* ================= KPI TREND ================= */
+
+	c.kpiTrend = function (metric) {
+
+		var runs    = c.filteredRuns();
+		var allRuns = c.data.runs || [];
+
+		if (!runs.length) return { direction: 'up', color: 'green', value: 0 };
+
+		/* All Time has no previous period to compare — return neutral zero */
+		if (c.dateFilter === 'all') {
+			return { direction: 'up', color: 'green', value: 0 };
+		}
+
+		var today    = new Date();
+		var prevRuns = [];
+
+		if (c.dateFilter === 'today') {
+			var yday    = new Date(today);
+			yday.setDate(today.getDate() - 1);
+			var ydayStr = yday.toDateString();
+
+			prevRuns = allRuns.filter(function (r) {
+				var rawStr = (r.created_raw || r.created || '').replace(' ', 'T');
+				var d      = new Date(rawStr);
+				return !isNaN(d.getTime()) && d.toDateString() === ydayStr;
+			});
+		}
+
+		else if (c.dateFilter === 'last7') {
+			var last14 = new Date(today.getTime() - 14 * 86400000);
+			var last7  = new Date(today.getTime() - 7  * 86400000);
+
+			prevRuns = allRuns.filter(function (r) {
+				var rawStr = (r.created_raw || r.created || '').replace(' ', 'T');
+				var d      = new Date(rawStr);
+				return !isNaN(d.getTime()) && d >= last14 && d < last7;
+			});
+		}
+
+		else if (c.dateFilter === 'lastMonth') {
+			var prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+			var prevMonthEnd   = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+
+			prevRuns = allRuns.filter(function (r) {
+				var rawStr = (r.created_raw || r.created || '').replace(' ', 'T');
+				var d      = new Date(rawStr);
+				return !isNaN(d.getTime()) && d >= prevMonthStart && d < prevMonthEnd;
+			});
+		}
+
+		/* ---- Previous period stats ---- */
+
+		var prevDurationTotal = prevRuns.reduce(function (sum, r) {
+			var match = (r.duration || '').match(/(\d+)\s*min\s*(\d+)\s*sec/i);
+			if (match) return sum + (parseInt(match[1], 10) * 60) + parseInt(match[2], 10);
+			return sum;
+		}, 0);
+
+		var prevStats = {
+			total:      prevRuns.length,
+			success:    prevRuns.filter(function (r) { return r.status === 'success'; }).length,
+			avgSeconds: prevRuns.length ? Math.round(prevDurationTotal / prevRuns.length) : 0
+		};
+
+		var currentStats = c.filteredStats();
+
+		var currentValue = 0;
+		var prevValue    = 0;
+
+		if (metric === 'runs') {
+			currentValue = currentStats.total;
+			prevValue    = prevStats.total;
+		}
+
+		else if (metric === 'success') {
+			currentValue = currentStats.success;
+			prevValue    = prevStats.success;
+		}
+
+		else if (metric === 'duration') {
+			/* use raw seconds not formatted string */
+			currentValue = currentStats.avg_seconds || 0;
+			prevValue    = prevStats.avgSeconds;
+		}
+
+		var delta    = currentValue - prevValue;
+		var improved = metric === 'duration' ? delta < 0 : delta > 0;
+
+		return {
+			direction: improved ? 'up' : 'down',
+			color:     improved ? 'green' : 'red',
+			value:     Math.abs(delta)
+		};
+
+	};
+
+	/* ================= FILTER WATCH — 50ms delay so digest completes before rebuild ================= */
+
+	$scope.$watch(
+		function () {
+			return [c.statusFilter, c.instanceFilter, c.dateFilter, c.tableSearch];
+		},
+		function (newVal, oldVal) {
+			if (!newVal || angular.equals(newVal, oldVal)) return;
+			$timeout(function () {
+				c.refreshDashboard();
+			}, 50);
+		},
+		true
+	);
 };]]></client_script>
         <controller_as>c</controller_as>
         <css>/* ================= PRINT ================= */&#13;
@@ -1913,151 +1964,318 @@ color:#f59e0b;&#13;
         <name>tracenow_reports</name>
         <option_schema/>
         <public>false</public>
-        <roles/>
+        <roles>admin</roles>
         <script><![CDATA[(function () {
 
-  data.side = $sp.getWidget('tracenow_sidebar');
+	/* ★FIX (duration): the Duration field on x_sysus_tracenow_migration_details
+	   is a STRING like "45 sec" or "1 min 30 sec". parseFloat() read only the
+	   leading number ("1 min 30 sec" → 1), collapsing durations to near-zero.
+	   This parser converts those text forms (and plain seconds / HH:MM:SS as a
+	   safety net) into a real seconds value. */
+	function parseDurationToSeconds(str) {
+		str = String(str || '').trim().toLowerCase();
+		if (!str) return 0;
 
-  data.runs = [];
-  data.activity = [];
+		/* "X min Y sec", "X min", "Y sec" (also "minute"/"second", "m"/"s") */
+		var mins = str.match(/(\d+(?:\.\d+)?)\s*(?:min|minute|m)\b/);
+		var secs = str.match(/(\d+(?:\.\d+)?)\s*(?:sec|second|s)\b/);
+		if (mins || secs) {
+			var mVal = mins ? parseFloat(mins[1]) : 0;
+			var sVal = secs ? parseFloat(secs[1]) : 0;
+			return (mVal * 60) + sVal;
+		}
 
-  /* ================= KPI COUNTERS ================= */
+		/* "HH:MM:SS" or "MM:SS" */
+		if (str.indexOf(':') !== -1) {
+			var p = str.split(':').map(parseFloat);
+			if (p.length === 3) return (p[0]||0)*3600 + (p[1]||0)*60 + (p[2]||0);
+			if (p.length === 2) return (p[0]||0)*60 + (p[1]||0);
+		}
 
-  var totalRuns = 0;
-  var successRuns = 0;
-  var partialRuns = 0;
-  var failedRuns = 0;
-  var totalRecords = 0;
-  var totalDuration = 0;
-  var instanceName = '';
+		/* "1970-01-01 00:00:45" Glide datetime */
+		if (str.indexOf('1970-') === 0) {
+			return new GlideDateTime(str).getNumericValue() / 1000;
+		}
 
-  /* ================= LOAD MIGRATION DETAILS ================= */
+		/* plain "45" or "45.2" */
+		return parseFloat(str) || 0;
+	}
 
-  var gr = new GlideRecordSecure('x_sysus_tracenow_migration_details');
+	data.side = $sp.getWidget('tracenow_sidebar');
 
-  gr.addQuery('sys_created_by', gs.getUserName());
-  gr.orderByDesc('sys_created_on');
-  gr.query();
+	data.runs = [];
+	data.activity = [];
+	data.tableStats = {};
 
-  gs.info('=== DEBUG USER: ' + gs.getUserName() + ', Found: ' + gr.getRowCount() + ' records ===');
+	/* ================= KPI COUNTERS ================= */
 
-  while (gr.next()) {
+	var totalRuns = 0;
+	var successRuns = 0;
+	var partialRuns = 0;
+	var failedRuns = 0;
+	var totalRecords = 0;
+	var totalAvgMigrationDuration = 0;
+	var instanceName = '';
+	var totalRecordDuration = 0;
+	var totalRecordCount = 0;
 
-    totalRuns++;
+	/* ================= LOAD MIGRATION DETAILS ================= */
 
-    var inserted = parseInt(gr.getValue('records_inserted') || 0);
-    var updated  = parseInt(gr.getValue('records_updated')  || 0);
-    var failed   = parseInt(gr.getValue('records_failed')   || 0);
-    var fetched  = parseInt(gr.getValue('records_fetched')  || 0);
-    var records  = inserted + updated;
+	var gr = new GlideRecordSecure('x_sysus_tracenow_migration_details');
 
-    totalRecords += records;
+	gr.addQuery('sys_created_by', gs.getUserName());
+	gr.orderByDesc('sys_created_on');
+	gr.query();
 
-    /* ================= DETERMINE STATUS ================= */
+	//gs.info('=== DEBUG USER: ' + gs.getUserName() + ', Found: ' + gr.getRowCount() + ' records ===');
 
-    var successRate = parseInt(gr.getValue('success_rate') || 0);
-    var status = 'success';
+	while (gr.next()) {
 
-    if (successRate === 0) {
-      status = 'failed';
-      failedRuns++;
-    } else if (successRate === 100) {
-      status = 'success';
-      successRuns++;
-    } else {
-      status = 'partial';
-      partialRuns++;
-    }
+		totalRuns++;
 
-    /* ================= TABLE LIST ================= */
+		var migrationSysId = gr.getUniqueValue();
 
-    var tables = [];
-    try {
-      var tableJSON = JSON.parse(gr.getValue('table') || '{}');
-			//console.log('tablesjson = ' + JSON.stringify(tableJSON));
-      //for (var key in tableJSON) {
-      //  tables.push(key.table);
-      //}
-			tableJSON.forEach(function(rec) {
-				tables.push(rec.table)
-			})
-      if (tables.length === 0) {
-        tables = ['Unknown Table'];
-      }
-    } catch (e) {
-      tables = ['Parse Error'];
-    }
+		var records = 0;
+		var successRecords = 0;
+		var failedRecords = 0;
 
-    /* ================= DURATION ================= */
+		var tables = [];
+		var tableMap = {};
 
-    var duration = gr.getValue('duration') || '0 min 0 sec';
+		var logGR = new GlideRecordSecure(
+			'x_sysus_tracenow_tracenow_migration_record_log'
+		);
 
-    totalDuration += 0;
+		logGR.addQuery(
+			'migration',
+			migrationSysId
+		);
 
-    /* ================= CONNECTION LOOKUP ================= */
+		logGR.query();
 
-    var connectionSysId = gr.getValue('connection');
-    var connectionName  = '';
+		var recordDurationTotal = 0;
 
-    if (connectionSysId) {
-      var connLookup = new GlideRecordSecure('x_sysus_tracenow_connection');
-      if (connLookup.get(connectionSysId)) {
-        instanceName   = connLookup.getValue('name');
-        connectionName = connLookup.getValue('name');
-      }
-    }
+		while (logGR.next()) {
 
-    /* ================= FIX: push created_raw (ISO) for reliable client-side date parsing ================= */
+			records++;
+			totalRecords++;
 
-    data.runs.push({
-      run_id:        gr.getValue('number'),
-      number:        gr.getValue('number'),
-      instance:      (gr.getValue('instance_url') || '').trim().replace(/\/$/, '').toLowerCase(),
-      instance_name: instanceName,
-      created:       gr.getDisplayValue('sys_created_on'),
-      created_raw:   gr.getValue('sys_created_on'),        // ISO value — client uses this for date filters
-      tables:        tables,
-      records:       records,
-      status:        status,
-      duration:      duration,
-      success_rate:  gr.getValue('success_rate')
-    });
 
-    data.activity.push({
-      created: gr.getDisplayValue('sys_created_on'),
-      tables:  tables,
-      records: records,
-      status:  status
-    });
-  }
+			var recDuration =
+					parseDurationToSeconds(logGR.getValue('duration'));
 
-  /* ================= CONNECTIONS ================= */
+			recordDurationTotal += recDuration;
 
-  data.connections = [];
+			// GLOBAL TOTALS
+			totalRecordDuration += recDuration;
+			totalRecordCount++;
+			var tableName =
+					logGR.getValue('table');
 
-  var connGR = new GlideRecordSecure('x_sysus_tracenow_connection');
-  connGR.addQuery('sys_created_by', gs.getUserName());
-  connGR.query();
+			if (!data.tableStats[tableName]) {
 
-  while (connGR.next()) {
-    data.connections.push({
-      /* FIX: normalize url here so instance filter matching is consistent */
-      url:  (connGR.getValue('url') || '').trim().replace(/\/$/, '').toLowerCase(),
-      name: connGR.getDisplayValue('name')
-    });
-  }
+				data.tableStats[tableName] = {
+					totalDuration: 0,
+					recordCount: 0
+				};
+			}
 
-  /* ================= KPI SUMMARY ================= */
+			data.tableStats[tableName].totalDuration += recDuration;
+			data.tableStats[tableName].recordCount++;
 
-  data.stats = {
-    total:        totalRuns,
-    success:      successRuns,
-    failed:       failedRuns,
-    records:      totalRecords,
-    avg_duration: (totalRuns ? Math.round(totalDuration / totalRuns) : 0)
-  };
+			if (
+				tableName &&
+				!tableMap[tableName]
+			) {
+				tableMap[tableName] = true;
+				tables.push(tableName);
+			}
 
-  gs.info('=== FINAL: ' + totalRuns + ' runs for user ' + gs.getUserName() + ' ===');
+			var recStatus =
+					(
+						logGR.getValue('status') || ''
+					).toLowerCase();
+
+			if (recStatus == 'success') {
+				successRecords++;
+			}
+
+			if (recStatus == 'failed') {
+				failedRecords++;
+			}
+		}
+
+		var avgMigrationDuration = 0;
+
+		/* ★FIX (duration): the authoritative run duration is the Duration STRING
+		   on this migration_details record (e.g. "1 min 30 sec"). Parse it. If it
+		   is empty, fall back to the sum of per-record log durations. */
+		var runDurationSeconds = parseDurationToSeconds(gr.getValue('duration'));
+		if (!runDurationSeconds) runDurationSeconds = recordDurationTotal;
+
+		if (records > 0) {
+			avgMigrationDuration =
+				recordDurationTotal / records;
+		}
+		/* if the log had no usable per-record durations but the run total is
+		   known, derive a per-record average from the run total instead */
+		if (!avgMigrationDuration && records > 0 && runDurationSeconds) {
+			avgMigrationDuration = runDurationSeconds / records;
+		}
+		totalAvgMigrationDuration += avgMigrationDuration;
+
+		/* ================= DETERMINE STATUS ================= */
+		/* UNCHANGED from your original (rate-based). The donut reads this.
+
+		   ── OPTIONAL FIX for Issue 2 (donut/table "Partial" agreement) ──
+		   Your table computes status a different way (mix of success/failed
+		   RUNS per table), so the two can disagree. If you want the server
+		   status to be failures-based instead, replace the block below with:
+
+		       var status = 'success';
+		       if (successRecords === 0 && failedRecords > 0) { status = 'failed';  failedRuns++; }
+		       else if (failedRecords > 0)                    { status = 'partial'; partialRuns++; }
+		       else                                           { status = 'success'; successRuns++; }
+
+		   NOTE: if every run is all-success or all-failed at the record level,
+		   neither definition shows "partial" in the donut. Run the gs.info at
+		   the bottom first to confirm what your data actually contains. */
+
+		var successRate = 0;
+
+		if (records > 0) {
+
+			successRate = Math.round(
+				(
+					successRecords /
+					records
+				) * 100
+			);
+		}
+
+		var status = 'success';
+
+		if (successRate === 0) {
+
+			status = 'failed';
+			failedRuns++;
+
+		}
+		else if (successRate === 100) {
+
+			status = 'success';
+			successRuns++;
+
+		}
+		else {
+
+			status = 'partial';
+			partialRuns++;
+
+		}
+
+
+		/* ================= CONNECTION LOOKUP ================= */
+
+		var connectionSysId = gr.getValue('connection');
+		var connectionName  = '';
+
+		if (connectionSysId) {
+			var connLookup = new GlideRecordSecure('x_sysus_tracenow_connection');
+			if (connLookup.get(connectionSysId)) {
+				instanceName   = connLookup.getValue('name');
+				connectionName = connLookup.getValue('name');
+			}
+		}
+
+		/* ================= push run ================= */
+		/* ★FIX (instance leak): use connectionName (reset per-run) instead of
+		   instanceName (module-level, leaked previous run's value when this
+		   run had no connection). */
+
+		data.runs.push({
+			run_id: gr.getValue('number'),
+			number: gr.getValue('number'),
+			instance: (gr.getValue('instance_url') || '')
+			.trim()
+			.replace(/\/$/, '')
+			.toLowerCase(),
+			instance_name: connectionName,
+			created: gr.getDisplayValue('sys_created_on'),
+			created_raw: gr.getValue('sys_created_on'),
+			tables: tables,
+			records: records,
+			status: status,
+			success_rate: successRate,
+			avg_record_duration: avgMigrationDuration,
+			duration_seconds: runDurationSeconds   /* ★FIX: full parsed run duration */
+		});
+	}
+
+	/* ================= ★FIX (perf): build tableDurations ONCE, after the run
+	   loop. Was inside the while(gr.next()) loop, rebuilt every iteration.
+	   Output is identical; this just stops the redundant rework. ============ */
+
+	data.tableDurations = {};
+
+	for (var tbl in data.tableStats) {
+
+		var avg =
+				data.tableStats[tbl].recordCount > 0 ? Math.round(
+			data.tableStats[tbl].totalDuration /
+			data.tableStats[tbl].recordCount
+		)
+		: 0;
+
+		data.tableDurations[tbl] = avg;
+	}
+
+	/* ================= CONNECTIONS ================= */
+
+	data.connections = [];
+
+	var connGR = new GlideRecordSecure('x_sysus_tracenow_connection');
+	connGR.addQuery('sys_created_by', gs.getUserName());
+	connGR.query();
+
+	while (connGR.next()) {
+		data.connections.push({
+			/* normalize url here so instance filter matching is consistent */
+			url:  (connGR.getValue('url') || '').trim().replace(/\/$/, '').toLowerCase(),
+			name: connGR.getDisplayValue('name')
+		});
+	}
+
+	/* ================= KPI SUMMARY ================= */
+
+	var avgDurationSeconds =
+			totalRecordCount > 0 ? Math.round(
+		totalRecordDuration /
+		totalRecordCount
+	)
+	: 0;
+
+	var avgMinutes =
+			Math.floor(avgDurationSeconds / 60);
+
+	var avgSeconds =
+			avgDurationSeconds % 60;
+
+	data.stats = {
+		total: totalRuns,
+		success: successRuns,
+		partial: partialRuns,
+		failed: failedRuns,
+		records: totalRecords,
+		avg_duration: avgMinutes + " min " + avgSeconds + " sec"
+	};
+
+	/* Diagnostic: tells you how many runs are success/partial/failed so you can
+	   decide whether the donut SHOULD show a Partial slice for your data.
+	   Remove once you've confirmed. */
+	gs.info('=== FINAL: ' + totalRuns + ' runs (success=' + successRuns +
+	        ' partial=' + partialRuns + ' failed=' + failedRuns +
+	        ') for user ' + gs.getUserName() + ' ===');
 
 })();]]></script>
         <servicenow>false</servicenow>
@@ -2065,14 +2283,14 @@ color:#f59e0b;&#13;
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 10:15:51</sys_created_on>
         <sys_id>408f35dc930587100af5f4e9b903d6a6</sys_id>
-        <sys_mod_count>8</sys_mod_count>
+        <sys_mod_count>40</sys_mod_count>
         <sys_name>tracenow_reports</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_408f35dc930587100af5f4e9b903d6a6</sys_update_name>
-        <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-06-09 06:53:55</sys_updated_on>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-22 07:11:43</sys_updated_on>
         <template><![CDATA[<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -2319,7 +2537,7 @@ change
                     </span>
                 </div>
 
-                <h2>{{c.filteredStats().avg_duration}}s</h2>
+                <h2>{{c.filteredStats().avg_duration}}</h2>
 
               <p class="trend {{c.kpiTrend('duration').color}}">
 

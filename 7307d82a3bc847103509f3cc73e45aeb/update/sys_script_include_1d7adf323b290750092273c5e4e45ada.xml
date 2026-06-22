@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_sysus_tracenow.TRACENowSourceConnector</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <mobile_callable>false</mobile_callable>
+        <name>TRACENowSourceConnector</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[var TRACENowSourceConnector = Class.create();
+
+TRACENowSourceConnector.prototype = {
+
+    initialize: function(jobSysId) {
+        this.cfg    = new TRACENowConfig();
+        this.logger = new TRACENowLogger(jobSysId, 'SourceConnector');
+        this.job    = this._loadJob(jobSysId);
+    },
+
+    /**
+     * Fetches records from the source instance.
+     * @returns {Object} { success, records: [], fields: [], error }
+     */
+    fetchRecords: function() {
+        try {
+            if (!this.job) {
+                throw new Error('Migration Job not found.');
+            }
+
+            var tableName = this.job.u_table;
+            var fields    = this._getTableFields(tableName);
+
+            this.logger.info('Fetching table schema for: ' + tableName);
+            this.logger.info('Fields to fetch: ' + fields.join(', '));
+
+            // Build source REST URL
+            var url = this._buildUrl(tableName, fields);
+            this.logger.info('Source URL: ' + url);
+
+            // Execute HTTP callout
+            var response = this._callSourceAPI(url);
+
+            if (!response.success) {
+                throw new Error('Source API call failed: ' + response.error);
+            }
+
+            var records = response.data.result || [];
+            this.logger.info('Records fetched from source: ' + records.length);
+
+            return {
+                success: true,
+                records: records,
+                fields:  fields
+            };
+
+        } catch(e) {
+            this.logger.error('fetchRecords failed: ' + e.message);
+            return { success: false, error: e.message };
+        }
+    },
+
+    /**
+     * Calls the source instance's Table REST API.
+     * Handles pagination automatically (up to 10,000 records per batch).
+     */
+    _callSourceAPI: function(url) {
+        try {
+            var request  = new sn_ws.RESTMessageV2();
+            request.setHttpMethod('GET');
+            request.setEndpoint(url);
+
+            // Basic Auth using job credentials
+            var username = this.job.getValue('u_source_username');
+            var password = this.job.getDecryptedValue('u_source_password');
+            request.setBasicAuth(username, password);
+
+            request.setRequestHeader('Accept', 'application/json');
+            request.setRequestHeader('Content-Type', 'application/json');
+
+            // Timeout: 60 seconds
+            request.setHttpTimeout(60000);
+
+            var response    = request.execute();
+            var statusCode  = response.getStatusCode();
+            var body        = response.getBody();
+
+            if (statusCode !== 200) {
+                return {
+                    success: false,
+                    error:   'HTTP ' + statusCode + ': ' + body
+                };
+            }
+
+            var parsed = JSON.parse(body);
+            return { success: true, data: parsed };
+
+        } catch(e) {
+            return { success: false, error: e.message };
+        }
+    },
+
+    /**
+     * Builds the source Table API URL with all required parameters.
+     * Handles specific sys_ids OR encoded query filter.
+     */
+    _buildUrl: function(tableName, fields) {
+        var baseUrl  = this.job.getValue('u_source_url').replace(/\/$/, '');
+        var url      = baseUrl + '/api/now/table/' + tableName;
+        var params   = [];
+
+        // Field selection
+        params.push('sysparm_fields=' + encodeURIComponent(fields.join(',')));
+
+        // Display values for reference fields — fetch both value and display
+        params.push('sysparm_display_value=all');
+
+        // Limit & offset (handle pagination if needed)
+        params.push('sysparm_limit=1000');
+
+        // Specific sys_ids OR encoded query
+        var sysIds = (this.job.getValue('u_sys_ids') || '').trim();
+        if (sysIds) {
+            var idList = sysIds.split(',').map(function(s){ return s.trim(); }).join('^OR');
+            params.push('sysparm_query=' + encodeURIComponent('sys_idIN' + sysIds));
+        } else {
+            var filter = (this.job.getValue('u_record_filter') || '').trim();
+            if (filter) {
+                params.push('sysparm_query=' + encodeURIComponent(filter));
+            }
+        }
+
+        params.push('sysparm_exclude_reference_link=true');
+
+        return url + '?' + params.join('&');
+    },
+
+    /**
+     * Reads table schema from SOURCE instance's schema API.
+     * Falls back to a direct dictionary query on target for common tables.
+     */
+    _getTableFields: function(tableName) {
+        // Always include mandatory fields
+        var fields = this.cfg.MANDATORY_FIELDS.slice();
+
+        // Fetch schema from source instance
+        var schemaUrl = this.job.getValue('u_source_url').replace(/\/$/, '') +
+                        '/api/now/table/sys_dictionary' +
+                        '?sysparm_query=name=' + tableName +
+                        '^elementISNOTEMPTY' +
+                        '^internal_type!=collection' +
+                        '&sysparm_fields=element,internal_type' +
+                        '&sysparm_limit=500';
+
+        var resp = this._callSourceAPI(schemaUrl);
+
+        if (resp.success && resp.data.result) {
+            var skipSet  = this.cfg.MANDATORY_FIELDS.concat(this.cfg.SKIP_ON_IMPORT);
+            var dictRows = resp.data.result;
+
+            for (var i = 0; i < dictRows.length; i++) {
+                var element = dictRows[i].element;
+                if (skipSet.indexOf(element) === -1 && fields.indexOf(element) === -1) {
+                    fields.push(element);
+                }
+            }
+            this.logger.info('Schema loaded from source. Field count: ' + fields.length);
+        } else {
+            this.logger.warn('Could not fetch schema from source. Using mandatory fields only.');
+        }
+
+        return fields;
+    },
+
+    _loadJob: function(sysId) {
+        var gr = new GlideRecord('u_tracenow_migration_job');
+        return gr.get(sysId) ? gr : null;
+    },
+
+    type: 'TRACENowSourceConnector'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-22 07:44:28</sys_created_on>
+        <sys_id>1d7adf323b290750092273c5e4e45ada</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>TRACENowSourceConnector</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_script_include_1d7adf323b290750092273c5e4e45ada</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-22 07:44:28</sys_updated_on>
+    </sys_script_include>
+</record_update>

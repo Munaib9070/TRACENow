@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_cs_topic_language">
+    <sys_cs_topic_language action="DELETE">
+        <cs_topic_id display_value="_PRVW__ed872c5033914f948e1eee545ec9d4d9">4f0997a493ad07100af5f4e9b903d640</cs_topic_id>
+        <language_code>en</language_code>
+        <nlu_entities>[]</nlu_entities>
+        <nlu_intent>Migration Assistance</nlu_intent>
+        <nlu_intent_label>Migration Assistance</nlu_intent_label>
+        <nlu_model>ml_x_sysus_x_sysus_tracenow_global_e01960bb93ddc3900af5f4e9b903d62b</nlu_model>
+        <nlu_model_label>Migration Assist</nlu_model_label>
+        <nlu_provider>64c023c17300330021a044764df6a70e</nlu_provider>
+        <sys_class_name>sys_cs_topic_language</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2026-06-15 07:51:44</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_id>c30997a493ad07100af5f4e9b903d6ff</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name/>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_cs_topic_language_c30997a493ad07100af5f4e9b903d6ff</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2026-06-15 07:51:44</sys_updated_on>
+    </sys_cs_topic_language>
+    <sys_update_version action="INSERT_OR_UPDATE">
+        <action>DELETE</action>
+        <application display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</application>
+        <file_path/>
+        <instance_id>5af4a451db6abb448aea21c405961971</instance_id>
+        <instance_name>sysusademo7</instance_name>
+        <name>sys_cs_topic_language_c30997a493ad07100af5f4e9b903d6ff</name>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_cs_topic_language"><sys_cs_topic_language action="INSERT_OR_UPDATE"><cs_topic_id display_value="_PRVW__ed872c5033914f948e1eee545ec9d4d9">4f0997a493ad07100af5f4e9b903d640</cs_topic_id><language_code>en</language_code><nlu_entities>[]</nlu_entities><nlu_intent>Migration Assistance</nlu_intent><nlu_intent_label>Migration Assistance</nlu_intent_label><nlu_model>ml_x_sysus_x_sysus_tracenow_global_e01960bb93ddc3900af5f4e9b903d62b</nlu_model><nlu_model_label>Migration Assist</nlu_model_label><nlu_provider>64c023c17300330021a044764df6a70e</nlu_provider><sys_class_name>sys_cs_topic_language</sys_class_name><sys_created_by>admin</sys_created_by><sys_created_on>2026-06-15 07:51:44</sys_created_on><sys_domain>global</sys_domain><sys_id>c30997a493ad07100af5f4e9b903d6ff</sys_id><sys_mod_count>0</sys_mod_count><sys_name/><sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package><sys_policy/><sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope><sys_update_name>sys_cs_topic_language_c30997a493ad07100af5f4e9b903d6ff</sys_update_name><sys_updated_by>admin</sys_updated_by><sys_updated_on>2026-06-15 07:51:44</sys_updated_on></sys_cs_topic_language></record_update>]]></payload>
+        <payload_hash>-1174436649</payload_hash>
+        <record_name/>
+        <reverted_from/>
+        <source>030997a493ad07100af5f4e9b903d644</source>
+        <source_table>sys_update_set</source_table>
+        <state>current</state>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2026-06-15 07:51:44</sys_created_on>
+        <sys_id>9709d7a493ad07100af5f4e9b903d603</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_recorded_at>19eca43d8250000001</sys_recorded_at>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2026-06-15 07:51:44</sys_updated_on>
+        <type>CS Topic Language</type>
+        <update_guid>5309d7a48fad07105c5cc63c1a987a02</update_guid>
+        <update_guid_history>5309d7a48fad07105c5cc63c1a987a02:-1174436649</update_guid_history>
+    </sys_update_version>
+    <sys_metadata_delete action="INSERT_OR_UPDATE">
+        <sys_audit_delete/>
+        <sys_class_name>sys_metadata_delete</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2026-06-15 20:50:54</sys_created_on>
+        <sys_db_object display_value="" name="sys_cs_topic_language">sys_cs_topic_language</sys_db_object>
+        <sys_id>120f662c474442e68313a94782b724d1</sys_id>
+        <sys_metadata>c30997a493ad07100af5f4e9b903d6ff</sys_metadata>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name/>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_parent/>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_scope_delete display_value="">2ef2079d3a0a4f3ea6602966dfb43524</sys_scope_delete>
+        <sys_update_name>sys_cs_topic_language_c30997a493ad07100af5f4e9b903d6ff</sys_update_name>
+        <sys_update_version display_value="sys_cs_topic_language_c30997a493ad07100af5f4e9b903d6ff">9709d7a493ad07100af5f4e9b903d603</sys_update_version>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2026-06-15 20:50:54</sys_updated_on>
+    </sys_metadata_delete>
+</record_update>

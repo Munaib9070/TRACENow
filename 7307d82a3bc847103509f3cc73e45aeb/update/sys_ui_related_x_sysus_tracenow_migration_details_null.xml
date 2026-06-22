@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update>
+    <sys_ui_related sys_domain="global" table="x_sysus_tracenow_migration_details" version="2" view="">
+        <sys_ui_related_list_entry action="INSERT_OR_UPDATE">
+            <filter/>
+            <list_id display_value="Migration details - Default view" name="x_sysus_tracenow_migration_details" related_list="NULL" sys_domain="global" view="Default view">b9f4afec93ed07100af5f4e9b903d6f8</list_id>
+            <order_by/>
+            <position>0</position>
+            <related_list>x_sysus_tracenow_tracenow_migration_record_log.migration</related_list>
+            <sys_class_name>sys_ui_related_list_entry</sys_class_name>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-15 08:43:48</sys_created_on>
+            <sys_id>b9f4e320932147100af5f4e9b903d603</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-15 08:43:48</sys_updated_on>
+        </sys_ui_related_list_entry>
+        <sys_ui_related_list action="INSERT_OR_UPDATE">
+            <calculated_name>Migration details - Default view</calculated_name>
+            <filter/>
+            <name>x_sysus_tracenow_migration_details</name>
+            <order_by/>
+            <position/>
+            <related_list/>
+            <sys_class_name>sys_ui_related_list</sys_class_name>
+            <sys_created_by>faizan.latief</sys_created_by>
+            <sys_created_on>2026-06-15 08:43:48</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>b9f4afec93ed07100af5f4e9b903d6f8</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_name>Migration details - Default view</sys_name>
+            <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+            <sys_policy/>
+            <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+            <sys_update_name>sys_ui_related_x_sysus_tracenow_migration_details_null</sys_update_name>
+            <sys_updated_by>faizan.latief</sys_updated_by>
+            <sys_updated_on>2026-06-15 08:43:48</sys_updated_on>
+            <sys_user/>
+            <view display_value="Default view" name="NULL">Default view</view>
+            <view_name/>
+        </sys_ui_related_list>
+    </sys_ui_related>
+</record_update>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="m2m_sys_nlu_model_sys_entity">
+    <m2m_sys_nlu_model_sys_entity action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <entity>DATE</entity>
+        <model display_value="Instance Migration Assistant ">da3bd8b3939dc3900af5f4e9b903d60e</model>
+        <sys_class_name>m2m_sys_nlu_model_sys_entity</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-12 10:06:57</sys_created_on>
+        <sys_entity/>
+        <sys_id>263bd8b3939dc3900af5f4e9b903d61c</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Instance Migration Assistant .</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>m2m_sys_nlu_model_sys_entity_263bd8b3939dc3900af5f4e9b903d61c</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-12 10:06:57</sys_updated_on>
+    </m2m_sys_nlu_model_sys_entity>
+</record_update>

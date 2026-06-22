@@ -3,6 +3,7 @@
         <element attributes="edge_encryption_enabled=true" default="javascript:global.getNextObjNumberPadded();" label="Number" max_length="40" name="number" type="string"/>
         <element label="Records Fetched" max_length="40" name="records_fetched" type="integer"/>
         <element label="Instance URL" max_length="150" name="instance_url" type="string"/>
+        <element label="Execution Logs" max_length="1000" name="execution_logs" type="string"/>
         <element label="Records Inserted" max_length="40" name="records_inserted" type="integer"/>
         <element label="Duration" max_length="100" name="duration" type="string"/>
         <element label="Records Failed" max_length="40" name="records_failed" type="string"/>

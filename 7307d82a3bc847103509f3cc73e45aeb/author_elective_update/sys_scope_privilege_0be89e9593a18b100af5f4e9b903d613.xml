@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_scope_privilege">
+    <sys_scope_privilege action="DELETE">
+        <operation>execute</operation>
+        <source_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</source_scope>
+        <status>allowed</status>
+        <sys_class_name>sys_scope_privilege</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-17 11:07:00</sys_created_on>
+        <sys_id>0be89e9593a18b100af5f4e9b903d613</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>ScriptableRESTMessageClient.execute</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_scope_privilege_0be89e9593a18b100af5f4e9b903d613</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-17 11:07:00</sys_updated_on>
+        <target_name>ScriptableRESTMessageClient.execute</target_name>
+        <target_scope display_value="Global">global</target_scope>
+        <target_type>scriptable</target_type>
+    </sys_scope_privilege>
+    <sys_update_version action="INSERT_OR_UPDATE">
+        <action>DELETE</action>
+        <application display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</application>
+        <file_path/>
+        <instance_id>5af4a451db6abb448aea21c405961971</instance_id>
+        <instance_name>sysusademo7</instance_name>
+        <name>sys_scope_privilege_0be89e9593a18b100af5f4e9b903d613</name>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_scope_privilege"><sys_scope_privilege action="INSERT_OR_UPDATE"><operation>execute</operation><source_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</source_scope><status>allowed</status><sys_class_name>sys_scope_privilege</sys_class_name><sys_created_by>bareen.makhdoomi</sys_created_by><sys_created_on>2026-06-17 11:07:00</sys_created_on><sys_id>0be89e9593a18b100af5f4e9b903d613</sys_id><sys_mod_count>0</sys_mod_count><sys_name>ScriptableRESTMessageClient.execute</sys_name><sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package><sys_policy/><sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope><sys_update_name>sys_scope_privilege_0be89e9593a18b100af5f4e9b903d613</sys_update_name><sys_updated_by>bareen.makhdoomi</sys_updated_by><sys_updated_on>2026-06-17 11:07:00</sys_updated_on><target_name>ScriptableRESTMessageClient.execute</target_name><target_scope display_value="Global">global</target_scope><target_type>scriptable</target_type></sys_scope_privilege></record_update>]]></payload>
+        <payload_hash>-234341349</payload_hash>
+        <record_name>ScriptableRESTMessageClient.execute</record_name>
+        <reverted_from/>
+        <source>3c9029cf9355cf500af5f4e9b903d666</source>
+        <source_table>sys_update_set</source_table>
+        <state>previous</state>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-17 11:07:01</sys_created_on>
+        <sys_id>dbe89e9593a18b100af5f4e9b903d617</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_recorded_at>19ed543588d0000001</sys_recorded_at>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-17 11:07:01</sys_updated_on>
+        <type>Cross scope privilege</type>
+        <update_guid>57e89e9532a18b106b69a4dc68c2b916</update_guid>
+        <update_guid_history>57e89e9532a18b106b69a4dc68c2b916:-234341349</update_guid_history>
+    </sys_update_version>
+    <sys_metadata_delete action="INSERT_OR_UPDATE">
+        <sys_audit_delete/>
+        <sys_class_name>sys_metadata_delete</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-18 06:53:27</sys_created_on>
+        <sys_db_object display_value="" name="sys_scope_privilege">sys_scope_privilege</sys_db_object>
+        <sys_id>24875014cbbf44ba8aaa8f513cf6e384</sys_id>
+        <sys_metadata>0be89e9593a18b100af5f4e9b903d613</sys_metadata>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>ScriptableRESTMessageClient.execute</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_parent/>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_scope_delete display_value="">2ef2079d3a0a4f3ea6602966dfb43524</sys_scope_delete>
+        <sys_update_name>sys_scope_privilege_0be89e9593a18b100af5f4e9b903d613</sys_update_name>
+        <sys_update_version display_value="sys_scope_privilege_0be89e9593a18b100af5f4e9b903d613">dbe89e9593a18b100af5f4e9b903d617</sys_update_version>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-18 06:53:27</sys_updated_on>
+    </sys_metadata_delete>
+</record_update>

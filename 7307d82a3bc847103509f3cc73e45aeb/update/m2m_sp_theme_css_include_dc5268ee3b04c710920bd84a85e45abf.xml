@@ -2,7 +2,7 @@
     <m2m_sp_theme_css_include action="INSERT_OR_UPDATE">
         <order>100</order>
         <sp_css_include display_value="TRACENow Main Styles">621224ee3b04c710920bd84a85e45a2c</sp_css_include>
-        <sp_theme display_value="TRACENow">1a9124ae3b04c710920bd84a85e45acf</sp_theme>
+        <sp_theme display_value="TraceNow">1a9124ae3b04c710920bd84a85e45acf</sp_theme>
         <sys_class_name>m2m_sp_theme_css_include</sys_class_name>
         <sys_created_by>bareen.makhdoomi</sys_created_by>
         <sys_created_on>2026-04-07 10:07:02</sys_created_on>

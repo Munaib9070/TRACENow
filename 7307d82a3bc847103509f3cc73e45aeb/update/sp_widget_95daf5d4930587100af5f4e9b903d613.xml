@@ -1,62 +1,86 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
     <sp_widget action="INSERT_OR_UPDATE">
         <category>custom</category>
-        <client_script><![CDATA[api.controller = function($scope, $window, $timeout) {
-    var c = this;
+        <client_script><![CDATA[api.controller = function($scope, $window, $location, $timeout) {
+	var c = this;
+	/* ★FIX (edit pre-fill): do NOT overwrite c.data with {} — that throws away
+       the server-loaded record (connection_name/url/username/password) in edit
+       mode, leaving the form blank. Keep whatever the server provided. */
+	c.data = c.data || {};
+	c.loading = false;
 
-    c.data = {};
-    c.loading = false;
+	// Snackbar state
+	c.showSnackbar = false;
+	c.snackbarMessage = '';
+	c.snackbarType = 'success';
 
-    // Snackbar state
-    c.showSnackbar = false;
-    c.snackbarMessage = '';
-    c.snackbarType = 'success';
+	/* SHOW SNACKBAR */
+	c.showToast = function(message, type) {
+		c.snackbarMessage = message;
+		c.snackbarType = type;
+		c.showSnackbar = true;
+		$timeout(function() {
+			c.showSnackbar = false;
+		}, 2500);
+	};
 
-    /* SHOW SNACKBAR */
-    c.showToast = function(message, type) {
-        c.snackbarMessage = message;
-        c.snackbarType = type;
-        c.showSnackbar = true;
+	/* CONNECT (save: insert or update) */
+	c.connect = function() {
+		if (!c.data.connection_name || !c.data.url || !c.data.username || !c.data.password) {
+			c.showToast('Please fill all required fields', 'error');
+			return;
+		}
+		c.loading = true;
+		c.data.action = "saveConnection";
 
-        $timeout(function() {
-            c.showSnackbar = false;
-        }, 2500);
-    };
+		/* ★ EDIT: carry the sys_id so the server updates instead of inserting. */
+		c.data.sys_id = c.data.sys_id || '';
 
-    /* CONNECT */
-    c.connect = function() {
+		/* capture BEFORE the call — c.server.update() replaces c.data with the
+           server's response, which may not carry sys_id back. */
+		var wasEdit = !!c.data.sys_id;
 
-        if (!c.data.connection_name || !c.data.url || !c.data.username || !c.data.password) {
-            c.showToast('Please fill all required fields', 'error');
-            return;
-        }
+		c.server.update().then(function(response) {
+			c.loading = false;
 
-        c.loading = true;
-        c.data.action = "saveConnection";
+			/* trust the server's own flag if present, else the pre-call capture */
+			if (response && typeof response.isEdit !== 'undefined') {
+				wasEdit = !!response.isEdit;
+			}
 
-        c.server.update().then(function(response) {
-            c.loading = false;
+			console.log('[SAVE] success=' + (response && response.success) +
+									' wasEdit=' + wasEdit);
 
-            if (response.success) {
+			if (response.success) {
 
-                // ✅ Show success snackbar
-                c.showToast('Connection saved successfully', 'success');
+				c.showToast(
+					(wasEdit ? 'Connection updated successfully' : 'Connection saved successfully'),
+					'success'
+				);
+				c.data.isEdit = wasEdit || !!(response.new_sys_id);
+				if (response.new_sys_id) {
+					c.data.sys_id = response.new_sys_id; // persist returned sys_id for safety
+				}
 
-                // ✅ Redirect after delay
-                $timeout(function() {
-                    $window.location.href = '?id=tracenow_browse_table';
-                }, 1500);
+				$timeout(function() {
+					/* ★ Open-redirect fix: navigate via $location (portal router)
+                       instead of $window.location.href. Targets are hardcoded page
+                       ids, no user input. $location.search() changes the ?id= param
+                       within the portal SPA. */
+					var target = wasEdit ? 'tracenow_connection_list' : 'tracenow_browse_table';
+					console.log('[SAVE] navigating to ' + target);
+					$location.search('id', target);
+				}, 1500);
+			} else {
+				c.showToast(response.error || 'Connection failed', 'error');
+			}
+		});
+	};
 
-            } else {
-                c.showToast(response.error || 'Connection failed', 'error');
-            }
-        });
-    };
-
-    c.goBack = function() {
-        $window.location.href = '?id=tracenow_coonection_list';
-    };
-
+	c.goBack = function() {
+		/* ★ Open-redirect fix: portal navigation, hardcoded page id */
+		$location.search('id', 'tracenow_connection_list');
+	};
 };]]></client_script>
         <controller_as>c</controller_as>
         <css>.sp-layout {&#13;
@@ -299,263 +323,308 @@ button:disabled {&#13;
         <name>tracenow_create_connection</name>
         <option_schema/>
         <public>false</public>
-        <roles/>
+        <roles>admin</roles>
         <script><![CDATA[(function() {
 
-data.side = $sp.getWidget('tracenow_sidebar');
+    data.side = $sp.getWidget('tracenow_sidebar');
 
+    /* ============================================================
+       ★ EDIT MODE (added): if opened with ?sys_id=…, load that
+       connection so the form pre-fills with its existing values
+       (incl. password). Runs only on the initial GET, not on save.
+    ============================================================ */
+    data.sys_id = $sp.getParameter('sys_id') || '';
+    data.isEdit = false;
 
-if (input && input.action === "saveConnection") {
-    var dup = new GlideRecord('x_sysus_tracenow_connection');
-	
-    dup.addQuery('url', input.url);
-    dup.addQuery('sys_created_by', gs.getUserName());
-    dup.query();
-
-    if (dup.next()) {
-
-        data.success = false;
-        data.error = "A connection with this URL already exists.";
-
-        return; // stop execution
+    if (data.sys_id && (!input || !input.action)) {
+        var loadGR = new GlideRecordSecure('x_sysus_tracenow_connection');
+        if (loadGR.get(data.sys_id) && loadGR.sys_created_by == gs.getUserName()) {
+            data.isEdit          = true;
+            data.connection_name = loadGR.getValue('name');
+            data.url             = loadGR.getValue('url');
+            data.username        = loadGR.getValue('username');
+            data.password        = loadGR.getValue('password');
+        } else {
+            data.sys_id = '';   // not found / not owned → fall back to create mode
+        }
     }
-    /* ================= VALIDATE CONNECTION ================= */
-
-    var connectionResult = validateAndFetchData(
-        input.url,
-        input.username,
-        input.password
-    );
 
 
-    /* ================= SUCCESS CASE ================= */
+    if (input && input.action === "saveConnection") {
 
-    if (connectionResult.isValid) {
+        /* ★ EDIT: are we updating an existing record we own? */
+        var editing = false;
+        var editGR  = new GlideRecordSecure('x_sysus_tracenow_connection');
+        if (input.sys_id && editGR.get(input.sys_id) &&
+            editGR.sys_created_by == gs.getUserName()) {
+            editing = true;
+        }
 
-        var gr = new GlideRecord(
-            'x_sysus_tracenow_connection'
+        var dup = new GlideRecordSecure('x_sysus_tracenow_connection');
+
+        dup.addQuery('url', input.url);
+        dup.addQuery('sys_created_by', gs.getUserName());
+        /* ★ EDIT: don't let the record being edited collide with itself */
+        if (editing) {
+            dup.addQuery('sys_id', '!=', input.sys_id);
+        }
+        dup.query();
+
+        if (dup.next()) {
+
+            data.success = false;
+            data.error = "A connection with this URL already exists.";
+
+            return; // stop execution
+        }
+        /* ================= VALIDATE CONNECTION ================= */
+
+        var connectionResult = validateAndFetchData(
+            input.url,
+            input.username,
+            input.password
         );
 
-        gr.initialize();
 
-        gr.name = input.connection_name;
-        gr.url = input.url;
-        gr.username = input.username;
-        gr.password = input.password;
-        gr.state = false;
+        /* ================= SUCCESS CASE ================= */
 
-        var sys_id = gr.insert();
+        if (connectionResult.isValid) {
 
+            var gr = new GlideRecordSecure(
+                'x_sysus_tracenow_connection'
+            );
 
-        if (sys_id) {
+            /* ★ EDIT: load the existing record to UPDATE; otherwise initialize a
+               new one. State is only set on create so an edit doesn't silently
+               flip an active connection back to inactive. */
+            if (editing) {
+                gr.getValue(input.sys_id);
+            } else {
+                gr.initialize();
+                gr.state = false;
+            }
 
-            /* ================= SUCCESS NOTIFICATION ================= */
+            gr.name = input.connection_name;
+            gr.url = input.url;
+            gr.username = input.username;
+            gr.password = input.password;
 
-            var successNotif =
-                new GlideRecord(
-                    "x_sysus_tracenow_notifications"
-                );
-
-            successNotif.initialize();
-
-            successNotif.user = gs.getUserID();
-
-            successNotif.title =
-                "Connection Created Successfully";
-
-            successNotif.message =
-                "Connection \"" +
-                input.connection_name +
-                "\" was verified and saved.";
-
-            successNotif.priority = "success";
-
-            successNotif.read = false;
-
-            successNotif.insert();
+            var sys_id = editing ? (gr.update() ? input.sys_id : '') : gr.insert();
 
 
-            /* ================= RESPONSE ================= */
+            if (sys_id) {
 
-            data.success = true;
+                /* ================= SUCCESS NOTIFICATION ================= */
 
-            data.new_sys_id = sys_id;
+                var successNotif =
+                    new GlideRecordSecure(
+                        "x_sysus_tracenow_notifications"
+                    );
 
-            data.message =
-                "Connection successful and data verified.";
+                successNotif.initialize();
+
+                successNotif.user = gs.getUserID();
+
+                successNotif.title =
+                    editing
+                    ? "Connection Updated Successfully"
+                    : "Connection Created Successfully";
+
+                successNotif.message =
+                    "Connection \"" +
+                    input.connection_name +
+                    "\" was verified and " +
+                    (editing ? "updated." : "saved.");
+
+                successNotif.priority = "success";
+
+                successNotif.read = false;
+
+                successNotif.insert();
+
+
+                /* ================= RESPONSE ================= */
+
+                data.success = true;
+
+                data.new_sys_id = sys_id;
+                data.isEdit     = editing;
+
+                data.message =
+                    "Connection successful and data verified.";
+
+            }
+
+            else {
+
+                /* ================= SAVE FAILED NOTIFICATION ================= */
+
+                var saveFailNotif =
+                    new GlideRecordSecure(
+                        "x_sysus_tracenow_notifications"
+                    );
+
+                saveFailNotif.initialize();
+
+                saveFailNotif.user = gs.getUserID();
+
+                saveFailNotif.title =
+                    "Connection Save Failed";
+
+                saveFailNotif.message =
+                    "Connection verified but failed to save locally.";
+
+                saveFailNotif.priority = "error";
+
+                saveFailNotif.read = false;
+
+                saveFailNotif.insert();
+
+
+                data.success = false;
+
+                data.error =
+                    "Connection verified, but failed to save record.";
+
+            }
 
         }
 
+
+        /* ================= VALIDATION FAILURE CASE ================= */
+
         else {
 
-            /* ================= SAVE FAILED NOTIFICATION ================= */
-
-            var saveFailNotif =
-                new GlideRecord(
+            var failNotif =
+                new GlideRecordSecure(
                     "x_sysus_tracenow_notifications"
                 );
 
-            saveFailNotif.initialize();
+            failNotif.initialize();
 
-            saveFailNotif.user = gs.getUserID();
+            failNotif.user = gs.getUserID();
 
-            saveFailNotif.title =
-                "Connection Save Failed";
+            failNotif.title =
+                "Connection Failed";
 
-            saveFailNotif.message =
-                "Connection verified but failed to save locally.";
+            failNotif.message =
+                "Connection \"" +
+                input.connection_name +
+                "\" could not be verified. " +
+                connectionResult.errorMessage;
 
-            saveFailNotif.priority = "error";
+            failNotif.priority = "error";
 
-            saveFailNotif.read = false;
+            failNotif.read = false;
 
-            saveFailNotif.insert();
+            failNotif.insert();
 
 
             data.success = false;
 
             data.error =
-                "Connection verified, but failed to save record.";
+                connectionResult.errorMessage;
 
         }
 
     }
 
 
-    /* ================= VALIDATION FAILURE CASE ================= */
 
-    else {
+    /* ================= VALIDATION FUNCTION ================= */
 
-        var failNotif =
-            new GlideRecord(
-                "x_sysus_tracenow_notifications"
+    function validateAndFetchData(
+        instanceUrl,
+        username,
+        password
+    ) {
+
+        var result = {
+            isValid: false,
+            errorMessage: ""
+        };
+
+        try {
+
+            var r = new sn_ws.RESTMessageV2();
+
+            r.setEndpoint(
+                instanceUrl +
+                '/api/now/table/sys_user?sysparm_limit=1'
             );
 
-        failNotif.initialize();
+            r.setHttpMethod('GET');
 
-        failNotif.user = gs.getUserID();
+            r.setBasicAuth(
+                username,
+                password
+            );
 
-        failNotif.title =
-            "Connection Failed";
+            r.setRequestHeader(
+                'Accept',
+                'application/json'
+            );
 
-        failNotif.message =
-            "Connection \"" +
-            input.connection_name +
-            "\" could not be verified. " +
-            connectionResult.errorMessage;
+            var response = r.execute();
 
-        failNotif.priority = "error";
+            var responseBody =
+                response.getBody();
 
-        failNotif.read = false;
-
-        failNotif.insert();
-
-
-        data.success = false;
-
-        data.error =
-            connectionResult.errorMessage;
-
-    }
-
-}
+            var statusCode =
+                response.getStatusCode();
 
 
+            if (statusCode === 200) {
 
-/* ================= VALIDATION FUNCTION ================= */
+                var parsedData =
+                    JSON.parse(responseBody);
 
-function validateAndFetchData(
-    instanceUrl,
-    username,
-    password
-) {
+                if (
+                    parsedData.result &&
+                    parsedData.result.length > 0
+                ) {
 
-    var result = {
-        isValid: false,
-        errorMessage: ""
-    };
+                    result.isValid = true;
 
-    try {
+                }
 
-        var r = new sn_ws.RESTMessageV2();
+                else {
 
-        r.setEndpoint(
-            instanceUrl +
-            '/api/now/table/sys_user?sysparm_limit=1'
-        );
+                    result.errorMessage =
+                        "Connected but no records returned.";
 
-        r.setHttpMethod('GET');
+                }
 
-        r.setBasicAuth(
-            username,
-            password
-        );
+            }
 
-        r.setRequestHeader(
-            'Accept',
-            'application/json'
-        );
+            else if (statusCode === 401) {
 
-        var response = r.execute();
-
-        var responseBody =
-            response.getBody();
-
-        var statusCode =
-            response.getStatusCode();
-
-
-        if (statusCode === 200) {
-
-            var parsedData =
-                JSON.parse(responseBody);
-
-            if (
-                parsedData.result &&
-                parsedData.result.length > 0
-            ) {
-
-                result.isValid = true;
+                result.errorMessage =
+                    "Authentication failed: Invalid username or password.";
 
             }
 
             else {
 
                 result.errorMessage =
-                    "Connected but no records returned.";
+                    "Connection failed with status code: " +
+                    statusCode;
 
             }
 
         }
 
-        else if (statusCode === 401) {
+        catch (ex) {
 
             result.errorMessage =
-                "Authentication failed: Invalid username or password.";
+                "Network error: " +
+                ex.message;
 
         }
 
-        else {
-
-            result.errorMessage =
-                "Connection failed with status code: " +
-                statusCode;
-
-        }
+        return result;
 
     }
-
-    catch (ex) {
-
-        result.errorMessage =
-            "Network error: " +
-            ex.message;
-
-    }
-
-    return result;
-
-}
 
 })();]]></script>
         <servicenow>false</servicenow>
@@ -563,14 +632,14 @@ function validateAndFetchData(
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 09:52:59</sys_created_on>
         <sys_id>95daf5d4930587100af5f4e9b903d613</sys_id>
-        <sys_mod_count>6</sys_mod_count>
+        <sys_mod_count>20</sys_mod_count>
         <sys_name>tracenow_create_connection</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_95daf5d4930587100af5f4e9b903d613</sys_update_name>
-        <sys_updated_by>munaib.ashraf</sys_updated_by>
-        <sys_updated_on>2026-06-03 07:13:51</sys_updated_on>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-06-22 10:13:30</sys_updated_on>
         <template><![CDATA[<div class="sp-layout">
 
   <!-- SIDEBAR -->
@@ -582,20 +651,20 @@ function validateAndFetchData(
   <div class="content-area">
 
     <!-- BACK -->
-    <a href="/_tracenow?id=tracenow_connection_list" class="back-link">
+    <a ng-click="c.goBack()" class="back-link" style="cursor:pointer;">
       <i class="fa fa-arrow-left"></i> Back to Connections
     </a>
 
     <!-- HERO -->
     <div class="hero-section">
-      <h1>New Source Connection</h1>
-      <p>Connect a ServiceNow instance to use for migrations</p>
+      <h1>{{c.data.isEdit ? 'Edit Connection' : 'New Source Connection'}}</h1>
+      <p>{{c.data.isEdit ? 'Update the credentials for your ServiceNow instance' : 'Connect a ServiceNow instance to use for migrations'}}</p>
     </div>
 
     <!-- INFO BANNER -->
     <div class="info-banner">
       <i class="fa fa-info-circle"></i>
-Connections are validated before saving. Ensure your credentials are accurate.
+      Connections are validated before saving. Ensure your credentials are accurate.
     </div>
 
     <!-- FORM CARD -->
@@ -612,6 +681,7 @@ Connections are validated before saving. Ensure your credentials are accurate.
 
       <form name="connectionForm" novalidate>
 
+        <input type="hidden" ng-model="c.data.sys_id">
         <!-- NAME -->
         <div class="form-group">
           <label>Connection Name *</label>
@@ -636,21 +706,21 @@ Connections are validated before saving. Ensure your credentials are accurate.
           <input type="password" ng-model="c.data.password" required>
         </div>
         <!-- ACTIONS -->
-   <div class="form-actions">
-<button type="button" class="btn-primary"
-        ng-click="c.connect()"
-        ng-disabled="c.loading">
+        <div class="form-actions">
+          <button type="button" class="btn-primary"
+                  ng-click="c.connect()"
+                  ng-disabled="c.loading">
 
-  <span ng-if="!c.loading">
-    Save Connection
-  </span>
+            <span ng-if="!c.loading">
+              {{c.data.isEdit ? 'Update Connection' : 'Save Connection'}}
+            </span>
 
-  <span ng-if="c.loading">
-    <i class="fa fa-spinner fa-spin"></i> Verifying...
-  </span>
+            <span ng-if="c.loading">
+              <i class="fa fa-spinner fa-spin"></i> Verifying...
+            </span>
 
-</button>
-</div>
+          </button>
+        </div>
 
       </form>
     </div>
@@ -661,9 +731,9 @@ Connections are validated before saving. Ensure your credentials are accurate.
 <div class="dm-snackbar" ng-class="{'show': c.showSnackbar, 'success': c.snackbarType === 'success', 'error': c.snackbarType === 'error'}">
   <div class="snackbar-content">
     <i class="fa" ng-class="{
-      'fa-check-circle': c.snackbarType === 'success',
-      'fa-times-circle': c.snackbarType === 'error'
-    }"></i>
+                            'fa-check-circle': c.snackbarType === 'success',
+                            'fa-times-circle': c.snackbarType === 'error'
+                            }"></i>
 
     <span>{{c.snackbarMessage}}</span>
   </div>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="ml_capability_definition_base">
+    <ml_capability_definition_base action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <capability display_value="NLU">b4ddf73453c73300d1dcddeeff7b1288</capability>
+        <current_solution_version>5</current_solution_version>
+        <dataset_language>en</dataset_language>
+        <fields/>
+        <filter/>
+        <pretrained>false</pretrained>
+        <request_source>api</request_source>
+        <solution_label>ml_x_sysus_x_sysus_tracenow_global_e01960bb93ddc3900af5f4e9b903d62b</solution_label>
+        <solution_name>ml_x_sysus_x_sysus_tracenow_global_e01960bb93ddc3900af5f4e9b903d62b</solution_name>
+        <solution_parameters/>
+        <solution_properties>{"authoringModel":{"intents":[{"name":"Migration Assistance","samples":[{"utterance":"connection"},{"utterance":"target"},{"utterance":"migration"},{"utterance":"migrate"},{"utterance":"record"},{"utterance":"queue"},{"utterance":"help"},{"utterance":"source"},{"utterance":"tracenow"},{"utterance":"connect"}],"testSamples":[],"entities":[]},{"name":"NO_INTENT","samples":[],"testSamples":[]}],"schemaVersion":"NY-1","vocabulary":[],"modelPurpose":"virtual_agent","entities":[],"confidenceThreshold":"0.7","lookupSources":[],"name":"ml_x_sysus_x_sysus_tracenow_global_e01960bb93ddc3900af5f4e9b903d62b","language":"en","version":"yokohama.0","properties":[{"name":"neuralModelPunctuationCleaning","value":"true"}]},"description":"Train NLU Solution","label":"ml_x_sysus_x_sysus_tracenow_global_e01960bb93ddc3900af5f4e9b903d62b","name":"ml_x_sysus_x_sysus_tracenow_global_e01960bb93ddc3900af5f4e9b903d62b","nluTrainingMode":"IntentClassifier","schedulingInfo":{"useCase":"Train NLU Solution"},"tags":["Train NLU Solution"],"trainingMode":"sync","trainingPipeline":{"pipelineName":"nlu_training_workflow_v1","pipelineInput":{"config":{"authoring_model":{"name":"ml_x_sysus_x_sysus_tracenow_global_e01960bb93ddc3900af5f4e9b903d62b","language":"en","confidenceThreshold":"0.7","modelPurpose":"virtual_agent","schemaVersion":"NY-1","version":"yokohama.0","entities":[],"intents":[{"name":"Migration Assistance","samples":[{"utterance":"connection"},{"utterance":"target"},{"utterance":"migration"},{"utterance":"migrate"},{"utterance":"record"},{"utterance":"queue"},{"utterance":"help"},{"utterance":"source"},{"utterance":"tracenow"},{"utterance":"connect"}],"testSamples":[],"entities":[]},{"name":"NO_INTENT","samples":[],"testSamples":[]}],"vocabulary":[],"lookupSources":[],"properties":[{"name":"neuralModelPunctuationCleaning","value":"true"}]}},"solutions":{},"datasets":{}}},"workflowAsyncCapability":false,"workflowConfiguration":{"trainingFrequency":"run_once"},"instance_name":"sysusademo7","g_bn":"Yokohama","g_jv":"27.378b85f3.0.0","g_bt":"glide-yokohama-12-18-2024__patch12-hotfix1b-04-17-2026","app_node_id":"app144189.ord101.service-now.com:sysusademo7002"}</solution_properties>
+        <stopwords>a6282a25533333008c5bddeeff7b12c3</stopwords>
+        <sys_class_name>ml_capability_definition_base</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-12 11:07:26</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>241960bb93ddc3900af5f4e9b903d62c</sys_id>
+        <sys_mod_count>15</sys_mod_count>
+        <sys_name>ml_x_sysus_x_sysus_tracenow_global_e01960bb93ddc3900af5f4e9b903d62b</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>ml_capability_definition_base_241960bb93ddc3900af5f4e9b903d62c</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-15 10:08:03</sys_updated_on>
+        <table/>
+        <training_frequency>run_once</training_frequency>
+        <triggered_source>API</triggered_source>
+        <word_vector_corpus/>
+    </ml_capability_definition_base>
+</record_update>

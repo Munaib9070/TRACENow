@@ -7,20 +7,22 @@
     c.showSuccessModal = false;
     c.status = "";
     c.failed = 0;
+    c.inserted = 0;
+    c.updated = 0;
+    c.total = 0;
+    c.duration = "";
     c.migrationResult = {};
     c.batchSize = 100;
     c.showToast = false;
     c.migrating = false;
     c.progress = 0;
-    c.current = 0;
-    c.table_count = 0;
-    c.total = 0;
-    c.check = sessionStorage.getItem('currentId');
+    c.cart = [];
     c.logs = [];
     c.isCompleted = false;
+    c.check = sessionStorage.getItem('currentId');
     c.conn_name = sessionStorage.getItem('conn_name');
 
-    /* ========================= NOTIFICATION SYSTEM ========================= */
+    /* ========================= NOTIFICATION ========================= */
     c.createNotification = function(notification) {
         $scope.server.get({
             action: "createNotification",
@@ -30,15 +32,7 @@
         });
     };
 
-    /* ========================= MIGRATION MODAL ========================= */
-    c.openMigrationModal = function() {
-        if (c.getTotalRecords() === 0) return;
-        c.showModal = true;
-        c.migrationResult = {};
-        c.progress = 0;
-        c.startMigration();
-    };
-
+    /* ========================= MODAL CONTROLS ========================= */
     c.closeModal = function() {
         c.showModal = false;
     };
@@ -47,13 +41,10 @@
         c.showSuccessModal = false;
     };
 
-    /* ========================= CART DATA ========================= */
-    c.cart = [];
-
     /* ========================= LOAD CART ========================= */
     c.loadCart = function() {
         var raw = JSON.parse(sessionStorage.getItem("migration_cart") || "[]");
-				//console.log('raw = ' + JSON.stringify(raw));
+        console.log('raw = ' + JSON.stringify(raw));
         c.selected_recs = raw.length;
 
         if (c.previousCartLength !== undefined && raw.length > c.previousCartLength) {
@@ -77,20 +68,8 @@
         }
 
         var grouped = {};
-       raw.forEach(function(item) {
-    // ✅ FIX: Normalize "Change Request" to "change_request" directly at processing time
-    var tableName = (item.table || "")
-        .toLowerCase()
-        .replace(/\s+/g, '_')
-        .replace(/[^a-z0-9_]/g, '');
-    
-    if (!grouped[tableName]) {
-        grouped[tableName] = {
-            name: tableName,
-            label: item.label || item.table, // Keep the clean display name here
-            records: []
-        };
-    } // ✅ FIX: normalize to lowercase
+        raw.forEach(function(item) {
+            var tableName = (item.table || "");
             if (!grouped[tableName]) {
                 grouped[tableName] = {
                     name: tableName,
@@ -104,14 +83,15 @@
                 size: item.size || 0,
                 table: tableName,
                 sys_id: item.sys_id || "",
-                state: item.state || "" // ✅ FIX: preserve state
+                state: item.state || ""
             });
         });
 
         c.cart = Object.keys(grouped).map(function(key) {
             return grouped[key];
         });
-				//console.log('cart = ' + JSON.stringify(c.cart));
+
+        console.log('cart = ' + JSON.stringify(c.cart));
         window.dispatchEvent(new Event("cartUpdated"));
         $scope.$emit("cartUpdated");
     };
@@ -120,24 +100,26 @@
     c.startMigration = function() {
         if (c.getTotalRecords() === 0) return;
 
+        c.logs = [];
         c.logs.push("Starting migration...");
         c.showModal = true;
+        c.showSuccessModal = false;
         c.migrating = true;
         c.progress = 0;
+        c.status = "";
         c.migrationResult = {};
+        c.inserted = 0;
+        c.updated = 0;
+        c.failed = 0;
 
-        // ✅ FIX: cartRaw is a flat array, count directly
         var cartRaw = JSON.parse(sessionStorage.getItem('migration_cart') || '[]');
         c.total = cartRaw.length;
 
-        var progressInterval;
-        progressInterval = setInterval(function() {
+        var progressInterval = setInterval(function() {
             if (c.progress < 90) {
                 c.progress += Math.floor(Math.random() * 5) + 1;
             }
-            if (c.progress > 90) {
-                c.progress = 90;
-            }
+            if (c.progress > 90) c.progress = 90;
             $scope.$applyAsync();
         }, 500);
 
@@ -150,46 +132,59 @@
             clearInterval(progressInterval);
             c.progress = 100;
             c.migrating = false;
+            c.isCompleted = true;
 
-            if (response.data.success) {
-                //var migration_logs = response.data.result.logs;
-                //for (var log = 0; log < migration_logs.length; log++) {
-                  //  c.logs.push(migration_logs[log]);
-                //}
-                c.logs.push("Migration started at " + response.data.sTime);
-                c.logs.push("Migration completed at " + response.data.eTime);
-                c.isCompleted = true;
+            var d = response.data;
 
-                //var failed = (response.data.result &&
-                  //            response.data.result.stats &&
-                    //          response.data.result.stats.failed) || 0;
-                //c.failed = failed;
-                c.status = "success";
+            c.inserted = d.inserted || 0;
+            c.updated  = d.updated  || 0;
+            c.failed   = d.failed   || 0;
+            c.total    = d.total    || c.total;
+            c.duration = d.duration || "N/A";
+            c.url      = d.url      || "";
+
+            if (d.success || d.partial) {
+                c.logs.push("Migration started at " + (d.sTime || ""));
+                c.logs.push("Migration completed at " + (d.eTime || ""));
+
+                // ✅ Determine final status
+                if (c.failed > 0 && (c.inserted + c.updated) > 0) {
+                    c.status = "partial";
+                    c.migrationResult = {
+                        message: c.failed + " record(s) failed. " + (c.inserted + c.updated) + " migrated successfully."
+                    };
+                } else if (c.failed > 0 && (c.inserted + c.updated) === 0) {
+                    c.status = "failed";
+                    c.migrationResult = {
+                        message: d.message || "All records failed to migrate."
+                    };
+                } else {
+                    c.status = "success";
+                    c.migrationResult = d.result || {};
+                }
 
                 c.showModal = false;
                 c.showSuccessModal = true;
-                c.duration = response.data.duration || "2m 34s";
-                c.inserted = response.data.inserted || 0;
-                c.updated = response.data.updated || 0;
-                c.total = response.data.total || 0;
-                c.url = response.data.url || 0;
-                c.migrationResult = response.data.result;
-                c.clearCart();
+
+                // Only clear cart on full success or partial
+                if (c.status !== "failed") {
+                    c.clearCart();
+                }
 
             } else {
-                c.migrating = false;
-                c.isCompleted = true;
+                // Explicit failure from server
                 c.status = "failed";
-                //c.failed = c.total;
                 c.showModal = false;
-                c.showSuccessModal = false;
+                c.showSuccessModal = true;
                 c.migrationResult = {
                     error: true,
-                    message: response.data.message || "Migration failed"
+                    message: d.message || "Migration failed due to an unexpected error."
                 };
             }
 
-        }, function(err) {
+            console.log('Final status: ' + c.status);
+
+        }).catch(function(error) {
             clearInterval(progressInterval);
             c.migrating = false;
             c.isCompleted = true;
@@ -200,9 +195,9 @@
             c.showSuccessModal = true;
             c.migrationResult = {
                 error: true,
-                message: "Migration failed"
+                message: "Migration failed due to a connection or server error."
             };
-            console.error(err);
+            console.error("Migration catch error: ", error);
         });
     };
 
@@ -224,9 +219,7 @@
         }
 
         var raw = JSON.parse(sessionStorage.getItem("migration_cart") || "[]");
-        raw = raw.filter(function(r) {
-            return r.sys_id !== rec.sys_id;
-        });
+        raw = raw.filter(function(r) { return r.sys_id !== rec.sys_id; });
         sessionStorage.setItem("migration_cart", JSON.stringify(raw));
         sessionStorage.setItem('cart_items', JSON.stringify(raw));
 
@@ -264,9 +257,7 @@
     /* ========================= TOTALS ========================= */
     c.getTotalRecords = function() {
         var total = 0;
-        c.cart.forEach(function(table) {
-            total += table.records.length;
-        });
+        c.cart.forEach(function(table) { total += table.records.length; });
         return total;
     };
 
@@ -277,9 +268,7 @@
     c.getTotalSize = function() {
         var total = 0;
         c.cart.forEach(function(table) {
-            table.records.forEach(function(rec) {
-                total += parseFloat(rec.size || 0);
-            });
+            table.records.forEach(function(rec) { total += parseFloat(rec.size || 0); });
         });
         return total.toFixed(1);
     };
@@ -294,778 +283,781 @@
     c.loadCart();
 
     window.addEventListener("storage", function() {
-        $scope.$apply(function() {
-            c.loadCart();
-        });
+        $scope.$apply(function() { c.loadCart(); });
     });
 };]]></client_script>
         <controller_as>c</controller_as>
-        <css>/* ===== Main Container ===== */&#13;
-.migration-cart {&#13;
-  display: flex;&#13;
-  max-height: calc(100vh - 64px);&#13;
-  position: relative;&#13;
-  overflow-x: hidden;&#13;
-  background: linear-gradient(&#13;
-    to bottom right,&#13;
-    #ffffff 0%,&#13;
-    rgba(17, 106, 248, 0.05) 50%,&#13;
-    rgba(10, 80, 245, 0.10) 100%&#13;
-  );&#13;
-}&#13;
-&#13;
-.con {&#13;
-  display: flex;&#13;
-  min-height: 100vh;&#13;
-  overflow-x: hidden;&#13;
-}&#13;
-&#13;
-.sidebar {&#13;
-  flex-basis: 260px;&#13;
-  flex-shrink: 0;&#13;
-  height: 100%;&#13;
-}&#13;
-&#13;
-.cart-svg-icon s{&#13;
-  color: #9BC0FC;&#13;
-}&#13;
-&#13;
-.main {&#13;
-  position: relative;&#13;
-  display: flex;&#13;
-  flex-direction: column;&#13;
-  gap: 30px;&#13;
-  margin: 0 auto;&#13;
-  overflow-y: auto;&#13;
-  overflow-x: hidden;&#13;
-  height: calc(100vh - 64px);&#13;
-  width: 100%;&#13;
-  min-width: 0;&#13;
-  padding: 30px 15%;&#13;
-  box-sizing: border-box;&#13;
-}&#13;
-&#13;
-/* ===== Header ===== */&#13;
-.cart-header {&#13;
-  display: flex;&#13;
-  justify-content: space-between;&#13;
-  align-items: center;&#13;
-  margin-bottom: 25px;&#13;
-}&#13;
-&#13;
-.cart-header h2 {&#13;
-  font-weight: 700;&#13;
-  margin-bottom: 5px;&#13;
-}&#13;
-&#13;
-.subtitle {&#13;
-  color: #64748b;&#13;
-  font-size: 14px;&#13;
-}&#13;
-&#13;
-/* ===== Back Button ===== */&#13;
-.back-link {&#13;
-  display: inline-flex;&#13;
-  align-items: center;&#13;
-  gap: 6px;&#13;
-  color: #6b7280;&#13;
-  text-decoration: none;&#13;
-  font-size: 14px;&#13;
-  margin-bottom: 10px;&#13;
-  transition: all 0.2s ease;&#13;
-}&#13;
-&#13;
-.back-link:hover {&#13;
-  color: #116AF8;&#13;
-}&#13;
-&#13;
-/* ===== Buttons ===== */&#13;
-.btn-danger {&#13;
-  background: #fff0f0;&#13;
-  border: 1px solid #ffc9c9;&#13;
-  color: #dc2626;&#13;
-  border-radius: 8px;&#13;
-  padding: 6px 14px;&#13;
-  transition: transform 0.15s ease;&#13;
-  box-shadow: none !important;&#13;
-}&#13;
-&#13;
-.btn-danger:hover {&#13;
-  transform: scale(1.08);&#13;
-  background: #fff0f0;&#13;
-  box-shadow: none !important;&#13;
-}&#13;
-&#13;
-.btn-danger:focus,&#13;
-.btn-danger:active,&#13;
-.btn-danger:focus:active {&#13;
-  box-shadow: none !important;&#13;
-  outline: none !important;&#13;
-  background: #fff0f0 !important;&#13;
-  color: #dc2626 !important;&#13;
-  transform: scale(1.05);&#13;
-}&#13;
-&#13;
-.btn {&#13;
-  transition: none !important;&#13;
-}&#13;
-&#13;
-.btn-danger:active,&#13;
-.btn-danger:focus {&#13;
-  background: #fff0f0 !important;&#13;
-  color: #dc2626 !important;&#13;
-  box-shadow: none !important;&#13;
-  outline: none;&#13;
-}&#13;
-&#13;
-.btn-primary {&#13;
-  background: linear-gradient(to right, #116AF8, #0A50F5);&#13;
-  box-shadow: 0 10px 20px rgba(17, 106, 248, 0.25);&#13;
-  transition: all 0.3s ease;&#13;
-  border: none;&#13;
-  padding: 10px 20px;&#13;
-  border-radius: 8px;&#13;
-  color: white;&#13;
-}&#13;
-&#13;
-.btn-primary:hover {&#13;
-  background: linear-gradient(to right, #0A50F5, #0842d0);&#13;
-  box-shadow: 0 10px 25px rgba(10, 80, 245, 0.35);&#13;
-}&#13;
-&#13;
-/* ===== Stats ===== */&#13;
-.stats-container {&#13;
-  display: flex;&#13;
-  gap: 20px;&#13;
-  margin-bottom: 25px;&#13;
-}&#13;
-&#13;
-.stat-box {&#13;
-  flex: 1;&#13;
-  background: white;&#13;
-  padding: 22px;&#13;
-  border-radius: 14px;&#13;
-  text-align: center;&#13;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.05);&#13;
-}&#13;
-&#13;
-.stat-box h3 {&#13;
-  font-size: 26px;&#13;
-  font-weight: 700;&#13;
-  color: #116AF8;&#13;
-}&#13;
-&#13;
-/* ===== Cart Section ===== */&#13;
-.cart-section {&#13;
-  background: white;&#13;
-  padding: 25px;&#13;
-  border-radius: 14px;&#13;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.04);&#13;
-  margin-bottom: 25px;&#13;
-  width: 100%;&#13;
-  box-sizing: border-box;&#13;
-}&#13;
-&#13;
-.cart-section.empty-mode {&#13;
-  display: flex;&#13;
-  justify-content: center;&#13;
-  align-items: center;&#13;
-  max-width: 100%;       /* ← was fixed 900px causing x-scroll */&#13;
-  min-height: 420px;&#13;
-  margin: 0 auto;&#13;
-  border-radius: 18px;&#13;
-}&#13;
-&#13;
-.cart-section.has-records {&#13;
-  display: block;&#13;
-}&#13;
-&#13;
-.cart-section h4 {&#13;
-  margin-bottom: 20px;&#13;
-  font-weight: 600;&#13;
-}&#13;
-&#13;
-.empty-cart-screen {&#13;
-  width: 100%;&#13;
-  max-width: 650px;&#13;
-  text-align: center;&#13;
-  display: flex;&#13;
-  flex-direction: column;&#13;
-  justify-content: center;&#13;
-  align-items: center;&#13;
-}&#13;
-&#13;
-.empty-icon {&#13;
-  width: 90px;&#13;
-  height: 90px;&#13;
-  border-radius: 50%;&#13;
-  background: #eef4ff;       /* ← light blue tint */&#13;
-  display: flex;&#13;
-  align-items: center;&#13;
-  justify-content: center;&#13;
-  margin-bottom: 25px;&#13;
-  font-size: 34px;&#13;
-  color: #116AF8;            /* ← was #94a3b8 */&#13;
-}&#13;
-&#13;
-.empty-title {&#13;
-  font-size: 34px;&#13;
-  font-weight: 700;&#13;
-  color: #0f172a;&#13;
-  margin-bottom: 12px;&#13;
-}&#13;
-&#13;
-.empty-subtitle {&#13;
-  font-size: 17px;&#13;
-  color: #475569;&#13;
-  line-height: 1.7;&#13;
-  margin-bottom: 30px;&#13;
-  max-width: 600px;&#13;
-}&#13;
-&#13;
-.browse-btn {&#13;
-  background: #116AF8;&#13;
-  color: white;&#13;
-  padding: 14px 30px;&#13;
-  border-radius: 10px;&#13;
-  text-decoration: none;&#13;
-  font-weight: 600;&#13;
-  transition: all 0.3s ease;&#13;
-}&#13;
-&#13;
-.browse-btn:hover {&#13;
-  background: linear-gradient(to right, #116AF8, #0A50F5);&#13;
-  box-shadow: 0 10px 20px rgba(17, 106, 248, 0.3);&#13;
-  color: white;&#13;
-}&#13;
-&#13;
-.browse-btn i {&#13;
-  transition: transform 0.25s ease;&#13;
-  display: inline-block;&#13;
-}&#13;
-&#13;
-.browse-btn:hover i {&#13;
-  transform: translateX(4px);&#13;
-}&#13;
-&#13;
-/* ===== Table Card ===== */&#13;
-.table-card {&#13;
-  border-radius: 12px;&#13;
-  margin-bottom: 20px;&#13;
-  background: #f9fafc;&#13;
-  border: 1px solid #e2e8f0;&#13;
-}&#13;
-&#13;
-.table-header {&#13;
-  display: flex;&#13;
-  align-items: center;&#13;
-  justify-content: space-between;&#13;
-  padding: 18px 22px;&#13;
-  background: #f1f5f9;&#13;
-  text-transform: uppercase;&#13;
-  flex-wrap: nowrap;&#13;
-}&#13;
-&#13;
-.table-header,&#13;
-.table-header * {&#13;
-  white-space: nowrap !important;&#13;
-}&#13;
-&#13;
-.table-header .left {&#13;
-  overflow: hidden;&#13;
-  text-overflow: ellipsis;&#13;
-}&#13;
-&#13;
-.table-header small {&#13;
-  font-weight: 700;&#13;
-  font-size: 14px;&#13;
-  color: #334155;&#13;
-}&#13;
-&#13;
-.badge-primary {&#13;
-  background: #116AF8;&#13;
-  padding: 8px 18px;&#13;
-  border-radius: 999px;&#13;
-  color: white;&#13;
-  display: inline-flex;&#13;
-  align-items: center;&#13;
-  justify-content: center;&#13;
-  min-height: 40px;&#13;
-  line-height: 1;&#13;
-}&#13;
-&#13;
-/* ===== Record ===== */&#13;
-.record-item {&#13;
-  display: flex;&#13;
-  justify-content: space-between;&#13;
-  padding: 18px;&#13;
-  border-top: 1px solid #e5e7eb;&#13;
-}&#13;
-&#13;
-.record-number {&#13;
-  color: #116AF8;&#13;
-  font-weight: 600;&#13;
-}&#13;
-&#13;
-.size-badge {&#13;
-  background: #eef4ff;         /* ← was generic #eef2ff */&#13;
-  color: #116AF8;              /* ← added for consistency */&#13;
-  padding: 3px 10px;&#13;
-  border-radius: 8px;&#13;
-}&#13;
-&#13;
-/* ===== Batch / Ready ===== */&#13;
-.ready-section {&#13;
-  background: linear-gradient(135deg, #dbeafe, #eff6ff);&#13;
-  padding: 25px;&#13;
-  border-radius: 14px;&#13;
-  margin: 0 0 20px 0;&#13;
-  display: flex;&#13;
-  justify-content: space-between;&#13;
-  align-items: center;&#13;
-}&#13;
-&#13;
-/* ===== Toast ===== */&#13;
-.migration-toast {&#13;
-  position: fixed;&#13;
-  bottom: 30px;&#13;
-  right: 30px;&#13;
-  background: #f1f5f9;&#13;
-  border-radius: 12px;&#13;
-  padding: 16px 20px;&#13;
-}&#13;
-&#13;
-/* ===== Loader ===== */&#13;
-.migration-loader {&#13;
-  position: fixed;&#13;
-  inset: 0;&#13;
-  background: rgba(0,0,0,0.5);&#13;
-  display: flex;&#13;
-  justify-content: center;&#13;
-  align-items: center;&#13;
-  flex-direction: column;&#13;
-}&#13;
-&#13;
-.spinner {&#13;
-  width: 50px;&#13;
-  height: 50px;&#13;
-  border: 5px solid #9BC0FC;   /* ← was #ccc */&#13;
-  border-top: 5px solid #116AF8;  /* ← was #4CAF50 */&#13;
-  border-radius: 50%;&#13;
-  animation: spin 1s linear infinite;&#13;
-}&#13;
-&#13;
-@keyframes spin {&#13;
-  100% { transform: rotate(360deg); }&#13;
-}&#13;
-&#13;
-/* ===== Modern Migration Modal ===== */&#13;
-.migration-modal-backdrop {&#13;
-  position: fixed;&#13;
-  inset: 0;&#13;
-  display: flex;&#13;
-  align-items: center;     /* vertical center */&#13;
-  justify-content: center; /* horizontal center */&#13;
-  background: rgba(0,0,0,0.55);&#13;
-  z-index: 9999;&#13;
-&#13;
-  /* 🔥 important fixes */&#13;
-  padding: 20px;           /* prevents edge sticking on small screens */&#13;
-  box-sizing: border-box;&#13;
-} 	&#13;
-.modern-migration-modal {&#13;
-  width: 520px;&#13;
-  padding: 40px 35px;&#13;
-  border-radius: 18px;&#13;
-  text-align: center;&#13;
-  position: relative;&#13;
-&#13;
-  background: linear-gradient(&#13;
-    135deg,&#13;
-    #0A50F5 0%,&#13;
-    #116AF8 50%,&#13;
-    #1e3a8a 100%&#13;
-  );&#13;
-&#13;
-  color: white;&#13;
-  box-shadow: 0 25px 60px rgba(17,106,248,0.35);&#13;
-  overflow: hidden;&#13;
-}&#13;
-&#13;
-/* subtle grid overlay */&#13;
-.modern-migration-modal::before {&#13;
-  content: "";&#13;
-  position: absolute;&#13;
-  inset: 0;&#13;
-  background-image:&#13;
-    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),&#13;
-    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);&#13;
-  background-size: 40px 40px;&#13;
-  opacity: 0.3;&#13;
-}&#13;
-&#13;
-/* ===== Icon ===== */&#13;
-  .modal-icon {&#13;
-  width: 70px;&#13;
-  height: 70px;&#13;
-  margin: 0 auto 20px;&#13;
-  border-radius: 16px;&#13;
-&#13;
-  //background: linear-gradient(to right, #22d3ee, #06b6d4);&#13;
-  display: flex;&#13;
-  align-items: center;&#13;
-  justify-content: center;&#13;
-&#13;
-  font-size: 30px;&#13;
-  transform: rotate(-10deg);&#13;
-}&#13;
-/* ===== ICON PULSE ANIMATION ===== */&#13;
-@keyframes zoomPulse {&#13;
-  0% {&#13;
-    transform: scale(1) rotate(-10deg);&#13;
-  }&#13;
-&#13;
-  50% {&#13;
-    transform: scale(1.15) rotate(-10deg);&#13;
-  }&#13;
-&#13;
-  100% {&#13;
-    transform: scale(1) rotate(-10deg);&#13;
-  }&#13;
-}&#13;
-&#13;
-.icon-animate {&#13;
-  animation: zoomPulse 1.6s ease-in-out infinite;&#13;
-}&#13;
-/* ===== Title ===== */&#13;
-.modern-migration-modal h2 {&#13;
-  font-size: 26px;&#13;
-  font-weight: 700;&#13;
-  margin-bottom: 10px;&#13;
-}&#13;
-&#13;
-/* ===== Subtitle ===== */&#13;
-.modal-subtitle {&#13;
-  font-size: 14px;&#13;
-  opacity: 0.9;&#13;
-  margin-bottom: 30px;&#13;
-}&#13;
-&#13;
-/* ===== Stats ===== */&#13;
-.modal-stats {&#13;
-  display: flex;&#13;
-  gap: 20px;&#13;
-  margin-bottom: 25px;&#13;
-}&#13;
-&#13;
-.modal-stat-box {&#13;
-  flex: 1;&#13;
-  padding: 18px;&#13;
-  border-radius: 14px;&#13;
-&#13;
-  background: rgba(255,255,255,0.08);&#13;
-  backdrop-filter: blur(10px);&#13;
-&#13;
-  border: 1px solid rgba(255,255,255,0.15);&#13;
-}&#13;
-&#13;
-.modal-stat-box span {&#13;
-  font-size: 12px;&#13;
-  opacity: 0.85;&#13;
-}&#13;
-&#13;
-.modal-stat-box h3 {&#13;
-  margin-top: 8px;&#13;
-  font-size: 24px;&#13;
-  font-weight: 700;&#13;
-}&#13;
-&#13;
-/* ===== Progress Bar ===== */&#13;
-.modern-progress {&#13;
-  width: 100%;&#13;
-  height: 10px;&#13;
-  background: rgba(255,255,255,0.2);&#13;
-  border-radius: 999px;&#13;
-  overflow: hidden;&#13;
-  margin-bottom: 15px;&#13;
-}&#13;
-&#13;
-.modern-progress-fill {&#13;
-  height: 100%;&#13;
-  background: linear-gradient(&#13;
-    to right,&#13;
-    #22d3ee,&#13;
-    #9BC0FC,&#13;
-    #116AF8&#13;
-  );&#13;
-  transition: width 0.4s ease;&#13;
-}&#13;
-&#13;
-/* ===== Note ===== */&#13;
-.modal-note {&#13;
-  font-size: 12px;&#13;
-  opacity: 0.85;&#13;
-}&#13;
-/* ===== Success Modal ===== */&#13;
-.success-modal {&#13;
-  width: 520px;&#13;
-  padding: 35px;&#13;
-  border-radius: 16px;&#13;
-  text-align: center;&#13;
-  position: relative;&#13;
-&#13;
-  background: linear-gradient(135deg, #e6f4ea, #cfe9db);&#13;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.15);&#13;
-}&#13;
-&#13;
-/* Close */&#13;
-.success-close {&#13;
-  position: absolute;&#13;
-  top: 15px;&#13;
-  right: 18px;&#13;
-  cursor: pointer;&#13;
-  font-size: 20px;&#13;
-  color: #64748b;&#13;
-}&#13;
-&#13;
-/* SUCCESS */&#13;
-.success-bg {&#13;
-  background: #16a34a;&#13;
-}&#13;
-&#13;
-/* FAILED */&#13;
-.failed-bg {&#13;
-  background: #dc2626;&#13;
-}&#13;
-/* ERROR TEXT */&#13;
-.error-message {&#13;
-  margin-top: 15px;&#13;
-  font-size: 14px;&#13;
-  color: #334155;&#13;
-  line-height: 1.6;&#13;
-  background: rgba(255,255,255,0.6);&#13;
-  padding: 14px;&#13;
-  border-radius: 10px;&#13;
-  word-break: break-word;&#13;
-}&#13;
-/* icon base */&#13;
-.success-icon {&#13;
-  width: 80px;&#13;
-  height: 80px;&#13;
-  margin: 0 auto 20px;&#13;
-  border-radius: 50%;&#13;
-  color: white;&#13;
-  font-size: 36px;&#13;
-  display: flex;&#13;
-  align-items: center;&#13;
-  justify-content: center;&#13;
-}&#13;
-&#13;
-/* Title */&#13;
-.success-modal h2 {&#13;
-  font-size: 24px;&#13;
-  font-weight: 700;&#13;
-  color: #0f172a;&#13;
-}&#13;
-&#13;
-/* Subtitle */&#13;
-.success-sub {&#13;
-  margin-top: 8px;&#13;
-  font-size: 14px;&#13;
-  color: #475569;&#13;
-}&#13;
-&#13;
-/* Stats */&#13;
-.success-stats {&#13;
-  display: flex;&#13;
-  gap: 15px;&#13;
-  margin: 25px 0;&#13;
-}&#13;
-&#13;
-.success-box {&#13;
-  flex: 1;&#13;
-  background: #ffffff;&#13;
-  padding: 18px;&#13;
-  border-radius: 12px;&#13;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.05);&#13;
-}&#13;
-&#13;
-.success-green {&#13;
-  border: 2px solid #16a34a;&#13;
-}&#13;
-&#13;
-.success-box h3 {&#13;
-  font-size: 22px;&#13;
-  margin: 8px 0;&#13;
-}&#13;
-&#13;
-.success-box p {&#13;
-  font-size: 12px;&#13;
-  color: #64748b;&#13;
-}&#13;
-&#13;
-/* Buttons */&#13;
-.success-actions {&#13;
-  display: flex;&#13;
-  justify-content: center;&#13;
-  gap: 12px;&#13;
-}&#13;
-&#13;
-.btn-secondary {&#13;
-  background: #f1f5f9;&#13;
-  border: none;&#13;
-  padding: 10px 18px;&#13;
-  border-radius: 8px;&#13;
-}&#13;
-&#13;
-.btn-success {&#13;
-  background: #16a34a;&#13;
-  color: white;&#13;
-  border: none;&#13;
-  padding: 10px 18px;&#13;
-  border-radius: 8px;&#13;
-}&#13;
-/* ===== Preview ===== */&#13;
-.preview-overlay {&#13;
-  position: fixed;&#13;
-  inset: 0;&#13;
-  background: rgba(15, 23, 42, 0.45);&#13;
-  display: flex;&#13;
-  justify-content: center;&#13;
-  align-items: center;&#13;
-  z-index: 9999;&#13;
-}&#13;
-&#13;
-.preview-modal {&#13;
-  background: white;&#13;
-  width: 620px;&#13;
-  border-radius: 18px;&#13;
-  padding: 30px;&#13;
-  box-shadow: 0 20px 45px rgba(17, 106, 248, 0.15);  /* ← blue tint */&#13;
-  position: relative;&#13;
-}&#13;
-&#13;
-.preview-close {&#13;
-  position: absolute;&#13;
-  top: 18px;&#13;
-  right: 20px;&#13;
-  font-size: 24px;&#13;
-  cursor: pointer;&#13;
-  color: #64748b;&#13;
-  font-weight: 400;&#13;
-  transition: all 0.2s ease;&#13;
-}&#13;
-&#13;
-.preview-close:hover {&#13;
-  color: #116AF8;              /* ← was #0f172a */&#13;
-  transform: scale(1.1);&#13;
-}&#13;
-&#13;
-.preview-title {&#13;
-  font-size: 24px;&#13;
-  font-weight: 700;&#13;
-  color: #116AF8;              /* ← was #1e293b */&#13;
-  margin-bottom: 28px;&#13;
-}&#13;
-&#13;
-.preview-grid {&#13;
-  display: grid;&#13;
-  grid-template-columns: 1fr 1fr;&#13;
-  gap: 22px;&#13;
-}&#13;
-&#13;
-.preview-grid label {&#13;
-  display: block;&#13;
-  font-size: 13px;&#13;
-  font-weight: 600;&#13;
-  color: #116AF8;              /* ← was #64748b */&#13;
-  margin-bottom: 6px;&#13;
-}&#13;
-&#13;
-.preview-grid div {&#13;
-  font-size: 15px;&#13;
-  color: #0f172a;&#13;
-  line-height: 1.5;&#13;
-}&#13;
-&#13;
-.full-width {&#13;
-  grid-column: 1 / span 2;&#13;
-}&#13;
-&#13;
-.preview-desc {&#13;
-  background: #eef4ff;         /* ← was #f8fafc, now light blue */&#13;
-  padding: 14px;&#13;
-  border-radius: 10px;&#13;
-  min-height: 60px;&#13;
-}&#13;
-&#13;
-.slider {&#13;
-  background: #116AF8;&#13;
-  color: #116AF8;&#13;
-  accent-color: #116AF8;       /* ← ensures native slider thumb color */&#13;
-}&#13;
-&#13;
-.queue-header {&#13;
-  display: flex;&#13;
-  justify-content: space-between;&#13;
-  align-items: center;&#13;
-  margin-bottom: 20px;&#13;
-}&#13;
-&#13;
-.queue-header h4 {&#13;
-  margin: 0;&#13;
-  font-weight: 600;&#13;
-}&#13;
-&#13;
-.queue-start-btn {&#13;
-  min-width: 160px;&#13;
-}&#13;
-&#13;
-.table-header-actions {&#13;
-  display: flex;&#13;
-  align-items: center;&#13;
-  gap: 12px;&#13;
-}&#13;
-&#13;
-.table-start-btn {&#13;
-  background: transparent;&#13;
-  border: 1px solid #116AF8;&#13;
-  color: #116AF8;&#13;
-  padding: 8px 18px;&#13;
-  border-radius: 999px;&#13;
-  font-size: 13px;&#13;
-  font-weight: 700;&#13;
-  min-height: 40px;&#13;
-  display: inline-flex;&#13;
-  align-items: center;&#13;
-  justify-content: center;&#13;
-  transition: all 0.3s ease;&#13;
-}&#13;
-&#13;
-.table-start-btn:hover {&#13;
-  background: linear-gradient(to right, #116AF8, #0A50F5);&#13;
-  color: white;&#13;
-  border-color: transparent;&#13;
-  box-shadow: 0 10px 20px rgba(17, 106, 248, 0.25);&#13;
-}&#13;
-&#13;
-.table-start-btn svg {&#13;
-  margin-right: 8px;&#13;
-  display: inline-block;&#13;
-  vertical-align: middle;&#13;
-}&#13;
-&#13;
-.actions {&#13;
-  display: flex;&#13;
-  align-items: center;&#13;
-  gap: 12px;&#13;
-}&#13;
-&#13;
-.action-icon {&#13;
-  cursor: pointer;&#13;
-  color: #116AF8;              /* ← added */&#13;
-  transition: color 0.2s&#13;
-}    </css>
+        <css>/* ===== Main Container ===== */
+.migration-cart {
+  display: flex;
+  max-height: calc(100vh - 64px);
+  position: relative;
+  overflow-x: hidden;
+  background: linear-gradient(
+    to bottom right,
+    #ffffff 0%,
+    rgba(17, 106, 248, 0.05) 50%,
+    rgba(10, 80, 245, 0.10) 100%
+  );
+}
+
+.con {
+  display: flex;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.sidebar {
+  flex-basis: 260px;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+.cart-svg-icon s{
+  color: #9BC0FC;
+}
+
+.main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  margin: 0 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: calc(100vh - 64px);
+  width: 100%;
+  min-width: 0;
+  padding: 30px 15%;
+  box-sizing: border-box;
+}
+
+/* ===== Header ===== */
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.cart-header h2 {
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* ===== Back Button ===== */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.back-link:hover {
+  color: #116AF8;
+}
+
+/* ===== Buttons ===== */
+.btn-danger {
+  background: #fff0f0;
+  border: 1px solid #ffc9c9;
+  color: #dc2626;
+  border-radius: 8px;
+  padding: 6px 14px;
+  transition: transform 0.15s ease;
+  box-shadow: none !important;
+}
+
+.btn-danger:hover {
+  transform: scale(1.08);
+  background: #fff0f0;
+  box-shadow: none !important;
+}
+
+.btn-danger:focus,
+.btn-danger:active,
+.btn-danger:focus:active {
+  box-shadow: none !important;
+  outline: none !important;
+  background: #fff0f0 !important;
+  color: #dc2626 !important;
+  transform: scale(1.05);
+}
+
+.btn {
+  transition: none !important;
+}
+
+.btn-danger:active,
+.btn-danger:focus {
+  background: #fff0f0 !important;
+  color: #dc2626 !important;
+  box-shadow: none !important;
+  outline: none;
+}
+
+.btn-primary {
+  background: linear-gradient(to right, #116AF8, #0A50F5);
+  box-shadow: 0 10px 20px rgba(17, 106, 248, 0.25);
+  transition: all 0.3s ease;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(to right, #0A50F5, #0842d0);
+  box-shadow: 0 10px 25px rgba(10, 80, 245, 0.35);
+}
+
+/* ===== Stats ===== */
+.stats-container {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.stat-box {
+  flex: 1;
+  background: white;
+  padding: 22px;
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+}
+
+.stat-box h3 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #116AF8;
+}
+
+/* ===== Cart Section ===== */
+.cart-section {
+  background: white;
+  padding: 25px;
+  border-radius: 14px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.04);
+  margin-bottom: 25px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cart-section.empty-mode {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;       /* ← was fixed 900px causing x-scroll */
+  min-height: 420px;
+  margin: 0 auto;
+  border-radius: 18px;
+}
+
+.cart-section.has-records {
+  display: block;
+}
+
+.cart-section h4 {
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.empty-cart-screen {
+  width: 100%;
+  max-width: 650px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.empty-icon {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: #eef4ff;       /* ← light blue tint */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 25px;
+  font-size: 34px;
+  color: #116AF8;            /* ← was #94a3b8 */
+}
+
+.empty-title {
+  font-size: 34px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+.empty-subtitle {
+  font-size: 17px;
+  color: #475569;
+  line-height: 1.7;
+  margin-bottom: 30px;
+  max-width: 600px;
+}
+
+.browse-btn {
+  background: #116AF8;
+  color: white;
+  padding: 14px 30px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.browse-btn:hover {
+  background: linear-gradient(to right, #116AF8, #0A50F5);
+  box-shadow: 0 10px 20px rgba(17, 106, 248, 0.3);
+  color: white;
+}
+
+.browse-btn i {
+  transition: transform 0.25s ease;
+  display: inline-block;
+}
+
+.browse-btn:hover i {
+  transform: translateX(4px);
+}
+
+/* ===== Table Card ===== */
+.table-card {
+  border-radius: 12px;
+  margin-bottom: 20px;
+  background: #f9fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  background: #f1f5f9;
+  text-transform: uppercase;
+  flex-wrap: nowrap;
+}
+
+.table-header,
+.table-header * {
+  white-space: nowrap !important;
+}
+
+.table-header .left {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-header small {
+  font-weight: 700;
+  font-size: 14px;
+  color: #334155;
+}
+
+.badge-primary {
+  background: #116AF8;
+  padding: 8px 18px;
+  border-radius: 999px;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  line-height: 1;
+}
+
+/* ===== Record ===== */
+.record-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 18px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.record-number {
+  color: #116AF8;
+  font-weight: 600;
+}
+
+.size-badge {
+  background: #eef4ff;         /* ← was generic #eef2ff */
+  color: #116AF8;              /* ← added for consistency */
+  padding: 3px 10px;
+  border-radius: 8px;
+}
+
+/* ===== Batch / Ready ===== */
+.ready-section {
+  background: linear-gradient(135deg, #dbeafe, #eff6ff);
+  padding: 25px;
+  border-radius: 14px;
+  margin: 0 0 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ===== Toast ===== */
+.migration-toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+/* ===== Loader ===== */
+.migration-loader {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #9BC0FC;   /* ← was #ccc */
+  border-top: 5px solid #116AF8;  /* ← was #4CAF50 */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+/* ===== Modern Migration Modal ===== */
+.migration-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;     /* vertical center */
+  justify-content: center; /* horizontal center */
+  background: rgba(0,0,0,0.55);
+  z-index: 9999;
+
+  /* 🔥 important fixes */
+  padding: 20px;           /* prevents edge sticking on small screens */
+  box-sizing: border-box;
+} 	
+.modern-migration-modal {
+  width: 520px;
+  padding: 40px 35px;
+  border-radius: 18px;
+  text-align: center;
+  position: relative;
+
+  background: linear-gradient(
+    135deg,
+    #0A50F5 0%,
+    #116AF8 50%,
+    #1e3a8a 100%
+  );
+
+  color: white;
+  box-shadow: 0 25px 60px rgba(17,106,248,0.35);
+  overflow: hidden;
+}
+
+/* subtle grid overlay */
+.modern-migration-modal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.3;
+}
+
+/* ===== Icon ===== */
+  .modal-icon {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 20px;
+  border-radius: 16px;
+
+  //background: linear-gradient(to right, #22d3ee, #06b6d4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 30px;
+  transform: rotate(-10deg);
+}
+/* ===== ICON PULSE ANIMATION ===== */
+@keyframes zoomPulse {
+  0% {
+    transform: scale(1) rotate(-10deg);
+  }
+
+  50% {
+    transform: scale(1.15) rotate(-10deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(-10deg);
+  }
+}
+
+.icon-animate {
+  animation: zoomPulse 1.6s ease-in-out infinite;
+}
+/* ===== Title ===== */
+.modern-migration-modal h2 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+/* ===== Subtitle ===== */
+.modal-subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 30px;
+}
+
+/* ===== Stats ===== */
+.modal-stats {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.modal-stat-box {
+  flex: 1;
+  padding: 18px;
+  border-radius: 14px;
+
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(10px);
+
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.modal-stat-box span {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.modal-stat-box h3 {
+  margin-top: 8px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+/* ===== Progress Bar ===== */
+.modern-progress {
+  width: 100%;
+  height: 10px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 15px;
+}
+
+.modern-progress-fill {
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    #22d3ee,
+    #9BC0FC,
+    #116AF8
+  );
+  transition: width 0.4s ease;
+}
+
+/* ===== Note ===== */
+.modal-note {
+  font-size: 12px;
+  opacity: 0.85;
+}
+/* ===== Success Modal ===== */
+.success-modal {
+  width: 520px;
+  padding: 35px;
+  border-radius: 16px;
+  text-align: center;
+  position: relative;
+
+  background: linear-gradient(135deg, #e6f4ea, #cfe9db);
+  box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+}
+
+/* Close */
+.success-close {
+  position: absolute;
+  top: 15px;
+  right: 18px;
+  cursor: pointer;
+  font-size: 20px;
+  color: #64748b;
+}
+
+/* SUCCESS */
+.success-bg {
+  background: #16a34a;
+}
+
+/* FAILED */
+.failed-bg {
+  background: #dc2626;
+}
+/* ERROR TEXT */
+.error-message {
+  margin-top: 15px;
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.6;
+  background: rgba(255,255,255,0.6);
+  padding: 14px;
+  border-radius: 10px;
+  word-break: break-word;
+}
+/* icon base */
+.success-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  color: white;
+  font-size: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Title */
+.success-modal h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Subtitle */
+.success-sub {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #475569;
+}
+
+/* Stats */
+.success-stats {
+  display: flex;
+  gap: 15px;
+  margin: 25px 0;
+}
+
+.success-box {
+  flex: 1;
+  background: #ffffff;
+  padding: 18px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+}
+
+.success-green {
+  border: 2px solid #16a34a;
+}
+
+.success-box h3 {
+  font-size: 22px;
+  margin: 8px 0;
+}
+
+.success-box p {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Buttons */
+.success-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+}
+
+.btn-success {
+  background: #16a34a;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+}
+/* ===== Preview ===== */
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.preview-modal {
+  background: white;
+  width: 620px;
+  border-radius: 18px;
+  padding: 30px;
+  box-shadow: 0 20px 45px rgba(17, 106, 248, 0.15);  /* ← blue tint */
+  position: relative;
+}
+
+.preview-close {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #64748b;
+  font-weight: 400;
+  transition: all 0.2s ease;
+}
+
+.preview-close:hover {
+  color: #116AF8;              /* ← was #0f172a */
+  transform: scale(1.1);
+}
+
+.preview-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #116AF8;              /* ← was #1e293b */
+  margin-bottom: 28px;
+}
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+.preview-grid label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #116AF8;              /* ← was #64748b */
+  margin-bottom: 6px;
+}
+
+.preview-grid div {
+  font-size: 15px;
+  color: #0f172a;
+  line-height: 1.5;
+}
+
+.full-width {
+  grid-column: 1 / span 2;
+}
+
+.preview-desc {
+  background: #eef4ff;         /* ← was #f8fafc, now light blue */
+  padding: 14px;
+  border-radius: 10px;
+  min-height: 60px;
+}
+
+.slider {
+  background: #116AF8;
+  color: #116AF8;
+  accent-color: #116AF8;       /* ← ensures native slider thumb color */
+}
+
+.queue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.queue-header h4 {
+  margin: 0;
+  font-weight: 600;
+}
+
+.queue-start-btn {
+  min-width: 160px;
+}
+
+.table-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.table-start-btn {
+  background: transparent;
+  border: 1px solid #116AF8;
+  color: #116AF8;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.table-start-btn:hover {
+  background: linear-gradient(to right, #116AF8, #0A50F5);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 10px 20px rgba(17, 106, 248, 0.25);
+}
+
+.table-start-btn svg {
+  margin-right: 8px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.action-icon {
+  cursor: pointer;
+  color: #116AF8;              /* ← added */
+  transition: color 0.2s
+}    
+//partial bg
+.partial-bg {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+}</css>
         <data_table>sp_instance</data_table>
         <demo_data/>
         <description/>
@@ -1080,365 +1072,388 @@
         <name>tracenow_queue</name>
         <option_schema/>
         <public>false</public>
-        <roles/>
+        <roles>admin</roles>
         <script><![CDATA[(function() {
-	data.side = $sp.getWidget('tracenow_sidebar');
+    data.side = $sp.getWidget('tracenow_sidebar');
 
-	var duration = 0;
-	var sTime = 0, eTime = 0;
-	var stats = {
-		inserted: 0,
-		updated: 0,
-		details: []
-	};
+    var stats = { inserted: 0, updated: 0, failed: 0, details: [] };
+    var migrationDetails = [];
+    var engine, migration_logs = [];
 
-	/* ========================= CREATE NOTIFICATION ========================= */
-	if (input && input.action == "createNotification") {
-		var notif = new GlideRecordSecure("x_sysus_tracenow_notifications");
-		notif.initialize();
-		notif.setValue("title", input.payload.title);
-		notif.setValue("message", input.payload.message);
-		notif.setValue("type", input.payload.type);
-		notif.setValue("priority", input.payload.priority);
-		notif.setValue("user", gs.getUserID());
-		notif.setValue("read", false);
-		notif.insert();
-		data.notificationCreated = true;
-		return;
-	}
+    /* ========================= CREATE NOTIFICATION ========================= */
+    if (input && input.action == "createNotification") {
+        var notif = new GlideRecordSecure("x_sysus_tracenow_notifications");
+        notif.initialize();
+        notif.setValue("title", input.payload.title);
+        notif.setValue("message", input.payload.message);
+        notif.setValue("type", input.payload.type);
+        notif.setValue("priority", input.payload.priority);
+        notif.setValue("user", gs.getUserID());
+        notif.setValue("read", false);
+        notif.insert();
+        data.notificationCreated = true;
+        return;
+    }
 
-	/* ========================= MIGRATION EXECUTION ========================= */
-	if (input && input.action == "migrateRecords") {
-		var username, password, sourceurl;
+    /* ========================= MIGRATION EXECUTION ========================= */
+    if (input && input.action == "migrateRecords") {
+        var username, password, sourceurl;
 
-		/* Migration Started Notification */
-		var startNotif = new GlideRecordSecure("x_sysus_tracenow_notifications");
-		startNotif.initialize();
-		startNotif.title = "Migration started";
-		startNotif.message = "Migration process has started.";
-		startNotif.type = "migration_started";
-		startNotif.priority = "info";
-		startNotif.user = gs.getUserID();
-		startNotif.insert();
+        // Migration Started Notification
+        var startNotif = new GlideRecordSecure("x_sysus_tracenow_notifications");
+        startNotif.initialize();
+        startNotif.setValue("title", "Migration started");
+        startNotif.setValue("message", "Migration process has started.");
+        startNotif.setValue("type", "migration_started");
+        startNotif.setValue("priority", "info");
+        startNotif.setValue("user", gs.getUserID());
+        startNotif.insert();
 
-		var gr = new GlideRecordSecure('x_sysus_tracenow_connection');
-		gr.addQuery('sys_id', input.active_conn);
-		gr.query();
-		if (gr.next()) {
-			username = gr.getValue('username');
-			password = gr.getValue('password');
-			sourceurl = gr.getValue('url');
-			data.conn_name = gr.getValue('name');
-		}
+        // Load connection
+        var gr = new GlideRecordSecure('x_sysus_tracenow_connection');
+        gr.addQuery('sys_id', input.active_conn);
+        gr.query();
+        if (gr.next()) {
+            username  = gr.getValue('username');
+            password  = gr.getValue('password');
+            sourceurl = gr.getValue('url');
+            data.conn_name = gr.getValue('name');
+        }
 
-		var cart = input.records || [];
-		var recordsToMigrate = [];
-
-		(input.records || []).forEach(function(tableGroup) {
-			console.log('tablegroup = ' + JSON.stringify(tableGroup));
-			var table = tableGroup.name;
-
-
-			(tableGroup.records || []).forEach(function(rec) {
-
-				if (rec.sys_id) {
-
-					recordsToMigrate.push({
-							table: table,
-							sysId: String(rec.sys_id).trim(),
-							number: rec.number || '',
-							state: rec.state || '',
-							short_description: rec.short_description || ''
-					});
-				}
-
-			});
-		});
-		console.log('recordstomigrate = ' + JSON.stringify(recordsToMigrate));
-
-		/* ============= Check Stats of Tables =========== */
-		var existingRecords = {};
-
-		for (var i = 0; i < recordsToMigrate.length; i++) {
-			var record = recordsToMigrate[i];
-
-			// DEFENSIVE FIX: Convert "Change Request" -> "change_request" 
-			// and strip any illegal label characters just in case.
-			var cleanTableName = String(record.table)
-			.toLowerCase()
-			.replace(/\s+/g, '_')   // Replace spaces with underscores
-			.replace(/[^a-z0-9_]/g, ''); // Remove special characters
-
-			// Final sanity check to avoid throwing a fatal error if table name is completely invalid
-			if (!gs.tableExists(cleanTableName)) {
-				gs.warn("Tracelow Queue: Attempted to check stats on non-existent table: " + record.table + " (Cleaned: " + cleanTableName + ")");
-				continue; 
-			}
-
-			var grCheck = new GlideRecordSecure(cleanTableName);
-			existingRecords[
-				record.table + ':' + record.sysId
-			] = grCheck.get(record.sysId);
-		}
-
-		/* Run migration engine */
-		try {
-			console.log('cart_length = ' + input.cart_length);
-			console.log('records = ' + JSON.stringify(input.records));
-			console.log('recordsmigrate = ' + JSON.stringify(recordsToMigrate));
-			var startTime = new Date().getTime(); // milliseconds
-			var engine = new DM_MigrationCore();
-			var result = engine.migrateMixedRecords(sourceurl, username, password, recordsToMigrate, { sortByTable: true, stopOnError: false });
-			if(result) {
-				data.success = true;
-				data.result = result;
-			}
-			else data.success = false;
-			var endTime = new Date().getTime();
-
-			var durationMs = endTime - startTime;
-
-			var totalSeconds = Math.floor(durationMs / 1000);
-			var minutes = Math.floor(totalSeconds / 60);
-			var seconds = totalSeconds % 60;
-
-			var durationText = minutes + " min " + seconds + " sec";
-
-			gs.info("Migration Duration: " + durationText);
-
-			data.duration = durationText;
-			//check the stats after migration
-			var migrationDetails = [];
-			for (var i = 0; i < recordsToMigrate.length; i++) {
-
-				var record = recordsToMigrate[i];
-
-				var key = record.table + ':' + record.sysId;
-
-				var existedBefore = existingRecords[key];
-
-				var grAfter = new GlideRecordSecure(record.table);
-
-				var existsAfter = grAfter.get(record.sysId);
-
-				if (!existsAfter) {
-
-					stats.failed++;
-
-					stats.details.push({
-						table: record.table,
-						sysId: record.sysId,
-						action: 'failed'
-					});
-					
-					migrationDetails.push({
-            table: record.table,
-            sys_id: record.sysId,
-            number: record.number,
-            state: record.state,
-            short_description: record.short_description,
-            status: "failed",
-            action: "failed"
+        var recordsToMigrate = [];
+        (input.records || []).forEach(function(tableGroup) {
+            var table = tableGroup.name;
+            (tableGroup.records || []).forEach(function(rec) {
+                if (rec.sys_id) {
+                    recordsToMigrate.push({
+                        table: table,
+                        sysId: String(rec.sys_id).trim(),
+                        number: rec.number || '',
+                        state: rec.state || '',
+                        short_description: rec.short_description || '',
+                        migrationStatus: 'pending'
+                    });
+                }
+            });
         });
 
-					continue;
-				}
+        /* ========== Validate Tables + Pre-check Existing Records ========== */
+        var existingRecords = {};
+        var validRecords = [];
+        var invalidTables = {};
 
-				if (existedBefore) {
+        for (var i = 0; i < recordsToMigrate.length; i++) {
+            var record = recordsToMigrate[i];
+            try {
+                if (invalidTables[record.table]) {
+                    stats.failed++;
+                    migrationDetails.push({
+                        table: record.table, sys_id: record.sysId,
+                        number: record.number, state: record.state,
+                        short_description: record.short_description,
+                        status: "failed", action: "failed",
+                        reason: "Table does not exist in target instance"
+                    });
+                    continue;
+                }
 
-					stats.updated++;
+                var grCheck = new GlideRecordSecure(record.table);
 
-					stats.details.push({
-						table: record.table,
-						sysId: record.sysId,
-						action: 'updated'
-					});
-					
-					migrationDetails.push({
-            table: record.table,
-            sys_id: record.sysId,
-            number: record.number,
-            state: record.state,
-            short_description: record.short_description,
-            status: "success",
-            action: "updated"
-        });
+                // ✅ CERTIFIED: get() wrapped in if() — prevents execution on false result
+                if (grCheck.get(record.sysId)) {
+                    existingRecords[record.table + ':' + record.sysId] = true;
+                } else {
+                    existingRecords[record.table + ':' + record.sysId] = false;
+                }
 
-				} else {
+                validRecords.push(record);
 
-					stats.inserted++;
-
-					stats.details.push({
-						table: record.table,
-						sysId: record.sysId,
-						action: 'inserted'
-					});
-					
-					migrationDetails.push({
-            table: record.table,
-            sys_id: record.sysId,
-            number: record.number,
-            state: record.state,
-            short_description: record.short_description,
-            status: "success",
-            action: "inserted"
-        });
-
-				}
-			}
-			//console.log('stats = ' + JSON.stringify(stats));
-			/*var migration_result = JSON.stringify(result.results);
-            console.log('migration_result = ' + migration_result);
-
-            var inserted = (result.stats && result.stats.inserted) || 0;
-            var updated  = (result.stats && result.stats.updated)  || 0;
-            var failed   = (result.stats && result.stats.failed)   || 0;
-
-            data.success  = true;
-            data.result   = result;*/
-            //sTime         = engine.startTime;
-            //eTime         = engine.endTime;
-            data.inserted = stats.inserted;
-            data.updated  = stats.updated;
-            data.total    = input.cart_length;
-            data.url      = sourceurl;
-            data.sTime    = sTime.toString();
-            data.eTime    = eTime.toString();
-
-            /* Success rate */
-							
-						var successRate = 0, partial = 0;
-            if (data.total > 0) {
-                successRate = ((stats.inserted + stats.updated) / input.cart_length) * 100;
+            } catch (ex) {
+                invalidTables[record.table] = true;
+                stats.failed++;
+                migrationDetails.push({
+                    table: record.table, sys_id: record.sysId,
+                    number: record.number, state: record.state,
+                    short_description: record.short_description,
+                    status: "failed", action: "failed",
+                    reason: "Table does not exist in target instance"
+                });
+                gs.warn("Skipping invalid table: " + record.table + " | " + ex);
             }
-            successRate = Math.round(successRate * 100) / 100;
+        }
 
-            /*for (var table in result.results) {
-                var records = result.results[table];
-                for (var sysId in records) {
-                    var rec = records[sysId];
-                    if (rec.success_rate == '75') {
-                        successRate = '75';
-                        data.inserted = 0;
-                        data.updated = 0;
-                        partial++;
+        /* ========================= Run Migration Engine ========================= */
+        try {
+            var startTime = new Date().getTime();
+
+            engine = new DM_MigrationCore();
+            var result = engine.migrateMixedRecords(
+                sourceurl, username, password, validRecords,
+                { sortByTable: true, stopOnError: false }
+            );
+						migration_logs = engine.executionLogs;
+						migration_logs.push("Migration Completed");
+            var endTime = new Date().getTime();
+            var durationMs = endTime - startTime;
+            var totalSeconds = Math.floor(durationMs / 1000);
+            var minutes = Math.floor(totalSeconds / 60);
+            var seconds = totalSeconds % 60;
+            var durationText = minutes + " min " + seconds + " sec";
+
+            gs.info("Migration Duration: " + durationText);
+            data.duration = durationText;
+            data.sTime = new Date(startTime).toString();
+            data.eTime = new Date(endTime).toString();
+
+            /* ========== Post-migration: count inserted / updated / failed ========== */
+            for (var j = 0; j < validRecords.length; j++) {
+                var vRec = validRecords[j];
+                var key = vRec.table + ':' + vRec.sysId;
+                var existedBefore = existingRecords[key];
+
+                var grAfter = new GlideRecordSecure(vRec.table);
+
+                // CERTIFIED: get() wrapped in if() — only process if record truly exists
+                if (grAfter.get(vRec.sysId)) {
+
+                    // Restore original number using GlideRecord to bypass BR/ACL
+                    if (vRec.number) {
+                        var numGr = new GlideRecordSecure(vRec.table);
+                        // CERTIFIED: get() wrapped in if()
+                        if (numGr.get(vRec.sysId)) {
+                            if (numGr.getValue('number') !== vRec.number) {
+                                numGr.setWorkflow(false);
+                                numGr.autoSysFields(false);
+                                numGr.setValue('number', vRec.number);
+                                numGr.update();
+                                gs.info('[TracenNow] Number restored: ' + vRec.table +
+                                        ' | ' + vRec.sysId + ' → ' + vRec.number);
+                            }
+                        }
                     }
+
+                    if (existedBefore) {
+                        stats.updated++;
+                        migrationDetails.push({
+                            table: vRec.table, sys_id: vRec.sysId,
+                            number: vRec.number, state: vRec.state,
+                            short_description: vRec.short_description,
+                            status: "success", action: "updated", duration: durationText
+                        });
+                    } else {
+                        stats.inserted++;
+                        migrationDetails.push({
+                            table: vRec.table, sys_id: vRec.sysId,
+                            number: vRec.number, state: vRec.state,
+                            short_description: vRec.short_description,
+                            status: "success", action: "inserted", duration: durationText
+                        });
+                    }
+
+                } else {
+                    //Record does not exist after migration — mark as failed
+                    stats.failed++;
+                    migrationDetails.push({
+                        table: vRec.table, sys_id: vRec.sysId,
+                        number: vRec.number, state: vRec.state,
+                        short_description: vRec.short_description,
+                        status: "failed", action: "failed", duration: durationText,
+                        reason: "Record not found in target after migration"
+                    });
                 }
             }
 
-            console.log('total = ' + data.total);
+            /* ========== Set Response Flags ========== */
+            var isPartial  = stats.failed > 0 && (stats.inserted + stats.updated) > 0;
+            var isAllFailed = stats.failed > 0 && (stats.inserted + stats.updated) === 0;
 
-            /* Save migration record */
-						var obj = {};
+            data.success  = !isPartial && !isAllFailed;
+            data.partial  = isPartial;
+            data.inserted = stats.inserted;
+            data.updated  = stats.updated;
+            data.failed   = stats.failed;
+            data.total    = input.cart_length;
+            data.url      = sourceurl;
+            data.migrationDetails = migrationDetails;
+
+            if (isPartial) {
+                data.message = stats.failed + " record(s) failed. " +
+                               (stats.inserted + stats.updated) + " migrated successfully.";
+            } else if (isAllFailed) {
+                data.success = false;
+                data.message = "All " + stats.failed + " record(s) failed to migrate.";
+            }
+
+            /* ========== Save Migration Record ========== */
+            var successRate = 0;
+            if (input.cart_length > 0) {
+                successRate = Math.round(
+                    ((stats.inserted + stats.updated) / input.cart_length) * 10000
+                ) / 100;
+            }
+
             var mig = new GlideRecordSecure('x_sysus_tracenow_migration_details');
             mig.initialize();
-
-            var total = 0;
-            cart.forEach(function(tableGroup) {
-                total += (tableGroup.records || []).length;
-            });
-
             mig.setValue('instance_url', sourceurl);
             mig.setValue('records_fetched', input.cart_length);
             mig.setValue('records_inserted', stats.inserted);
             mig.setValue('records_updated', stats.updated);
-            mig.setValue('records_failed', 0);
-            mig.setValue('partial_record', 0);
+            mig.setValue('records_failed', stats.failed);
             mig.setValue('success_rate', successRate);
-            mig.setValue('duration', durationText);
             mig.setValue('target_instance', gs.getProperty('glide.servlet.uri'));
+            var migrationSysId = mig.insert();
 
-            Object.keys(recordsToMigrate).forEach(function(key) {
-                obj[key] = "true";
-            });
+            /* ========== Save Record-Level Logs ========== */
+            if (migrationSysId) {
+                migrationDetails.forEach(function(rec) {
+                    var logGr = new GlideRecordSecure(
+                        'x_sysus_tracenow_tracenow_migration_record_log'
+                    );
+                    logGr.initialize();
+                    logGr.setValue('migration', migrationSysId);
+                    logGr.setValue('table', rec.table);
+                    logGr.setValue('source_sys_id', rec.sys_id);
+                    logGr.setValue('record_number', rec.number);
+                    logGr.setValue('status', rec.status);
+                    logGr.setValue('action', rec.action);
+                    logGr.setValue('state', rec.state);
+                    logGr.setValue('short_description', rec.short_description);
+                    logGr.setValue('duration', rec.duration || durationText);
+                    logGr.setValue('reason', rec.reason || '');
+                    logGr.setValue('migration_log', JSON.stringify(migration_logs || []));
+                    logGr.insert();
+                });
 
-            mig.setValue('table', JSON.stringify(migrationDetails));
-            mig.insert();
+                /* ========== Sum Log Durations ========== */
+                var totalDurationSeconds = 0;
+                var durationGR = new GlideRecordSecure(
+                    'x_sysus_tracenow_tracenow_migration_record_log'
+                );
+                durationGR.addQuery('migration', migrationSysId);
+                durationGR.query();
+                while (durationGR.next()) {
+                    var dur = durationGR.getValue('duration') || '';
+                    var minMatch = dur.match(/(\d+)\s*min/i);
+                    var secMatch = dur.match(/(\d+)\s*sec/i);
+                    totalDurationSeconds +=
+                        ((minMatch ? parseInt(minMatch[1], 10) : 0) * 60) +
+                        (secMatch  ? parseInt(secMatch[1],  10) : 0);
+                }
+                var totalMins = Math.floor(totalDurationSeconds / 60);
+                var remSecs   = totalDurationSeconds % 60;
+                var totalDurationText = totalMins + " min " + remSecs + " sec";
 
-            /* Result Notification */
-			var resultNotif = new GlideRecordSecure("x_sysus_tracenow_notifications");
-			resultNotif.initialize();
+                /* ========== Update Migration Duration ========== */
+                var updateMig = new GlideRecordSecure('x_sysus_tracenow_migration_details');
 
-			if (engine.stats.failed == 0) {
-				resultNotif.title   = "Migration completed successfully";
-				resultNotif.message = (engine.stats.inserted + engine.stats.updated) + " records migrated successfully.";
-				resultNotif.type    = "migration_success";
-				resultNotif.priority = "success";
-			} else if (engine.stats.failed > 0 && (engine.stats.inserted + engine.stats.updated) > 0) {
-				resultNotif.title   = engine.stats.failed + " records failed during migration.";
-				resultNotif.message = engine.stats.failed + " records failed during migration.";
-				resultNotif.type    = "migration_warning";
-				resultNotif.priority = "warning";
-			} else {
-				resultNotif.title   = "Migration failed";
-				resultNotif.message = "Migration failed. No records migrated.";
-				resultNotif.type    = "migration_failed";
-				resultNotif.priority = "critical";
-			}
+                // CERTIFIED: get() wrapped in if()
+                if (updateMig.get(migrationSysId)) {
+                    updateMig.setValue('duration', totalDurationText);
+                    updateMig.update();
+                }
 
-			resultNotif.user = gs.getUserID();
-			resultNotif.insert();
+                data.duration = totalDurationText;
+            }
 
-		} catch (e) {
-			gs.error("Migration failed: " + e);
-			console.log('error occurred ' + e);
+            /* ========== Result Notification ========== */
+            var resultNotif = new GlideRecordSecure("x_sysus_tracenow_notifications");
+            resultNotif.initialize();
+            if (stats.failed === 0) {
+                resultNotif.setValue("title", "Migration completed successfully");
+                resultNotif.setValue("message",
+                    (stats.inserted + stats.updated) + " records migrated successfully.");
+                resultNotif.setValue("type", "migration_success");
+                resultNotif.setValue("priority", "success");
+            } else if (isPartial) {
+                resultNotif.setValue("title",
+                    stats.failed + " record(s) failed during migration.");
+                resultNotif.setValue("message",
+                    stats.failed + " record(s) failed. " +
+                    (stats.inserted + stats.updated) + " succeeded.");
+                resultNotif.setValue("type", "migration_warning");
+                resultNotif.setValue("priority", "warning");
+            } else {
+                resultNotif.setValue("title", "Migration failed");
+                resultNotif.setValue("message", "Migration failed. No records migrated.");
+                resultNotif.setValue("type", "migration_failed");
+                resultNotif.setValue("priority", "critical");
+            }
+            resultNotif.setValue("user", gs.getUserID());
+            resultNotif.insert();
 
-			data.success = false;
-			data.error   = e.toString();
-			data.failed  = 0;
+        } catch (e) {
+            gs.error("Migration failed: " + e);
 
-			var result_data = {};
-			for (var i = 0; i < input.records.length; i++) {
-				var group = input.records[i];
-				var tableName = (group.name || "").toLowerCase(); // ✅ FIX: lowercase here too
-				if (!result_data[tableName]) {
-					result_data[tableName] = {};
-				}
-				for (var j = 0; j < group.records.length; j++) {
-					var rc = group.records[j];
-					data.failed++;
-					result_data[tableName][rc.sys_id] = {
-						status: "failed",
-						rec_number: rc.number,
-						success_rate: "0",
-						reason: "The source table does not exist in the Target Instance"
-					};
-				}
-			}
+            data.success  = false;
+            data.partial  = false;
+            data.failed   = recordsToMigrate.length;
+            data.inserted = 0;
+            data.updated  = 0;
+            data.total    = input.cart_length;
+            data.message  = e.toString();
 
-			var mig_gr = new GlideRecordSecure('x_sysus_tracenow_migration_details');
-			mig_gr.initialize();
-			mig_gr.setValue('instance_url', sourceurl);
-			mig_gr.setValue('records_fetched', input.cart_length);
-			mig_gr.setValue('records_inserted', 0);
-			mig_gr.setValue('records_updated', 0);
-			mig_gr.setValue('records_failed', data.failed);
-			mig_gr.setValue('partial_record', 0);
-			mig_gr.setValue('success_rate', 0);
-			mig_gr.setValue('duration', '0 min 0 sec');
-			mig_gr.setValue('target_instance', gs.getProperty('glide.servlet.uri'));
-			mig_gr.setValue('table', JSON.stringify(result_data));
-			mig_gr.insert();
+            var failedDetails = [];
+            for (var k = 0; k < recordsToMigrate.length; k++) {
+                var fRec = recordsToMigrate[k];
+                failedDetails.push({
+                    table: fRec.table, sys_id: fRec.sysId,
+                    number: fRec.number, state: fRec.state,
+                    short_description: fRec.short_description,
+                    status: "failed", action: "failed",
+                    reason: e.toString(),
+                    logs: engine ? engine.executionLogs : []
+                });
+            }
+            data.migrationDetails = failedDetails;
 
-			data.message = e.toString();
+            var mig_gr = new GlideRecordSecure('x_sysus_tracenow_migration_details');
+            mig_gr.initialize();
+            mig_gr.setValue('instance_url', sourceurl);
+            mig_gr.setValue('records_fetched', input.cart_length);
+            mig_gr.setValue('records_inserted', 0);
+            mig_gr.setValue('records_updated', 0);
+            mig_gr.setValue('records_failed', recordsToMigrate.length);
+            mig_gr.setValue('success_rate', 0);
+            mig_gr.setValue('target_instance', gs.getProperty('glide.servlet.uri'));
+            var failedMigSysId = mig_gr.insert();
 
-			var failNotif = new GlideRecordSecure("x_sysus_tracenow_notifications");
-			failNotif.initialize();
-			failNotif.title    = "Migration failed";
-			failNotif.message  = e.toString();
-			failNotif.type     = "migration_failed";
-			failNotif.priority = "critical";
-			failNotif.user     = gs.getUserID();
-			failNotif.insert();
-		}
-	}
+            if (failedMigSysId) {
+                failedDetails.forEach(function(rec) {
+                    var logGr = new GlideRecordSecure(
+                        'x_sysus_tracenow_tracenow_migration_record_log'
+                    );
+                    logGr.initialize();
+                    logGr.setValue('migration', failedMigSysId);
+                    logGr.setValue('table', rec.table);
+                    logGr.setValue('source_sys_id', rec.sys_id);
+                    logGr.setValue('record_number', rec.number);
+                    logGr.setValue('status', rec.status);
+                    logGr.setValue('action', rec.action);
+                    logGr.setValue('state', rec.state);
+                    logGr.setValue('short_description', rec.short_description);
+                    logGr.setValue('reason', e.toString());
+                    logGr.setValue('migration_log',
+                        JSON.stringify(migration_logs || []));
+                    logGr.insert();
+                });
+            }
 
-	/* ========================= PROGRESS ========================= */
-	if (input && input.action == "getProgress") {
-		var eng = new global.UnifiedMigrationEngine();
-		var progress = eng.getProgress();
-		data.progress = progress;
-	}
+            var failNotif = new GlideRecordSecure("x_sysus_tracenow_notifications");
+            failNotif.initialize();
+            failNotif.setValue("title", "Migration failed");
+            failNotif.setValue("message", e.toString());
+            failNotif.setValue("type", "migration_failed");
+            failNotif.setValue("priority", "critical");
+            failNotif.setValue("user", gs.getUserID());
+            failNotif.insert();
+        }
+    }
+
+    /* ========================= GET PROGRESS ========================= */
+    if (input && input.action == "getProgress") {
+        var eng = new DM_MigrationCore();
+        data.progress = eng.getProgress();
+    }
 
 })();]]></script>
         <servicenow>false</servicenow>
@@ -1446,14 +1461,14 @@
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 10:10:28</sys_created_on>
         <sys_id>143f759c930587100af5f4e9b903d690</sys_id>
-        <sys_mod_count>40</sys_mod_count>
+        <sys_mod_count>92</sys_mod_count>
         <sys_name>tracenow_queue</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_143f759c930587100af5f4e9b903d690</sys_update_name>
         <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-06-09 06:51:23</sys_updated_on>
+        <sys_updated_on>2026-06-22 06:17:01</sys_updated_on>
         <template><![CDATA[<div class="migration-cart">
 
   <!-- Sidebar -->
@@ -1465,12 +1480,12 @@
   <div class="main">
 
     <!-- Header -->
-    <div class="cart-header" ng-if="c.cart.length>0">
+    <div class="cart-header" ng-if="c.cart.length > 0">
       <div>
         <h2>Migration Queue</h2>
         <p class="subtitle">Review and configure your migration selection</p>
       </div>
-      <button class="btn btn-danger btn-sm" ng-if="c.cart.length > 0" ng-click="c.clearCart()">
+      <button class="btn btn-danger btn-sm" ng-click="c.clearCart()">
         <i class="fa fa-trash"></i> Clear Queue
       </button>
     </div>
@@ -1493,20 +1508,17 @@
       <!-- Empty Cart -->
       <div ng-if="c.cart.length == 0" class="empty-cart-screen">
         <div class="empty-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="8" cy="21" r="1"/>
             <circle cx="19" cy="21" r="1"/>
             <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
           </svg>
         </div>
-
         <div class="empty-title">Your Queue is empty</div>
-
         <div class="empty-subtitle">
-          Browse records and add them to your queue to start building<br>
-          your migration
+          Browse records and add them to your queue to start building<br>your migration
         </div>
-
         <a ng-href="/_tracenow?id=tracenow_browse_table&sys_id={{c.check}}" class="browse-btn">
           Browse Records <i class="fa fa-arrow-right"></i>
         </a>
@@ -1514,51 +1526,37 @@
 
       <!-- Ready to Migrate -->
       <div class="ready-section" ng-if="c.cart.length > 0">
-
         <div>
           <h4>Ready to Migrate</h4>
           <p>
-            You are about to migrate 
-            <strong>{{c.getTotalRecords()}} record(s)</strong> 
-            from 
+            You are about to migrate
+            <strong>{{c.getTotalRecords()}} record(s)</strong>
+            from
             <strong>{{c.getTotalTables()}} table(s)</strong>.
           </p>
         </div>
-
         <button class="btn btn-primary table-start-btn"
                 ng-disabled="c.getTotalRecords() == 0"
                 ng-click="c.startMigration()">
-
-          <svg xmlns="http://www.w3.org/2000/svg"
-               width="16"
-               height="16"
-               viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="2"
-               stroke-linecap="round"
-               stroke-linejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/>
           </svg>
-
           Start Migration
         </button>
-
       </div>
 
       <!-- Tables in Queue -->
       <div class="table-card" ng-repeat="table in c.cart">
-
-     <div class="table-header">
-  <div class="left">
-    <strong>Table Name:</strong>
-    <strong>{{table.label}}</strong>
-    <!--<small>{{table.table}}</small> -->
-  </div>
+        <div class="table-header">
+          <div class="left">
+            <strong>Table Name:</strong>
+            <strong>{{table.label}}</strong>
+          </div>
           <div class="table-header-actions">
             <span class="badge badge-primary">{{table.records.length}} record(s)</span>
           </div>
-
         </div>
 
         <div class="record-item" ng-repeat="rec in table.records">
@@ -1566,13 +1564,11 @@
             <strong class="record-number">{{rec.number}}</strong>
             <p>{{rec.short_description}}</p>
           </div>
-
           <div class="actions">
             <i class="fa fa-eye action-icon" ng-click="c.openPreview(rec)"></i>
             <i class="fa fa-trash action-icon text-danger" ng-click="c.removeRecord($parent.$index, $index)"></i>
           </div>
         </div>
-
       </div>
 
     </div>
@@ -1580,166 +1576,144 @@
     <!-- Toast -->
     <div class="migration-toast" ng-show="c.showToast">{{c.toastMessage}}</div>
 
-    <!-- Migration Modal -->
-<div class="migration-modal-backdrop" ng-if="c.showModal">
-  <div class="modern-migration-modal">
+    <!-- ===================== MIGRATION IN PROGRESS MODAL ===================== -->
+    <div class="migration-modal-backdrop" ng-if="c.showModal">
+      <div class="modern-migration-modal">
 
-    <!-- Icon -->
-    <div class="modal-icon" ng-class="{'icon-animate': c.migrating}">
-      <svg width="150" height="110" viewBox="0 0 133 98" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M93.4217 0H10.2803L37.2925 28.7662H65.3571V57.5325L93.4217 85.5971V0Z" fill="#fff"/>
-<path d="M101.584 0H132.422L101.584 33.8613V0Z" fill="#fff"/>
-<g opacity="0.42" style="mix-blend-mode:multiply">
-<path d="M83.1415 12.0938L0 12.0938L27.0122 40.86L55.0768 40.86L55.0768 69.6262L83.1415 97.6909L83.1415 12.0938Z" fill="#116AF8"/>
-</g>
-</svg>
-
-
-
-    </div>
-
-    <!-- Title -->
-    <h2>Migration in Progress</h2>
-    <p class="modal-subtitle">
-      Migrating your records with intelligent dependency handling
-    </p>
-
-    <!-- Stats -->
-    <div class="modal-stats">
-
-      <div class="modal-stat-box">
-        <span>Records Processed</span>
-        <h3>{{c.inserted + c.updated || 0}} / {{c.total}}</h3>
-      </div>
-
-      <div class="modal-stat-box">
-        <span>Progress</span>
-        <h3>{{c.progress}}%</h3>
-      </div>
-
-    </div>
-
-    <!-- Progress Bar -->
-    <div class="modern-progress">
-      <div class="modern-progress-fill"
-           ng-style="{'width': c.progress + '%'}">
-      </div>
-    </div>
-
-    <!-- Footer Note -->
-    <div class="modal-note">
-      Please do not close this window during migration
-    </div>
-
-  </div>
-</div>
-<!-- Success Modal -->
-<div class="migration-modal-backdrop" ng-if="c.showSuccessModal">
-
-  <div class="success-modal">
-
-    <!-- Close -->
-    <div class="success-close" ng-click="c.closeSuccessModal()">×</div>
-
-    <!-- ICON -->
-    <div class="success-icon"
-         ng-class="{
-           'success-bg': c.status == 'success',
-           'failed-bg': c.status == 'failed'
-         }">
-
-      <span ng-if="c.status == 'success'">✓</span>
-      <span ng-if="c.status == 'failed'">✖</span>
-
-    </div>
-
-    <!-- TITLE -->
-    <h2 ng-if="c.status == 'success'">
-      Migration Completed Successfully!
-    </h2>
-
-    <h2 ng-if="c.status == 'failed'">
-      Migration Failed
-    </h2>
-
-    <!-- =========================
-         SUCCESS VIEW (UNCHANGED)
-    ========================== -->
-    <div ng-if="c.status == 'success'">
-
-      <p class="success-sub">
-        All {{c.total}} records have been migrated successfully
-      </p>
-
-      <div class="success-stats">
-        <div class="success-box">
-          <h3>{{c.inserted + c.updated}}</h3>
-          <p>Successful</p>
+        <div class="modal-icon" ng-class="{'icon-animate': c.migrating}">
+          <svg width="150" height="110" viewBox="0 0 133 98" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M93.4217 0H10.2803L37.2925 28.7662H65.3571V57.5325L93.4217 85.5971V0Z" fill="#fff"/>
+            <path d="M101.584 0H132.422L101.584 33.8613V0Z" fill="#fff"/>
+            <g opacity="0.42" style="mix-blend-mode:multiply">
+              <path d="M83.1415 12.0938L0 12.0938L27.0122 40.86L55.0768 40.86L55.0768 69.6262L83.1415 97.6909L83.1415 12.0938Z" fill="#116AF8"/>
+            </g>
+          </svg>
         </div>
 
-        <div class="success-box">
-          <h3>{{c.duration}}</h3>
-          <p>Duration</p>
+        <h2>Migration in Progress</h2>
+        <p class="modal-subtitle">Migrating your records with intelligent dependency handling</p>
+
+        <div class="modal-stats">
+          <div class="modal-stat-box">
+            <span>Records Processed</span>
+            <h3>{{c.inserted + c.updated || 0}} / {{c.total}}</h3>
+          </div>
+          <div class="modal-stat-box">
+            <span>Progress</span>
+            <h3>{{c.progress}}%</h3>
+          </div>
         </div>
 
-        <div class="success-box">
-          <h3>{{c.total}}</h3>
-          <p>Tables</p>
+        <div class="modern-progress">
+          <div class="modern-progress-fill" ng-style="{'width': c.progress + '%'}"></div>
         </div>
+
+        <div class="modal-note">Please do not close this window during migration</div>
+
       </div>
-
     </div>
 
-    <!-- =========================
-         ❌ FAILED VIEW (NEW)
-    ========================== -->
-    <div ng-if="c.status == 'failed'">
+    <!-- ===================== SUCCESS / PARTIAL / FAILED MODAL ===================== -->
+    <div class="migration-modal-backdrop" ng-if="c.showSuccessModal">
+      <div class="success-modal">
 
-      <p class="error-message">
-        {{c.migrationResult.message || 'Migration failed due to an unexpected error.'}}
-      </p>
+        <!-- Close -->
+        <div class="success-close" ng-click="c.closeSuccessModal()">×</div>
 
+        <!-- Icon -->
+        <div class="success-icon"
+             ng-class="{
+               'success-bg': c.status === 'success',
+               'partial-bg': c.status === 'partial',
+               'failed-bg':  c.status === 'failed'
+             }">
+          <span ng-if="c.status === 'success'">✓</span>
+          <span ng-if="c.status === 'partial'">⚠</span>
+          <span ng-if="c.status === 'failed'">✖</span>
+        </div>
+
+        <!-- Title -->
+        <h2 ng-if="c.status === 'success'">Migration Completed Successfully!</h2>
+        <h2 ng-if="c.status === 'partial'">Migration Partially Completed</h2>
+        <h2 ng-if="c.status === 'failed'">Migration Failed</h2>
+
+        <!-- SUCCESS VIEW -->
+        <div ng-if="c.status === 'success'">
+          <p class="success-sub">All {{c.total}} records have been migrated successfully</p>
+          <div class="success-stats">
+            <div class="success-box">
+              <h3>{{c.inserted + c.updated}}</h3>
+              <p>Successful</p>
+            </div>
+            <div class="success-box">
+              <h3>{{c.duration}}</h3>
+              <p>Duration</p>
+            </div>
+            <div class="success-box">
+              <h3>{{c.total}}</h3>
+              <p>Total</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- PARTIAL VIEW -->
+        <div ng-if="c.status === 'partial'">
+          <p class="success-sub">
+            {{c.inserted + c.updated}} of {{c.total}} record(s) migrated.
+            <strong class="text-danger">{{c.failed}} failed.</strong>
+          </p>
+          <div class="success-stats">
+            <div class="success-box success-bg">
+              <h3>{{c.inserted + c.updated}}</h3>
+              <p>Successful</p>
+            </div>
+            <div class="success-box failed-bg">
+              <h3>{{c.failed}}</h3>
+              <p>Failed</p>
+            </div>
+            <div class="success-box">
+              <h3>{{c.duration}}</h3>
+              <p>Duration</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- FAILED VIEW -->
+        <div ng-if="c.status === 'failed'">
+          <p class="error-message">
+            {{c.migrationResult.message || 'Migration failed due to an unexpected error.'}}
+          </p>
+        </div>
+
+        <!-- Actions -->
+        <div class="success-actions">
+          <a href="/_tracenow?id=tracenow_migration_details" class="btn-secondary">
+            View Details
+          </a>
+          <button class="btn-success" ng-click="c.closeSuccessModal()">Done →</button>
+        </div>
+
+      </div>
     </div>
 
-    <!-- ACTIONS -->
-    <div class="success-actions">
-
-      <a href="/_tracenow?id=tracenow_migration_details" class="btn-secondary">
-        View Details
-      </a>
-
-      <button class="btn-success"
-              ng-click="c.closeSuccessModal()">
-        Done →
-      </button>
-
-    </div>
-
-  </div>
-</div> 
-
-    <!-- Preview Modal -->
+    <!-- ===================== PREVIEW MODAL ===================== -->
     <div class="preview-overlay" ng-if="c.previewOpen">
       <div class="preview-modal">
         <div class="preview-close" ng-click="c.closePreview()">×</div>
         <h3 class="preview-title">Record Preview</h3>
-
         <div class="preview-grid">
           <div>
             <label>Record Number</label>
             <div>{{c.previewData.number}}</div>
           </div>
-
           <div>
             <label>Table</label>
             <div>{{c.previewData.table}}</div>
           </div>
-
           <div>
             <label>Sys ID</label>
             <div>{{c.previewData.sys_id}}</div>
           </div>
-
           <div class="full-width">
             <label>Short Description</label>
             <div class="preview-desc">{{c.previewData.short_description}}</div>
@@ -1749,8 +1723,6 @@
     </div>
 
   </div>
-</div>
-
-]]></template>
+</div>]]></template>
     </sp_widget>
 </record_update>

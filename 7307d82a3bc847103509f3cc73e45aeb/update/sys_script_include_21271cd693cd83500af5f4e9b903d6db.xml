@@ -510,7 +510,7 @@ DM_MigrationCore.prototype = {
     safeUpsert: function(record, table, sysId) {
     
             var gr     = new GlideRecordSecure(table);
-            var exists = sysId && gr.get(sysId);
+            var exists = sysId && gr.getValue('sysId');
     
             if (!exists) {
                 gr.initialize();
@@ -537,15 +537,10 @@ DM_MigrationCore.prototype = {
                     result = gr.insert();
                 } catch (insertErr) {
                     var errMsg = String(insertErr || '');
-                    /* ★ v37 — duplicate sys_id from cross-scope ACL hiding a
-                       pre-existing record. GlideRecordSecure.get(sysId) returned
-                       false (no read ACL) so we took the insert path, but the
-                       primary-key write hit the existing row. Fall through to
-                       update path with a plain GlideRecord. */
                     if (errMsg.indexOf('Duplicate entry') !== -1 ||
                         errMsg.indexOf('duplicate') !== -1) {
                         this.logStep('  ↻ v37 duplicate-key on insert, switching to update for ' + table + '/' + sysId);
-                        var grUpd = new GlideRecord(table);
+                        var grUpd = new GlideRecordSecure(table);
                         if (grUpd.get(sysId)) {
                             for (var uf in record) {
                                 if (uf === 'sys_id' || uf === 'sys_created_on' ||
@@ -608,7 +603,7 @@ DM_MigrationCore.prototype = {
     
                 if (!sourceNumber || !targetSysId) return false;
     
-                var gr = new GlideRecord(table);
+                var gr = new GlideRecordSecure(table);
                 if (!gr.get(targetSysId)) return false;
                 if (!gr.isValidField('number')) return false;
     
@@ -622,7 +617,7 @@ DM_MigrationCore.prototype = {
                 gr.setValue('number', sourceNumber);
                 gr.update();
     
-                var verify = new GlideRecord(table);
+                var verify = new GlideRecordSecure(table);
                 if (verify.get(targetSysId)) {
                     var finalNumber = verify.getValue('number');
                     if (String(finalNumber) === String(sourceNumber)) {
@@ -1153,13 +1148,13 @@ DM_MigrationCore.prototype = {
         <sys_created_by>bareen.makhdoomi</sys_created_by>
         <sys_created_on>2026-05-26 07:42:55</sys_created_on>
         <sys_id>21271cd693cd83500af5f4e9b903d6db</sys_id>
-        <sys_mod_count>9</sys_mod_count>
+        <sys_mod_count>11</sys_mod_count>
         <sys_name>DM_MigrationCore</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy>read</sys_policy>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sys_script_include_21271cd693cd83500af5f4e9b903d6db</sys_update_name>
         <sys_updated_by>bareen.makhdoomi</sys_updated_by>
-        <sys_updated_on>2026-06-03 10:10:13</sys_updated_on>
+        <sys_updated_on>2026-06-17 07:40:28</sys_updated_on>
     </sys_script_include>
 </record_update>

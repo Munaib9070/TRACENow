@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_sysus_tracenow.TRACENowExcelBuilder</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <mobile_callable>false</mobile_callable>
+        <name>TRACENowExcelBuilder</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[var TRACENowExcelBuilder = Class.create();
+
+TRACENowExcelBuilder.prototype = {
+
+    initialize: function(jobSysId) {
+        this.jobSysId = jobSysId;
+        this.cfg      = new TRACENowConfig();
+        this.logger   = new TRACENowLogger(jobSysId, 'ExcelBuilder');
+    },
+
+    /**
+     * Converts fetched JSON records into SpreadsheetML Excel and saves as attachment.
+     * @param {Array}  records   - Array of record objects from source Table API
+     * @param {Array}  fields    - Ordered list of field names
+     * @param {String} tableName - Table name (for sheet name and file name)
+     * @returns {Object} { success, attachSysId, fileName }
+     */
+    buildAndSave: function(records, fields, tableName) {
+        try {
+            this.logger.info('Building Excel for ' + records.length + ' records...');
+
+            var headers = this._buildHeaders(fields);
+            var xml     = this._buildSpreadsheetML(records, headers, fields, tableName);
+            var fileName = this._getFileName(tableName);
+
+            // Save as attachment on the Migration Job record
+            var sa = new GlideSysAttachment();
+            var attachSysId = sa.write(
+                { sys_id: this.jobSysId, sys_class_name: 'u_tracenow_migration_job' },
+                fileName,
+                'application/vnd.ms-excel',
+                xml
+            );
+
+            this.logger.info('Excel saved as attachment: ' + fileName + ' | sys_id: ' + attachSysId);
+
+            return { success: true, attachSysId: attachSysId, fileName: fileName };
+
+        } catch(e) {
+            this.logger.error('buildAndSave failed: ' + e.message);
+            return { success: false, error: e.message };
+        }
+    },
+
+    /**
+     * Maps raw field names to Excel column headers.
+     * Mandatory fields get the TRN_ prefix; all others use field name directly.
+     */
+    _buildHeaders: function(fields) {
+        var headers = [];
+        var cfg     = this.cfg;
+
+        for (var i = 0; i < fields.length; i++) {
+            var f = fields[i];
+            switch(f) {
+                case 'number':         headers.push(cfg.COL_NUMBER);     break;
+                case 'sys_id':         headers.push(cfg.COL_SYS_ID);     break;
+                case 'sys_created_on': headers.push(cfg.COL_CREATED_ON); break;
+                case 'sys_updated_on': headers.push(cfg.COL_UPDATED_ON); break;
+                case 'sys_created_by': headers.push(cfg.COL_CREATED_BY); break;
+                case 'sys_updated_by': headers.push(cfg.COL_UPDATED_BY); break;
+                default:               headers.push(f);                  break;
+            }
+        }
+
+        return headers;
+    },
+
+    /**
+     * Generates SpreadsheetML XML — native Excel format, no library needed.
+     * ServiceNow can produce and consume this without any npm or external tool.
+     */
+    _buildSpreadsheetML: function(records, headers, fields, tableName) {
+        var me  = this;
+        var xml = [];
+
+        xml.push('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>');
+        xml.push('<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"');
+        xml.push(' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"');
+        xml.push(' xmlns:x="urn:schemas-microsoft-com:office:excel">');
+
+        // Styles
+        xml.push('<Styles>');
+        xml.push('<Style ss:ID="hdr">');
+        xml.push('<Font ss:Bold="1" ss:Color="#FFFFFF" ss:Size="10"/>');
+        xml.push('<Interior ss:Color="#1F4E79" ss:Pattern="Solid"/>');
+        xml.push('<Alignment ss:Horizontal="Center"/>');
+        xml.push('</Style>');
+        xml.push('<Style ss:ID="trn">');  // TRN_ metadata columns
+        xml.push('<Font ss:Bold="1" ss:Color="#FFFFFF" ss:Size="10"/>');
+        xml.push('<Interior ss:Color="#833C00" ss:Pattern="Solid"/>');
+        xml.push('</Style>');
+        xml.push('<Style ss:ID="dat"><Alignment ss:WrapText="1"/></Style>');
+        xml.push('</Styles>');
+
+        // Main data sheet
+        xml.push('<Worksheet ss:Name="' + me._escapeXml(tableName) + '">');
+        xml.push('<Table>');
+
+        // Freeze header row
+        xml.push('<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">');
+        xml.push('<FreezePanes/>');
+        xml.push('<FrozenNoSplit/>');
+        xml.push('<SplitHorizontal>1</SplitHorizontal>');
+        xml.push('<TopRowBottomPane>1</TopRowBottomPane>');
+        xml.push('</WorksheetOptions>');
+
+        // Header row
+        xml.push('<Row ss:Height="22">');
+        for (var h = 0; h < headers.length; h++) {
+            var isMetaCol = headers[h].indexOf('TRN_') === 0;
+            xml.push('<Cell ss:StyleID="' + (isMetaCol ? 'trn' : 'hdr') + '">');
+            xml.push('<Data ss:Type="String">' + me._escapeXml(headers[h]) + '</Data>');
+            xml.push('</Cell>');
+        }
+        xml.push('</Row>');
+
+        // Data rows
+        for (var r = 0; r < records.length; r++) {
+            var rec = records[r];
+            xml.push('<Row>');
+
+            for (var f = 0; f < fields.length; f++) {
+                var fieldName = fields[f];
+                var value     = me._extractValue(rec, fieldName);
+                xml.push('<Cell ss:StyleID="dat">');
+                xml.push('<Data ss:Type="String">' + me._escapeXml(value) + '</Data>');
+                xml.push('</Cell>');
+            }
+
+            xml.push('</Row>');
+        }
+
+        xml.push('</Table>');
+        xml.push('</Worksheet>');
+
+        // Metadata sheet
+        xml.push('<Worksheet ss:Name="TRACENow_Meta">');
+        xml.push('<Table>');
+        var meta = [
+            ['table',          tableName],
+            ['exported_on',    new GlideDateTime().getValue()],
+            ['record_count',   String(records.length)],
+            ['job_sys_id',     this.jobSysId],
+            ['version',        '1.0']
+        ];
+        for (var m = 0; m < meta.length; m++) {
+            xml.push('<Row>');
+            xml.push('<Cell><Data ss:Type="String">' + me._escapeXml(meta[m][0]) + '</Data></Cell>');
+            xml.push('<Cell><Data ss:Type="String">' + me._escapeXml(meta[m][1]) + '</Data></Cell>');
+            xml.push('</Row>');
+        }
+        xml.push('</Table>');
+        xml.push('</Worksheet>');
+
+        xml.push('</Workbook>');
+
+        return xml.join('\n');
+    },
+
+    /**
+     * Extracts a clean string value from a record field.
+     * Handles ServiceNow's sysparm_display_value=all format:
+     *   { value: "...", display_value: "..." }
+     * Reference fields stored as: "Display Value||sys_id"
+     */
+    _extractValue: function(record, fieldName) {
+        if (!record || !record[fieldName]) return '';
+
+        var fieldData = record[fieldName];
+
+        // sysparm_display_value=all returns objects with value + display_value
+        if (typeof fieldData === 'object' && fieldData !== null) {
+            var val  = fieldData.value         || '';
+            var disp = fieldData.display_value || '';
+
+            // Reference fields: store display_value||sys_id for target resolution
+            if (disp && val && disp !== val) {
+                return disp + '||' + val;
+            }
+
+            return val || disp;
+        }
+
+        return String(fieldData);
+    },
+
+    _getFileName: function(tableName) {
+        var dt = new GlideDateTime().getValue().replace(/[: -]/g, '').substring(0,14);
+        return 'TRACENow_' + tableName + '_' + dt + '.xls';
+    },
+
+    _escapeXml: function(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+    },
+
+    type: 'TRACENowExcelBuilder'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-22 07:45:17</sys_created_on>
+        <sys_id>909a57723b290750092273c5e4e45a68</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>TRACENowExcelBuilder</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_script_include_909a57723b290750092273c5e4e45a68</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-22 07:45:17</sys_updated_on>
+    </sys_script_include>
+</record_update>

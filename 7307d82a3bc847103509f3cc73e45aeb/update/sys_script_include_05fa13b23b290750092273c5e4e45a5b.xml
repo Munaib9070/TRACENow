@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_sysus_tracenow.TRACENowNumberPreserver</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <mobile_callable>false</mobile_callable>
+        <name>TRACENowNumberPreserver</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[var TRACENowNumberPreserver = Class.create();
+
+TRACENowNumberPreserver.prototype = {
+
+    initialize: function() {
+        this.cfg = new TRACENowConfig();
+    },
+
+    /**
+     * Called from Business Rule (Before Insert).
+     * Sets number field to source value before platform auto-number fires.
+     */
+    apply: function(current) {
+        var isActive = gs.getSession().getClientData(this.cfg.SESSION_ACTIVE);
+        if (isActive !== 'true') return;
+
+        var sourceNumber = gs.getSession().getClientData(this.cfg.SESSION_NUMBER);
+        if (!sourceNumber) return;
+
+        if (current.isValidField('number')) {
+            current.setValue('number', sourceNumber);
+            gs.log('TRACENow NumberPreserver: Applied source number: ' + sourceNumber, 'TRACENow');
+        }
+    },
+
+    type: 'TRACENowNumberPreserver'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-22 07:46:37</sys_created_on>
+        <sys_id>05fa13b23b290750092273c5e4e45a5b</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>TRACENowNumberPreserver</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_script_include_05fa13b23b290750092273c5e4e45a5b</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-22 07:46:37</sys_updated_on>
+    </sys_script_include>
+</record_update>

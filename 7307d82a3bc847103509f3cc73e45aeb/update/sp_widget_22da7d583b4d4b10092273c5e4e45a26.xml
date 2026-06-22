@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
     <sp_widget action="INSERT_OR_UPDATE">
         <category>custom</category>
-        <client_script><![CDATA[api.controller = function($scope, $timeout) {
+        <client_script><![CDATA[api.controller = function($scope, $timeout, $location) {
   var c = this;
 
 	c.filters = {
@@ -26,11 +26,11 @@
     new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: ['Success', 'Failed', 'Partial', 'Skipped'],
+        labels: ['Success', 'Failed', 'Partial'],
         datasets: [{
           data: [c.data.successCount, c.data.failedCount, c.data.partialCount],
           backgroundColor: [
-            '#10b981',
+            '#116AF8',
             '#ef4444',
             '#f59e0b'
           ],
@@ -61,7 +61,7 @@ c.goToDetails = function(status) {
 
   var url = '?id=tracenow_migration_details&status=' + status;
 
-  window.location.href = url;
+  $location.url(url);
 };	
 };
 ]]></client_script>
@@ -573,12 +573,7 @@ c.goToDetails = function(status) {
   width: 200px;
   height: 200px;
   border-radius: 50%;
-  background: conic-gradient(
-    #116AF8 0% 88%,
-    #ef4444 88% 91.6%,
-    #f59e0b 91.6% 98.4%,
-    #9BC0FC 98.4% 100%
-  );
+  background: #116AF8;
   position: relative;
 }
 
@@ -616,7 +611,7 @@ canvas#donutChart {
 
 /* HOVER EFFECT */
 .legend-item:hover {
-  background: #f1f5f9;
+  background: #116AF8;
   transform: translateX(6px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
 }
@@ -684,125 +679,131 @@ canvas#donutChart {
         <name>tracenow_analytics</name>
         <option_schema/>
         <public>false</public>
-        <roles/>
+        <roles>admin</roles>
         <script><![CDATA[(function() {
 
-  data.side = $sp.getWidget('tracenow_sidebar');
-  data.totalMigrations = 414;
-  data.avgDuration = "2m 34s";
-	var mig_recs = {}, duration = 0, recs_count = 0;
-	
-	
+	data.side = $sp.getWidget('tracenow_sidebar');
 
-  var gr = new GlideRecordSecure("x_sysus_tracenow_migration_details");
-  gr.addQuery('sys_created_by', gs.getUserName());
-	gr.query();
+	var totalMigrations = 0;
+	var successRuns = 0;
+	var failedRuns = 0;
+	var partialRuns = 0;
+	var totalRecords = 0;
 
-  var total = 0; 
-  var count = 0;
-	var time_count = 0;
+	var totalAvgMigrationDuration = 0; // Tracks logs that actually have durations
 
-  var success = 0;
-  var failed = 0;
-  var partial = 0;
-	var totalSeconds = 0;
+	var migrationGR = new GlideRecordSecure('x_sysus_tracenow_migration_details');
+	migrationGR.addQuery('sys_created_by', gs.getUserName());
+	migrationGR.query();
 
-  while (gr.next()) {
-		//count total successful migrated records 
-		mig_recs = gr.getValue('table');
-		var new_mig_recs = JSON.parse(mig_recs);
-		console.log('new_mig_recs = ' + JSON.stringify(new_mig_recs));
-		for (var i = 0; i < new_mig_recs.length; i++) {
+	while (migrationGR.next()) {
+		var migrationDurationSeconds = 0;
+		totalMigrations++;
 
-			var rec = new_mig_recs[i];
+		var migrationSysId = migrationGR.getUniqueValue();
+		var successCount = 0;
+		var failedCount = 0;
+		var recordCount = 0;
 
-			console.log('table = ' + rec.table);
+		var logGR = new GlideRecordSecure('x_sysus_tracenow_tracenow_migration_record_log');
+		logGR.addQuery('migration', migrationSysId);
+		logGR.query();
 
-			if (rec.status === "success") {
-				recs_count++;
+		while (logGR.next()) {
+			recordCount++;
+			totalRecords++;
+
+			// 1. Process Statuses
+			var status = (logGR.getValue('status') || '').toLowerCase();
+			if (status == 'success') {
+				successCount++;
+			} else if (status == 'failed') {
+				failedCount++;
+			}
+
+			// 2. Process Durations INSIDE the record loop
+			var durationStr = logGR.getValue('duration');
+			if (durationStr) {
+				// Regex uses (\d+) to capture numeric values cleanly
+				var minMatch = durationStr.match(/(\d+)\s*min/);
+				var secMatch = durationStr.match(/(\d+)\s*sec/);
+
+				var minutes = minMatch ? parseInt(minMatch[1], 10) : 0;
+				var seconds = secMatch ? parseInt(secMatch[1], 10) : 0;
+
+				migrationDurationSeconds += (minutes * 60) + seconds;
 			}
 		}
 
-    var rate = parseFloat(gr.getValue('success_rate')) || 0;
+		var avgMigrationDuration = 0;
 
-    // ]]>🔹<![CDATA[ average logic
-    total += rate;
-    count++;
-		duration += gr.getValue('duration');
-
-    // ]]>🔹<![CDATA[ classification logic
-    if (rate == 100) {
-      success++;
-    } 
-    else if (rate == 0) {
-      failed++;
-    } 
-    else {
-      partial++;
-    }
-		var durationStr = gr.getValue('duration'); // e.g. "2 min 30 sec"
-
-		if (durationStr) {
-
-			// ]]>🔹<![CDATA[ extract minutes & seconds
-			var minMatch = durationStr.match(/(\d+)\s*min/);
-			var secMatch = durationStr.match(/(\d+)\s*sec/);
-
-			var minutes = minMatch ? parseInt(minMatch[1], 10) : 0;
-			var seconds = secMatch ? parseInt(secMatch[1], 10) : 0;
-
-			var total_time = (minutes * 60) + seconds;
-
-			totalSeconds += total_time;
-			time_count++;
+		if (recordCount > 0) {
+			avgMigrationDuration =
+				migrationDurationSeconds / recordCount;
 		}
-  }
-	//console.log('mig_recs =' + mig_recs);
 
-	//console.log('recs_count = ' + recs_count);
-	
-	// ✅ calculate average
-    var avgSeconds = (count > 0) ? Math.floor(totalSeconds / count) : 0;
+		totalAvgMigrationDuration += avgMigrationDuration;
 
-    // ]]>🔹<![CDATA[ convert back to min/sec
-    var avgMin = Math.floor(avgSeconds / 60);
-    var avgSec = avgSeconds % 60;
+		// Calculate Migration Success Statuses
+		var successRate = 0;
+		if (recordCount > 0) {
+			successRate = Math.round((successCount / recordCount) * 100);
+		}
 
-    data.avgDuration = avgMin + " min " + avgSec + " sec";
+		if (successRate == 100) {
+			successRuns++;
+		} else if (successRate == 0) {
+			failedRuns++;
+		} else {
+			partialRuns++;
+		}
+	}
 
-  // ✅ average success rate
-	if (count > 0) {
-		data.successRate = ((success / count) * 100).toFixed(1);
-		data.failureRate = ((failed / count) * 100).toFixed(1);
-		data.partialRate = ((partial / count) * 100).toFixed(1);
+	// Calculate Average Duration based on processed records
+	var avgSeconds =
+			totalMigrations > 0
+	? Math.floor(
+		totalAvgMigrationDuration /
+		totalMigrations
+	)
+	: 0;
+	var avgMin = Math.floor(avgSeconds / 60);
+	var avgSec = avgSeconds % 60;
+
+	// Output clean text string for HTML block
+	data.avgDuration = avgMin + " min " + avgSec + " sec";
+
+	// Standard metadata mapping
+	data.totalCount = totalMigrations;
+	data.totalRecords = totalRecords;
+	data.successCount = successRuns;
+	data.failedCount = failedRuns;
+	data.partialCount = partialRuns;
+
+	if (totalMigrations > 0) {
+		data.successRate = ((successRuns / totalMigrations) * 100).toFixed(1);
+		data.failureRate = ((failedRuns / totalMigrations) * 100).toFixed(1);
+		data.partialRate = ((partialRuns / totalMigrations) * 100).toFixed(1);
 	} else {
 		data.successRate = 0;
 		data.failureRate = 0;
 		data.partialRate = 0;
 	}
-	
 
-	data.totalRecords = recs_count;
-  // ✅ counts
-  data.successCount = success;
-  data.failedCount = failed;
-  data.partialCount = partial;
-	data.totalCount = count;
-})();
-]]></script>
+})();]]></script>
         <servicenow>false</servicenow>
         <sys_class_name>sp_widget</sys_class_name>
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-20 09:50:40</sys_created_on>
         <sys_id>22da7d583b4d4b10092273c5e4e45a26</sys_id>
-        <sys_mod_count>13</sys_mod_count>
+        <sys_mod_count>34</sys_mod_count>
         <sys_name>tracenow_analytics</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_22da7d583b4d4b10092273c5e4e45a26</sys_update_name>
         <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-06-09 06:55:14</sys_updated_on>
+        <sys_updated_on>2026-06-22 06:55:59</sys_updated_on>
         <template><![CDATA[<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <div class="layout">
 

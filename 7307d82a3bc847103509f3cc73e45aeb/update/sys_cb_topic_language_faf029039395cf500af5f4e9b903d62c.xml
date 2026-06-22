@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_cb_topic_language">
+    <sys_cb_topic_language action="INSERT_OR_UPDATE">
+        <cb_topic_id display_value="Instance Migration Assistant">f2f029039395cf500af5f4e9b903d625</cb_topic_id>
+        <language_code>en</language_code>
+        <nlu_entities>[{"node_id":"36c9d4be40c14e2d8e726ef4610236f1","variable_name":"hey_how_can_i_help_you_","nlu_entity":"","nlu_entity_label":""},{"node_id":"fcea49f31b11445685655c5f46f116fa","variable_name":"url","nlu_entity":"","nlu_entity_label":""},{"node_id":"963f61bf080447528ea04f03f4c4ba05","variable_name":"username","nlu_entity":"","nlu_entity_label":""},{"node_id":"8c24e62c30aa4834bbc62bad5cfd198b","variable_name":"password","nlu_entity":"","nlu_entity_label":""},{"node_id":"5ba0830d96054e44b84e4e87345125d6","variable_name":"connection_status","nlu_entity":"","nlu_entity_label":""},{"node_id":"b56bc599c57a4644b611474d9c69ee00","variable_name":"migration","nlu_entity":"","nlu_entity_label":""},{"node_id":"d6b6171613fd41ccb8e5ea173adb8c95","variable_name":"table_status","nlu_entity":"","nlu_entity_label":""},{"node_id":"010ed11afb6e4cab9150aa6b6c6efdaa","variable_name":"record","nlu_entity":"","nlu_entity_label":""},{"node_id":"c2465c1857174360ba60b4e933cff574","variable_name":"record_status","nlu_entity":"","nlu_entity_label":""},{"node_id":"b8c689c2fe164aa5ad0ddb4fb9e6c010","variable_name":"ready_to_migrate_","nlu_entity":"","nlu_entity_label":""},{"node_id":"1507e785ee8e46d3b4526c19bad2bc3d","variable_name":"migration_status","nlu_entity":"","nlu_entity_label":""},{"node_id":"cc8ecbbe1fc740fd96e1770edd6e2692","variable_name":"table","nlu_entity":"","nlu_entity_label":""},{"node_id":"0196820246bc4c58966f3b2224d7fe7f","variable_name":"sysid_","nlu_entity":"","nlu_entity_label":""}]</nlu_entities>
+        <nlu_intent>Instance Migration Assistant</nlu_intent>
+        <nlu_intent_label>Instance Migration Assistant</nlu_intent_label>
+        <nlu_model>ml_x_sysus_x_sysus_tracenow_global_86f029039395cf500af5f4e9b903d64a</nlu_model>
+        <nlu_model_label>Migration Assistant</nlu_model_label>
+        <nlu_provider>64c023c17300330021a044764df6a70e</nlu_provider>
+        <sys_class_name>sys_cb_topic_language</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-10 07:16:16</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_id>faf029039395cf500af5f4e9b903d62c</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name/>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_cb_topic_language_faf029039395cf500af5f4e9b903d62c</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-12 07:45:08</sys_updated_on>
+    </sys_cb_topic_language>
+</record_update>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_ui_module">
+    <sys_ui_module action="DELETE">
+        <active>true</active>
+        <application/>
+        <filter/>
+        <name>Support Requests</name>
+        <order/>
+        <path/>
+        <path_relative_to_root>false</path_relative_to_root>
+        <roles>x_sysus_tracenow.support_request_user</roles>
+        <sys_class_name>sys_ui_module</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-05-26 07:48:42</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>b3889cda3bc18310092273c5e4e45a31</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Support Requests</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_ui_module_b3889cda3bc18310092273c5e4e45a31</sys_update_name>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-05-26 07:48:42</sys_updated_on>
+        <table>x_sysus_tracenow_support_request</table>
+        <uncancelable>false</uncancelable>
+        <view_name/>
+    </sys_ui_module>
+    <sys_update_version action="INSERT_OR_UPDATE">
+        <action>DELETE</action>
+        <application display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</application>
+        <file_path/>
+        <instance_id>5af4a451db6abb448aea21c405961971</instance_id>
+        <instance_name>sysusademo7</instance_name>
+        <name>sys_ui_module_b3889cda3bc18310092273c5e4e45a31</name>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_ui_module"><sys_ui_module action="INSERT_OR_UPDATE"><active>true</active><application/><filter/><name>Support Requests</name><order/><path/><path_relative_to_root>false</path_relative_to_root><roles>x_sysus_tracenow.support_request_user</roles><sys_class_name>sys_ui_module</sys_class_name><sys_created_by>munaib.ashraf</sys_created_by><sys_created_on>2026-05-26 07:48:42</sys_created_on><sys_domain>global</sys_domain><sys_domain_path>/</sys_domain_path><sys_id>b3889cda3bc18310092273c5e4e45a31</sys_id><sys_mod_count>0</sys_mod_count><sys_name>Support Requests</sys_name><sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package><sys_policy/><sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope><sys_update_name>sys_ui_module_b3889cda3bc18310092273c5e4e45a31</sys_update_name><sys_updated_by>munaib.ashraf</sys_updated_by><sys_updated_on>2026-05-26 07:48:42</sys_updated_on><table>x_sysus_tracenow_support_request</table><uncancelable>false</uncancelable><view_name/></sys_ui_module></record_update>]]></payload>
+        <payload_hash>-1383807854</payload_hash>
+        <record_name>Support Requests</record_name>
+        <reverted_from/>
+        <source>3c9029cf9355cf500af5f4e9b903d666</source>
+        <source_table>sys_update_set</source_table>
+        <state>previous</state>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-16 10:37:55</sys_created_on>
+        <sys_id>9ba8818993a9c7100af5f4e9b903d6fe</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_recorded_at>19ed0025acb0000001</sys_recorded_at>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-16 10:37:55</sys_updated_on>
+        <type>Module</type>
+        <update_guid>d3a88189a0a9c710ad0f7c4cca2323fe</update_guid>
+        <update_guid_history>d3a88189a0a9c710ad0f7c4cca2323fe:0,7b889cda2dc18310064c7c1b4d9bb435:57828183</update_guid_history>
+    </sys_update_version>
+    <sys_metadata_delete action="INSERT_OR_UPDATE">
+        <sys_audit_delete/>
+        <sys_class_name>sys_metadata_delete</sys_class_name>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-06-16 10:38:07</sys_created_on>
+        <sys_db_object display_value="" name="sys_ui_module">sys_ui_module</sys_db_object>
+        <sys_id>cd372607417d46df9be582c9b1908a69</sys_id>
+        <sys_metadata>b3889cda3bc18310092273c5e4e45a31</sys_metadata>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Support Requests</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_parent/>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_scope_delete display_value="">2ef2079d3a0a4f3ea6602966dfb43524</sys_scope_delete>
+        <sys_update_name>sys_ui_module_b3889cda3bc18310092273c5e4e45a31</sys_update_name>
+        <sys_update_version display_value="sys_ui_module_b3889cda3bc18310092273c5e4e45a31">9ba8818993a9c7100af5f4e9b903d6fe</sys_update_version>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-06-16 10:38:07</sys_updated_on>
+    </sys_metadata_delete>
+</record_update>

@@ -219,8 +219,8 @@
 
 .tn-support-page {
     background: #f5f7fb;
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     color: #08142b;
+    width:100%;
 }
 
 /* ========================================
@@ -1190,7 +1190,7 @@
         <name>tracenow_contact</name>
         <option_schema/>
         <public>false</public>
-        <roles/>
+        <roles>admin</roles>
         <script><![CDATA[(function() {
     data.side= $sp.getWidget('tracenow_sidebar');
     /* =====================================
@@ -1199,7 +1199,7 @@
 
     if (input && input.action == "submit_support_request") {
 
-        var gr = new GlideRecord(
+        var gr = new GlideRecordSecure(
             "x_sysus_tracenow_support_request"
         );
 
@@ -1226,14 +1226,14 @@
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-22 10:33:25</sys_created_on>
         <sys_id>ddd7dc4d3b01cf10092273c5e4e45a25</sys_id>
-        <sys_mod_count>60</sys_mod_count>
+        <sys_mod_count>64</sys_mod_count>
         <sys_name>tracenow_contact</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_ddd7dc4d3b01cf10092273c5e4e45a25</sys_update_name>
-        <sys_updated_by>munaib.ashraf</sys_updated_by>
-        <sys_updated_on>2026-06-09 10:45:40</sys_updated_on>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-06-16 09:09:54</sys_updated_on>
         <template><![CDATA[<div class="tn-page-layout">
   <div class="tn-left-sidebar">
         <sp-widget widget="data.side"></sp-widget>
@@ -1252,6 +1252,8 @@
 <path opacity="0.42" d="M83.1415 12.0938L0 12.0938L27.0122 40.86L55.0768 40.86L55.0768 69.6262L83.1415 97.6909L83.1415 12.0938Z" fill="#6B6B6B"/>
 <path d="M93.4217 0H10.2803L37.2925 28.7662H65.3571V57.5325L93.4217 85.5971V0Z" fill="white"/>
 <path d="M101.584 0H132.422L101.584 33.8613V0Z" fill="white"/>
+</svg>
+
 </svg>
 
 

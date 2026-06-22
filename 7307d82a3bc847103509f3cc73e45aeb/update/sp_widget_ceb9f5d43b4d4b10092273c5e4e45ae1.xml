@@ -359,10 +359,10 @@ position:relative;
   background:#0A50F5;
 }
 .dm-stats .stat-card:nth-child(3){
-  background:linear-gradient(135deg,#F5F9FE,#EBF3FE);
+  background:linear-gradient(135deg,#E0ECFD,#C7DBFC);
 }
 .dm-stats .stat-card:nth-child(3) .icon{
-  background:#9BC0FC;
+  background:#116AF8;
 }
 .dm-stats .stat-card:nth-child(4){
   background:linear-gradient(135deg,#E5EFFE,#D0E0FD);
@@ -662,17 +662,18 @@ position:relative;
         <name>tracenow_dashboard</name>
         <option_schema/>
         <public>false</public>
-        <roles/>
+        <roles>admin</roles>
         <script><![CDATA[(function() {
   data.side= $sp.getWidget('tracenow_sidebar');
   data.migrations = [];
 	data.user = gs.getUserDisplayName();
-  var gr = new GlideRecord('x_sysus_tracenow_migration_details');
+	var count=0;
+  var gr = new GlideRecordSecure('x_sysus_tracenow_migration_details');
 	gr.addQuery('sys_created_by', gs.getUserName());
   gr.orderByDesc('sys_created_on');
-	data.totalCount = gr.getRowCount(); //  total records
+	 gr.query();
+	//data.totalCount = gr.getRowCount(); //  total records
 	gr.setLimit(3);
-  gr.query();
 	
 	
 	data.runs= 657; //dummy data
@@ -681,55 +682,138 @@ position:relative;
    // limit results
  
 while (gr.next()) {
-    var tablesArr = [];
-    var tablesStr = gr.getValue('table') || "";
+    count++;
+    var migrationSysId = gr.getUniqueValue();
 
-    // for making the records displayed from 1st inserted, 2nd time updated
-    var inserted = parseInt(gr.getValue('records_inserted')) || 0;
-    var updated = parseInt(gr.getValue('records_updated')) || 0;
+    var tables = [];
+    var tableMap = {};
 
-    var finalRecords = 0;
-    var finalStatus = "Failed";
+    var recordCount = 0;
+    var successCount = 0;
+    var failedCount = 0;
 
-    if (inserted > 0) {
-        finalRecords = inserted;
-        finalStatus = "Success";
-    } else if (updated > 0) {
-        finalRecords = updated;
-        finalStatus = "Success";
+    var logGR = new GlideRecordSecure(
+        'x_sysus_tracenow_tracenow_migration_record_log'
+    );
+
+    logGR.addQuery(
+        'migration',
+        migrationSysId
+    );
+
+    logGR.query();
+
+    while (logGR.next()) {
+
+        recordCount++;
+
+        var tableName =
+            logGR.getValue('table');
+
+        if (!tableMap[tableName]) {
+
+            tableMap[tableName] = true;
+
+            tables.push({
+                table: tableName
+            });
+        }
+
+        var status =
+            (logGR.getValue('status') || '')
+            .toLowerCase();
+
+        if (status == 'success') {
+            successCount++;
+        }
+
+        if (status == 'failed') {
+            failedCount++;
+        }
+    }
+
+    var successRate = 0;
+
+    if (recordCount > 0) {
+
+        successRate = Math.round(
+            (successCount / recordCount) * 100
+        );
     }
 
     data.migrations.push({
+
         id: gr.getValue('number'),
-        tables: Object.keys(JSON.parse(tablesStr)),
-        records: finalRecords,
-        status: finalStatus,
-        date: gr.getDisplayValue('sys_created_on'),
-        duration: gr.getValue('duration'),
-        successRate: parseInt(gr.getValue('success_rate'))
+
+        tables: tables,
+
+        records: recordCount,
+
+        status:
+            successRate == 100
+                ? 'Success'
+                : successRate > 0
+                    ? 'Partial'
+                    : 'Failed',
+
+        date:
+            gr.getDisplayValue(
+                'sys_created_on'
+            ),
+
+        duration:
+            gr.getValue('duration'),
+
+        successRate:
+            successRate
     });
 }
+data.totalCount=count;
 	// ===== DYNAMIC SUCCESS RATE =====
-var total = 0;
-var successCount = 0;
+var totalRuns = 0;
+var totalSuccessRate = 0;
+var successfulRuns = 0;
 
-var grSuccess = new GlideRecordSecure('x_sysus_tracenow_migration_details');
-grSuccess.addQuery('sys_created_by', gs.getUserName());
+var grSuccess = new GlideRecordSecure(
+    'x_sysus_tracenow_migration_details'
+);
+
+grSuccess.addQuery(
+    'sys_created_by',
+    gs.getUserName()
+);
+
 grSuccess.query();
 
 while (grSuccess.next()) {
-    total++;
 
-    var rate = parseInt(grSuccess.getValue('success_rate')) || 0;
-    if (rate === 100) {
-        successCount++;
+    totalRuns++;
+
+    var rate =
+        parseInt(
+            grSuccess.getValue(
+                'success_rate'
+            )
+        ) || 0;
+
+    totalSuccessRate += rate;
+
+    if (rate > 0) {
+        successfulRuns++;
     }
 }
 
-// override static value
-data.success = total > 0 ? Math.round((successCount / total) * 100) : 0;
-data.runs = total;
-data.totalCount = successCount;
+data.success =
+    totalRuns > 0
+        ? Math.round(
+            totalSuccessRate /
+            totalRuns
+        )
+        : 0;
+
+data.runs = totalRuns;
+
+data.totalCount = successfulRuns;
 
 
 
@@ -778,14 +862,14 @@ data.durationLabels.push(label);
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-20 09:45:59</sys_created_on>
         <sys_id>ceb9f5d43b4d4b10092273c5e4e45ae1</sys_id>
-        <sys_mod_count>10</sys_mod_count>
+        <sys_mod_count>22</sys_mod_count>
         <sys_name>tracenow_dashboard</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_ceb9f5d43b4d4b10092273c5e4e45ae1</sys_update_name>
-        <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-06-09 06:13:54</sys_updated_on>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-16 09:58:40</sys_updated_on>
         <template><![CDATA[<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <div class="dm-page-layout">
@@ -932,7 +1016,7 @@ data.durationLabels.push(label);
                     <div class="title">
                         <div>Success Rate</div>
 
-                        <div class="stat-value">{{c.data.success}}%</div>
+                        <div class="stat-value">{{c.data.success}}</div>
                     </div>
 
                     <div class="stat-icon">
@@ -1025,7 +1109,7 @@ data.durationLabels.push(label);
         <!-- TABLE TAGS -->
         <td>
           <span class="table-pill" ng-repeat="t in run.tables">
-            {{t}}
+            {{t.table}}
           </span>
         </td>
 
@@ -1058,7 +1142,7 @@ data.durationLabels.push(label);
             : "Failed" }}
 
   </span>
-</td>
+</td>		
         <td>{{run.duration}}</td>
         <td>{{run.date}}</td>
 

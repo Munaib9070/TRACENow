@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_cb_topic_language">
+    <sys_cb_topic_language action="INSERT_OR_UPDATE">
+        <cb_topic_id display_value="Migration Assistance">fa3b18b3939dc3900af5f4e9b903d6f8</cb_topic_id>
+        <language_code>en</language_code>
+        <nlu_entities>[]</nlu_entities>
+        <nlu_intent>Migration Assistance</nlu_intent>
+        <nlu_intent_label>Migration Assistance</nlu_intent_label>
+        <nlu_model>ml_x_sysus_x_sysus_tracenow_global_e01960bb93ddc3900af5f4e9b903d62b</nlu_model>
+        <nlu_model_label>Migration Assist</nlu_model_label>
+        <nlu_provider>64c023c17300330021a044764df6a70e</nlu_provider>
+        <sys_class_name>sys_cb_topic_language</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-12 10:06:58</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_id>763b18b3939dc3900af5f4e9b903d6fd</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name/>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_cb_topic_language_763b18b3939dc3900af5f4e9b903d6fd</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-12 11:09:42</sys_updated_on>
+    </sys_cb_topic_language>
+</record_update>

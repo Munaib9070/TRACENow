@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sysauto_script">
+    <sysauto_script action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <business_calendar/>
+        <condition/>
+        <conditional>false</conditional>
+        <entered_time>1970-01-01 00:00:00</entered_time>
+        <max_drift/>
+        <name>u_tracenow_migration_job</name>
+        <offset/>
+        <offset_type>0</offset_type>
+        <run_as display_value="Bareen Makhdoomi">413d0c04fbe1b250cc3dfdd86eefdcf2</run_as>
+        <run_as_tz/>
+        <run_dayofmonth>1</run_dayofmonth>
+        <run_dayofweek>1</run_dayofweek>
+        <run_period/>
+        <run_start>2026-06-22 07:47:46</run_start>
+        <run_time>1970-01-01 09:00:00</run_time>
+        <run_type>on_demand</run_type>
+        <script><![CDATA[// Scheduled Job: TRACENow Bulk Migration Runner
+// Runs all Migration Jobs where status = 'new'
+
+var jobQuery = new GlideRecord('u_tracenow_migration_job');
+jobQuery.addQuery('u_status', 'new');
+jobQuery.query();
+
+while (jobQuery.next()) {
+    var jobSysId  = jobQuery.getValue('sys_id');
+    var tableName = jobQuery.getValue('u_table');
+
+    gs.log('TRACENow Scheduled: Starting job ' + jobSysId, 'TRACENow');
+
+    var connector   = new TRACENowSourceConnector(jobSysId);
+    var fetchResult = connector.fetchRecords();
+
+    if (!fetchResult.success) {
+        jobQuery.u_status = 'error';
+        jobQuery.u_error_detail = fetchResult.error;
+        jobQuery.update();
+        continue;
+    }
+
+    var builder     = new TRACENowExcelBuilder(jobSysId);
+    var buildResult = builder.buildAndSave(fetchResult.records, fetchResult.fields, tableName);
+
+    if (!buildResult.success) {
+        jobQuery.u_status = 'error';
+        jobQuery.u_error_detail = buildResult.error;
+        jobQuery.update();
+        continue;
+    }
+
+    var engine       = new TRACENowImportEngine(jobSysId);
+    var importResult = engine.importFromAttachment(buildResult.attachSysId, tableName);
+
+    jobQuery.u_status         = importResult.success ? 'complete' : 'error';
+    jobQuery.u_total_imported = importResult.results ? importResult.results.success : 0;
+    jobQuery.u_total_errors   = importResult.results ? importResult.results.error   : 0;
+    jobQuery.update();
+}]]></script>
+        <sys_class_name>sysauto_script</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-22 07:48:16</sys_created_on>
+        <sys_id>914b1fb23b290750092273c5e4e45a22</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>u_tracenow_migration_job</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sysauto_script_914b1fb23b290750092273c5e4e45a22</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-22 07:48:16</sys_updated_on>
+        <time_zone/>
+        <upgrade_safe>false</upgrade_safe>
+    </sysauto_script>
+</record_update>

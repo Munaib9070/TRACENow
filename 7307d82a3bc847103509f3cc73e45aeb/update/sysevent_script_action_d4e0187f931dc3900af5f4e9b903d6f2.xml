@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sysevent_script_action">
+    <sysevent_script_action action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <condition_script/>
+        <description/>
+        <event_name>activate.life.cycle.migration</event_name>
+        <name>DM VA Migrate Handler</name>
+        <order>100</order>
+        <script><![CDATA[(function() {
+    var p;
+    try { p = JSON.parse(event.parm1); }
+    catch (pe) { gs.error('[VA-MIGRATE] bad payload: ' + event.parm1); return; }
+
+    gs.info('[VA-MIGRATE] starting ' + p.table + '/' + p.sysId);
+    var startMs = new GlideDateTime().getNumericValue();
+
+    try {
+        var engine = new DM_MigrationCore();
+        engine.SOURCE_URL  = p.url;
+        engine.SOURCE_USER = p.user;
+        engine.SOURCE_PSWD = p.pass;
+        engine.DEBUG       = false;
+
+        var targetSysId = engine.migrateWithDependencies(p.table, p.sysId, 0);
+        var secs = Math.round((new GlideDateTime().getNumericValue() - startMs) / 1000);
+        var s = engine.stats || {};
+
+        if (targetSysId) {
+            gs.info('[VA-MIGRATE] ✔ DONE in ' + secs + 's — ' + p.table + '/' + p.sysId +
+                    ' → ' + targetSysId +
+                    ' | inserted=' + (s.inserted || 0) +
+                    ' updated='  + (s.updated  || 0) +
+                    ' failed='   + (s.failed   || 0) +
+                    ' | reminder: run the Global number post-pass for numbers');
+        } else {
+            gs.error('[VA-MIGRATE] ✗ engine returned no target sys_id for ' +
+                     p.table + '/' + p.sysId + ' after ' + secs + 's');
+        }
+    } catch (e) {
+        gs.error('[VA-MIGRATE] ✗ threw: ' + ((e && e.message) ? e.message : String(e)) +
+                 ' | ' + (e && e.stack ? e.stack : ''));
+    }
+})();]]></script>
+        <synchronous>false</synchronous>
+        <sys_class_name>sysevent_script_action</sys_class_name>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-12 09:24:29</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>d4e0187f931dc3900af5f4e9b903d6f2</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>DM VA Migrate Handler</sys_name>
+        <sys_overrides/>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sysevent_script_action_d4e0187f931dc3900af5f4e9b903d6f2</sys_update_name>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-12 09:24:29</sys_updated_on>
+    </sysevent_script_action>
+</record_update>

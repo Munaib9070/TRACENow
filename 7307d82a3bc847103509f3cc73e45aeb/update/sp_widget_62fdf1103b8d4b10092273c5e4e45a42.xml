@@ -2,57 +2,57 @@
     <sp_widget action="INSERT_OR_UPDATE">
         <category>custom</category>
         <client_script><![CDATA[api.controller = function() {
-  var c = this;
+	var c = this;
 	c.status = sessionStorage.getItem('status');
 
-  /* ================= REFRESH ================= */
-  c.refreshData = function() {
-    c.server.update();
-  };
+	/* ================= REFRESH ================= */
+	c.refreshData = function() {
+		c.server.update();
+	};
 
-  /* ================= TABS ================= */
-  c.tabs = ["All", "Success", "Failed", "Partial"];
-  c.activeTab = "All";
+	/* ================= TABS ================= */
+	c.tabs = ["All", "Success", "Failed", "Partial"];
+	c.activeTab = "All";
 
-  /* ================= SET TAB ================= */
-  c.setTab = function(tab) {
-    c.activeTab = tab;
-  };
+	/* ================= SET TAB ================= */
+	c.setTab = function(tab) {
+		c.activeTab = tab;
+	};
 
-  /* ================= FILTER RECORDS ================= */
-c.getFilteredRecords = function() {
+	/* ================= FILTER RECORDS ================= */
+	c.getFilteredRecords = function() {
 
-    if (c.activeTab === "All") {
-        return c.data.records;
-    }
+		if (c.activeTab === "All") {
+			return c.data.records;
+		}
 
-    if (c.activeTab === "Success") {
-        return c.data.records.filter(function(rec) {
-            return rec.status === 'success';
-        });
-    }
+		if (c.activeTab === "Success") {
+			return c.data.records.filter(function(rec) {
+				return rec.status === 'success';
+			});
+		}
 
-    if (c.activeTab === "Failed") {
-        return c.data.records.filter(function(rec) {
-            return rec.status === 'failed';
-        });
-    }
+		if (c.activeTab === "Failed") {
+			return c.data.records.filter(function(rec) {
+				return rec.status === 'failed';
+			});
+		}
 
-    if (c.activeTab === "Partial") {
-        return c.data.records.filter(function(rec) {
-            //var rate = parseInt(rec.success_rate, 10);
-            //return rate > 0 && rate < 100;
-						return rec.status === 'partial';
-        });
-    }
-	console.log("data.records = " + JSON.stringify(c.data.records));
-    return c.data.records;
-};
-  /* ================= COUNT ================= */
-  c.getCount = function(tab) {
-    if (tab === "All") {
-      return c.data.totalRecords;
-    }
+		if (c.activeTab === "Partial") {
+			return c.data.records.filter(function(rec) {
+				//var rate = parseInt(rec.success_rate, 10);
+				//return rate > 0 && rate < 100;
+				return rec.status === 'partial';
+			});
+		}
+		//console.log("data.records = " + JSON.stringify(c.data.records));
+		return c.data.records;
+	};
+	/* ================= COUNT ================= */
+	c.getCount = function(tab) {
+		if (tab === "All") {
+			return c.data.totalRecords;
+		}
 		if(tab == "Success") {
 			return c.data.successRecords;
 		}
@@ -62,54 +62,56 @@ c.getFilteredRecords = function() {
 		if(tab == "Partial") {
 			return c.data.partialRecords;
 		}
-  };
+	};
 
-  /* ================= SVG PROGRESS RING ================= */
-  setTimeout(function () {
+	/* ================= SVG PROGRESS RING ================= */
+	setTimeout(function () {
 
-    var total = c.data.totalRecords || 1;
-    var success = c.data.successRecords || 0;
+		var total = c.data.totalRecords || 1;
+		var success = c.data.successRecords || 0;
 
-    var percent = (success / total) * 100;
+		var percent = (success / total) * 100;
 
-    var circle = document.getElementById("progressBar");
+		var circle = document.getElementById("progressBar");
 
-    if (!circle) return;
+		if (!circle) return;
 
-    var radius = 70;
-    var circumference = 2 * Math.PI * radius;
+		var radius = 70;
+		var circumference = 2 * Math.PI * radius;
 
-    // Start empty
-    circle.style.strokeDasharray = circumference;
-    circle.style.strokeDashoffset = circumference;
+		// Start empty
+		circle.style.strokeDasharray = circumference;
+		circle.style.strokeDashoffset = circumference;
 
-    // Force reflow (important for animation)
-    circle.getBoundingClientRect();
+		// Force reflow (important for animation)
+		circle.getBoundingClientRect();
 
-    var offset = circumference - (percent / 100) * circumference;
+		var offset = circumference - (percent / 100) * circumference;
 
-    // Animate
-    circle.style.strokeDashoffset = offset;
+		// Animate
+		circle.style.strokeDashoffset = offset;
 
-  }, 150);
+	}, 150);
 
-/* ================= MODAL ================= */
-c.showModal = false;
-c.selectedRecord = {};
+	/* ================= MODAL ================= */
+	c.showModal = false;
+	c.selectedRecord = {};
 
-c.openModal = function(rec) {
-	sessionStorage.setItem('record_id', rec.rec_number);
-	c.results = c.data.records.filter(function(rec) {
-    return rec.rec_number === sessionStorage.getItem('record_id');
-		});
+	c.openModal = function(rec) {
 
-  c.selectedRecord = rec;
-  c.showModal = true;
-};
+		c.selectedRecord = angular.copy(rec);
 
-c.closeModal = function() {
-  c.showModal = false;
-};	
+		console.log(
+			'Selected Record',
+			c.selectedRecord
+		);
+
+		c.showModal = true;
+	};
+
+	c.closeModal = function() {
+		c.showModal = false;
+	};	
 };
 ]]></client_script>
         <controller_as>c</controller_as>
@@ -706,108 +708,99 @@ c.closeModal = function() {
         <name>tracenow_deep_down</name>
         <option_schema/>
         <public>false</public>
-        <roles/>
+        <roles>admin</roles>
         <script><![CDATA[(function() {
 
-  data.side = $sp.getWidget('tracenow_sidebar');
+	data.side = $sp.getWidget('tracenow_sidebar');
 
-  //data.total = 247;
-  data.successRecords = 0;
-  data.failed = 0;
-  data.skipped = 0;
+	//data.total = 247;
+	data.successRecords = 0;
+	data.failed = 0;
+	data.skipped = 0;
 	data.records = [];
 	data.tables = [];
 	data.all_records = [];
 	data.migration_id = $sp.getParameter('migration_id');
 	var totalCount = 0, insertedCount = 0, updatedCount = 0, successCount = 0, failedCount = 0, partialCount = 0, table = '';
-	console.log('migration_id = ' + data.migration_id);
-	
-	
+	//console.log('migration_id = ' + data.migration_id);
+
+
 	//get migration data from table
-	var gr = new GlideRecord('x_sysus_tracenow_migration_details');
+	var gr = new GlideRecordSecure('x_sysus_tracenow_migration_details');
 	gr.addQuery('sys_created_by', gs.getUserName());
 	gr.addQuery('number', data.migration_id);
 	gr.query();
-	
-	while(gr.next()) {
+
+	var migrationSysId = '';
+
+	if (gr.next()) {
+
+		migrationSysId = gr.getUniqueValue();
+
 		data.targetInstance = gr.getValue('target_instance');
 		data.source_instance = gr.getValue('instance_url');
 		data.duration = gr.getValue('duration');
 		data.completedAt = gr.getValue('sys_updated_on');
 		data.current_user = gr.getDisplayValue('sys_created_by');
-		//count total successful migrated records 
-		mig_recs = gr.getValue('table')
-		console.log('mig_recs =' + mig_recs);
-		var new_mig_recs = JSON.parse(mig_recs);
-		data.all_records.push(new_mig_recs);
-		for (var i = 0; i < new_mig_recs.length; i++) {
-
-				var rec = new_mig_recs[i];
-
-				totalCount++;
-
-				if (data.tables.indexOf(rec.table) === -1) {
-						data.tables.push(rec.table);
-				}
-
-				console.log('table = ' + rec.table);
-
-				if (rec.status === "success") {
-
-						successCount++;
-
-						if (rec.action === "updated") {
-								updatedCount++;
-						} else if (rec.action === "inserted") {
-								insertedCount++;
-						}
-
-				} else if (rec.status === "failed") {
-
-						failedCount++;
-
-				} else {
-
-						partialCount++;
-				}
-		}
+		data.targetInstance = gr.getValue('target_instance');
+		data.source_instance = gr.getValue('instance_url');
+		data.duration = gr.getValue('duration');
+		data.completedAt = gr.getValue('sys_updated_on');
+		data.current_user = gr.getDisplayValue('sys_created_by');
 	}
-		data.totalRecords = totalCount;
-		data.successRecords = successCount;
-		data.failedRecords = failedCount;
-		data.partialRecords = partialCount;
-		console.log('data.all_records = ' + JSON.stringify(data.all_records));
-		(data.all_records || []).forEach(function(group) {
+	data.totalRecords = totalCount;
+	data.successRecords = successCount;
+	data.failedRecords = failedCount;
+	data.partialRecords = partialCount;
+	//console.log('data.all_records = ' + JSON.stringify(data.all_records));
+	var logGR = new GlideRecordSecure('x_sysus_tracenow_tracenow_migration_record_log'); // <-- your record log table
 
-				if (!Array.isArray(group)) return;
+	logGR.addQuery('migration', migrationSysId);
+	logGR.orderBy('sys_created_on');
+	logGR.query();
 
-				group.forEach(function(rec) {
+	while (logGR.next()) {
 
-						data.records.push({
-								table: rec.table || '',
-								source_id: rec.sys_id || '',
-								state: rec.state || '',
-								rec_number: rec.number || '',
-								short_description: rec.short_description || '',
-								status: rec.status || '',
-								action: rec.action || ''
-						});
+		data.records.push({
 
-				});
+			table: logGR.getValue('table') || '',
+			source_id: logGR.getValue('source_sys_id') || '',
+			rec_number: logGR.getValue('record_number') || '',
+			short_description: logGR.getValue('short_description') || '',
+			state: logGR.getDisplayValue('state') || '',
+
+			status: (logGR.getValue('status') || '').toLowerCase(),
+
+			action: logGR.getValue('action') || '',
+
+			reason: logGR.getValue('reason') || '',
+
+			duration: logGR.getValue('duration') || '',
+
+			logs: JSON.parse(
+				logGR.getValue('migration_log') || '{"logs":[]}'
+			)
 
 		});
-	console.log('records = ' + JSON.stringify(data.records));
+	}
 
-//status logic for the top
-	if (data.failedRecords === data.totalRecords) {
-    data.status = "Failed";
-}
-else if (data.successRecords === data.totalRecords) {
-    data.status = "Success";
-}
-else {
-    data.status = "Partial";
-}
+
+	//console.log('records = ' + JSON.stringify(data.records));
+
+	//status logic for the top
+	data.totalRecords = data.records.length;
+
+	data.successRecords = data.records.filter(function(r) {
+		return r.status === 'success';
+	}).length;
+
+	data.failedRecords = data.records.filter(function(r) {
+		return r.status === 'failed';
+	}).length;
+
+	data.partialRecords = data.records.filter(function(r) {
+		return r.status === 'partial';
+	}).length;
 })();
 ]]></script>
         <servicenow>false</servicenow>
@@ -815,14 +808,14 @@ else {
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-20 10:04:31</sys_created_on>
         <sys_id>62fdf1103b8d4b10092273c5e4e45a42</sys_id>
-        <sys_mod_count>36</sys_mod_count>
+        <sys_mod_count>82</sys_mod_count>
         <sys_name>tracenow_deep_down</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_62fdf1103b8d4b10092273c5e4e45a42</sys_update_name>
         <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-06-09 10:30:06</sys_updated_on>
+        <sys_updated_on>2026-06-19 06:29:20</sys_updated_on>
         <template><![CDATA[<div class="sp-layout">
 
   <!-- ================= SIDEBAR ================= -->
@@ -863,32 +856,32 @@ else {
       <div class="mic-header">
         <div class="left">
           <div class="status-icon"
-             ng-class="{
-               'success': c.data.status === 'Success',
-               'failed': c.data.status === 'Failed',
-               'partial': c.data.status === 'Partial'
-             }">
+               ng-class="{
+                         'success': c.data.status === 'Success',
+                         'failed': c.data.status === 'Failed',
+                         'partial': c.data.status === 'Partial'
+                         }">
 
-          <i class="fa"
-             ng-class="{
-               'fa-check-circle': c.data.status === 'Success',
-               'fa-times-circle': c.data.status === 'Failed',
-               'fa-exclamation-triangle': c.data.status === 'Partial'
-             }"></i>
+            <i class="fa"
+               ng-class="{
+                         'fa-check-circle': c.data.status === 'Success',
+                         'fa-times-circle': c.data.status === 'Failed',
+                         'fa-exclamation-triangle': c.data.status === 'Partial'
+                         }"></i>
 
-        </div>
-          
+          </div>
+
           <div>
             <h2>{{c.data.migration_id}}</h2>
             <div class="tags">
               <span class="tag"
-      ng-class="{
-        'success': c.data.status === 'Success',
-        'failed': c.data.status === 'Failed',
-        'partial': c.data.status === 'Partial'
-      }">
-  {{c.data.status}}
-</span>
+                    ng-class="{
+                              'success': c.data.status === 'Success',
+                              'failed': c.data.status === 'Failed',
+                              'partial': c.data.status === 'Partial'
+                              }">
+                {{c.data.status}}
+              </span>
               <!--<span class="tag warn">Multi-Table</span>-->
             </div>
           </div>
@@ -919,7 +912,7 @@ else {
             <div>]]>🗄<![CDATA[ <b>Source Instance</b><br>{{c.data.source_instance}}</div>
             <div>]]>🧩<![CDATA[ <b>Target Instance</b><br>{{c.data.targetInstance}}</div>
             <div>]]>📦<![CDATA[ <b>Tables</b><br>
-              <span class="pill" ng-repeat="table in c.data.tables">{{table}}</span>
+              <span class="pill" ng-repeat="rec in c.data.records">{{rec.table}}</span>
             </div>
           </div>
 
@@ -956,11 +949,11 @@ else {
         <!-- TABS -->
         <div class="records-tabs">
           <div 
-            class="tab" 
-            ng-repeat="tab in c.tabs"
-            ng-class="{'active': c.activeTab === tab}"
-            ng-click="c.setTab(tab)"
-          >
+               class="tab" 
+               ng-repeat="tab in c.tabs"
+               ng-class="{'active': c.activeTab === tab}"
+               ng-click="c.setTab(tab)"
+               >
             {{tab}} ({{c.getCount(tab)}})
           </div>
         </div>
@@ -977,15 +970,15 @@ else {
           </div>
 
           <div 
-            class="table-row" 
-            ng-repeat="rec in c.getFilteredRecords()"
-          >
+               class="table-row" 
+               ng-repeat="rec in c.getFilteredRecords()"
+               >
             <div class="bold">{{rec.rec_number}}</div>
             <div><span class="pill">{{rec.table}}</span></div>
             <div>{{rec.source_id}}</div>
             <div>{{rec.status}}</div>
 
-          
+
 
 
             <!-- ✅ CLEAN ACTION -->
@@ -1007,27 +1000,27 @@ else {
 
   <div class="mic-modal-overlay" ng-click="c.closeModal()"></div>
 
-  <div class="mic-modal-box" ng-repeat="rec in c.results">
+  <div class="mic-modal-box">
 
     <!-- HEADER -->
     <div class="mic-modal-header">
       <div class="left">
-        <div class="status-icon success" ng-if="c.status == 'Success'">✔</div>
-				<div class="status-icon failed" ng-if="c.status == 'Failed'">✖</div>
-				<div class="status-icon partial" ng-if="c.status == 'Partial'">⚠</div>
+        <div class="status-icon success" ng-if="c.selectedRecord.status === 'success'">✔</div>
+        <div class="status-icon failed" ng-if="c.selectedRecord.status === 'failed'">✖</div>
+        <div class="status-icon partial" ng-if="c.selectedRecord.status === 'partial'">⚠</div>
         <div>
           <h2>{{c.selectedRecord.rec_number}}</h2>
           <div class="tags">
             <span class="tag"
-                ng-class="{
-                  'success': c.selectedRecord.status === 'Success',
-                  'failed': c.selectedRecord.status === 'Failed',
-                  'partial': c.selectedRecord.status === 'Partial'
-                }">
+                  ng-class="{
+                            'success': c.selectedRecord.status === 'success',
+                            'failed': c.selectedRecord.status === 'failed',
+                            'partial': c.selectedRecord.status === 'partial'
+                            }">
 
-            {{c.selectedRecord.status}}
+              {{c.selectedRecord.status}}
 
-          </span>
+            </span>
             <span class="tag warn">{{c.selectedRecord.table}}</span>
           </div>
         </div>
@@ -1046,7 +1039,7 @@ else {
 
       <div class="box">
         <span>State</span>
-        <p>{{rec.state}}</p>
+        <p>{{c.selectedRecord.state}}</p>
       </div>
 
       <div class="box">
@@ -1056,12 +1049,12 @@ else {
 
       <div class="box">
         <span>Short Description</span>
-        <p>{{rec.short_description}}</p>
+        <p>{{c.selectedRecord.short_description}}</p>
       </div>
 
       <div class="box">
         <span>Migration Duration</span>
-        <p>{{c.data.duration}}</p>
+        <p>{{c.selectedRecord.duration}}</p>
       </div>
 
       <div class="box">
@@ -1070,34 +1063,37 @@ else {
       </div>
 
     </div>
-<!-- FAILED ERROR BOX -->
-<div class="error-box failed" ng-if="c.status == 'Failed'">
-<div class="error-icon">✖</div>
-<div>
-<h4>Error Details</h4>
-<p>{{rec.reason}}</p>
-</div>
-</div>
- 
+    <!-- FAILED ERROR BOX -->
+    <div class="error-box failed" ng-if="c.selectedRecord.status == 'failed'">
+      <div class="error-icon">✖</div>
+      <div>
+        <h4>Error Details</h4>
+        <p>{{c.selectedRecord.reason}}</p>
+      </div>
+    </div>
+
     <!-- PARTIAL WARNING BOX -->
-<div class="error-box partial" ng-if="c.status == 'Partial'">
-<div class="error-icon">⚠</div>
-<div>
-<h4>Partial Migration</h4>
-<p>{{rec.reason}}</p>
-</div>
-</div>
+    <div class="error-box partial" ng-if="c.selectedRecord.status == 'partial'">
+      <div class="error-icon">⚠</div>
+      <div>
+        <h4>Partial Migration</h4>
+        <p>{{rec.reason}}</p>
+      </div>
+    </div>
     <!-- LOGS -->
     <div class="mic-modal-logs">
       <h4>]]>📄<![CDATA[ Migration Log</h4>
 
       <div class="log-box">
-        <pre>
+        <!--<pre>
 [14:32:45] INFO: Starting record migration for {{c.selectedRecord.rec_number}}
 [14:32:46] DEBUG: Fetching source record
 [14:32:47] INFO: Field mappings validated successfully
 [14:32:48] INFO: Record created successfully
 [14:32:49] INFO: Migration completed
+        </pre>-->
+        <pre ng-repeat="log in c.selectedRecord.logs track by $index">
+        	{{log}}
         </pre>
       </div>
     </div>

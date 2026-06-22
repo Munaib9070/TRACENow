@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_embedded_help_role">
+    <sys_embedded_help_role action="INSERT_OR_UPDATE">
+        <order>1000</order>
+        <role display_value="x_sysus_tracenow.tracenow_migration_record_log_user" name="x_sysus_tracenow.tracenow_migration_record_log_user">7112af6893ed07100af5f4e9b903d6ee</role>
+        <sys_class_name>sys_embedded_help_role</sys_class_name>
+        <sys_created_by>faizan.latief</sys_created_by>
+        <sys_created_on>2026-06-15 08:31:15</sys_created_on>
+        <sys_id>c212af6893ed07100af5f4e9b903d6f5</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>7112af6893ed07100af5f4e9b903d6ee</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_embedded_help_role_c212af6893ed07100af5f4e9b903d6f5</sys_update_name>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-06-15 08:31:15</sys_updated_on>
+    </sys_embedded_help_role>
+</record_update>
