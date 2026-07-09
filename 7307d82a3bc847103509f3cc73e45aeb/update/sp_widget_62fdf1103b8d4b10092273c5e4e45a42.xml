@@ -721,7 +721,7 @@
 	data.tables = [];
 	data.all_records = [];
 	data.migration_id = $sp.getParameter('migration_id');
-	var totalCount = 0, insertedCount = 0, updatedCount = 0, successCount = 0, failedCount = 0, partialCount = 0, table = '';
+	var totalCount = 0, insertedCount = 0, updatedCount = 0, successCount = 0, failedCount = 0, partialCount = 0, table = '', tar_rec_number;
 	//console.log('migration_id = ' + data.migration_id);
 
 
@@ -760,12 +760,21 @@
 	logGR.query();
 
 	while (logGR.next()) {
+		
+		//query the record number in target instance for the migrated record
+		var tbl_gr = new GlideRecordSecure(logGR.getValue('table'));
+		tbl_gr.addQuery('sys_id', logGR.getValue('source_sys_id'));
+		tbl_gr.query();
+		while(tbl_gr.next()) {
+			tar_rec_number = tbl_gr.getValue('number');
+		}
 
 		data.records.push({
 
 			table: logGR.getValue('table') || '',
+			target_rec_number: tar_rec_number || '',
 			source_id: logGR.getValue('source_sys_id') || '',
-			rec_number: logGR.getValue('record_number') || '',
+			source_rec_number: logGR.getValue('record_number') || '',
 			short_description: logGR.getValue('short_description') || '',
 			state: logGR.getDisplayValue('state') || '',
 
@@ -808,14 +817,14 @@
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-20 10:04:31</sys_created_on>
         <sys_id>62fdf1103b8d4b10092273c5e4e45a42</sys_id>
-        <sys_mod_count>82</sys_mod_count>
+        <sys_mod_count>97</sys_mod_count>
         <sys_name>tracenow_deep_down</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_62fdf1103b8d4b10092273c5e4e45a42</sys_update_name>
         <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-06-19 06:29:20</sys_updated_on>
+        <sys_updated_on>2026-06-22 12:23:20</sys_updated_on>
         <template><![CDATA[<div class="sp-layout">
 
   <!-- ================= SIDEBAR ================= -->
@@ -973,7 +982,7 @@
                class="table-row" 
                ng-repeat="rec in c.getFilteredRecords()"
                >
-            <div class="bold">{{rec.rec_number}}</div>
+            <div class="bold">{{rec.source_rec_number}}</div>
             <div><span class="pill">{{rec.table}}</span></div>
             <div>{{rec.source_id}}</div>
             <div>{{rec.status}}</div>
@@ -1009,7 +1018,7 @@
         <div class="status-icon failed" ng-if="c.selectedRecord.status === 'failed'">✖</div>
         <div class="status-icon partial" ng-if="c.selectedRecord.status === 'partial'">⚠</div>
         <div>
-          <h2>{{c.selectedRecord.rec_number}}</h2>
+          <h2>{{c.selectedRecord.source_rec_number}}</h2>
           <div class="tags">
             <span class="tag"
                   ng-class="{
@@ -1033,8 +1042,8 @@
     <div class="mic-modal-details" ng>
 
       <div class="box">
-        <span>Record ID</span>
-        <p>{{c.selectedRecord.source_id}}</p>
+        <span>Source Record ID</span>
+        <p>{{c.selectedRecord.source_rec_number}}</p>
       </div>
 
       <div class="box">
@@ -1058,8 +1067,8 @@
       </div>
 
       <div class="box">
-        <span>Record ID</span>
-        <p>{{c.selectedRecord.rec_number}}</p>
+        <span>Target Record ID</span>
+        <p>{{c.selectedRecord.target_rec_number}}</p>
       </div>
 
     </div>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
     <sys_script_include action="INSERT_OR_UPDATE">
         <access>package_private</access>
-        <active>true</active>
+        <active>false</active>
         <api_name>x_sysus_tracenow.TRACENowLogger</api_name>
         <caller_access/>
         <client_callable>false</client_callable>
@@ -31,7 +31,7 @@ TRACENowLogger.prototype = {
         // Persist per-record log when job context is available
         if (this.jobSysId) {
             try {
-                var log = new GlideRecord('u_tracenow_record_log');
+                var log = new GlideRecordSecure('x_sysus_tracenow_tracenow_migration_record_log');
                 log.initialize();
                 log.u_job     = this.jobSysId;
                 log.u_status  = level;
@@ -46,7 +46,7 @@ TRACENowLogger.prototype = {
 
     flushToJob: function() {
         if (!this.jobSysId || this.buffer.length === 0) return;
-        var job = new GlideRecord('u_tracenow_migration_job');
+        var job = new GlideRecordSecure('x_sysus_tracenow_tracenow_migration_record_log');
         if (job.get(this.jobSysId)) {
             job.u_run_log = this.buffer.join('\n');
             job.update();
@@ -59,13 +59,13 @@ TRACENowLogger.prototype = {
         <sys_created_by>bareen.makhdoomi</sys_created_by>
         <sys_created_on>2026-06-22 07:43:31</sys_created_on>
         <sys_id>cf3ad7323b290750092273c5e4e45ac6</sys_id>
-        <sys_mod_count>0</sys_mod_count>
+        <sys_mod_count>2</sys_mod_count>
         <sys_name>TRACENowLogger</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy>read</sys_policy>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sys_script_include_cf3ad7323b290750092273c5e4e45ac6</sys_update_name>
         <sys_updated_by>bareen.makhdoomi</sys_updated_by>
-        <sys_updated_on>2026-06-22 07:43:31</sys_updated_on>
+        <sys_updated_on>2026-06-23 07:05:37</sys_updated_on>
     </sys_script_include>
 </record_update>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_package_dependency_m2m">
+    <sys_package_dependency_m2m action="INSERT_OR_UPDATE">
+        <dependency display_value="Virtual Agent Platform Topic Blocks" source="com.glide.cs.topic_blocks">7dd3bf3704b52210559073c06a02f701</dependency>
+        <min_version>1.0.0</min_version>
+        <sys_created_by>bareen.makhdoomi</sys_created_by>
+        <sys_created_on>2026-06-22 11:43:56</sys_created_on>
+        <sys_id>3851100f3bad0750092273c5e4e45a1a</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-06-22 11:43:56</sys_updated_on>
+    </sys_package_dependency_m2m>
+</record_update>

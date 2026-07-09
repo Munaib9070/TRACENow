@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
     <sys_script_include action="INSERT_OR_UPDATE">
         <access>package_private</access>
-        <active>true</active>
+        <active>false</active>
         <api_name>x_sysus_tracenow.TRACENowImportEngine</api_name>
         <caller_access/>
         <client_callable>false</client_callable>
@@ -30,8 +30,8 @@ TRACENowImportEngine.prototype = {
             this.logger.info('Reading Excel attachment: ' + attachSysId);
 
             var sa      = new GlideSysAttachment();
-            var attachGR = new GlideRecord('sys_attachment');
-            if (!attachGR.get(attachSysId)) {
+            var attachGR = new GlideRecordSecure('sys_attachment');
+            if (!attachGR.getValue(attachSysId)) {
                 throw new Error('Attachment not found: ' + attachSysId);
             }
 
@@ -99,7 +99,7 @@ TRACENowImportEngine.prototype = {
             gs.getSession().putClientData(cfg.SESSION_NUMBER,  sourceNumber);
             gs.getSession().putClientData(cfg.SESSION_SYS_ID,  sourceSysId);
 
-            var gr = new GlideRecord(tableName);
+            var gr = new GlideRecordSecure(tableName);
             gr.initialize();
 
             // Preserve timestamps and audit fields
@@ -184,8 +184,8 @@ TRACENowImportEngine.prototype = {
     _enforceNumber: function(tableName, sysId, desiredNumber) {
         if (!desiredNumber || !sysId) return;
 
-        var check = new GlideRecord(tableName);
-        check.get(sysId);
+        var check = new GlideRecordSecure(tableName);
+        check.getValue(sysId);
         if (check.getValue('number') === desiredNumber) {
             this.logger.info('Number confirmed correct: ' + desiredNumber);
             return;
@@ -193,15 +193,15 @@ TRACENowImportEngine.prototype = {
 
         this.logger.warn('Number was overridden by platform. Enforcing via direct update...');
 
-        var fix = new GlideRecord(tableName);
-        fix.get(sysId);
+        var fix = new GlideRecordSecure(tableName);
+        fix.getval(sysId);
         fix.setWorkflow(false);
         fix.autoSysFields(false);
         fix.setValue('number', desiredNumber);
         fix.update();
 
-        var verify = new GlideRecord(tableName);
-        verify.get(sysId);
+        var verify = new GlideRecordSecure(tableName);
+        verify.getValue(sysId);
         var finalNum = verify.getValue('number');
 
         if (finalNum === desiredNumber) {
@@ -213,7 +213,7 @@ TRACENowImportEngine.prototype = {
 
     _exists: function(tableName, number) {
         if (!number) return false;
-        var gr = new GlideRecord(tableName);
+        var gr = new GlideRecordSecure(tableName);
         gr.addQuery('number', number);
         gr.setLimit(1);
         gr.query();
@@ -221,7 +221,7 @@ TRACENowImportEngine.prototype = {
     },
 
     _logRecord: function(sourceNum, sourceSysId, targetSysId, status, message) {
-        var log = new GlideRecord('u_tracenow_record_log');
+        var log = new GlideRecordSecure('x_sysus_tracenow_tracenow_migration_record_log');
         log.initialize();
         log.u_job            = this.jobSysId;
         log.u_source_number  = sourceNum;
@@ -252,7 +252,7 @@ TRACENowImportEngine.prototype = {
             }
 
             for (var r = 0; r < rowNodes.size(); r++) {
-                var rowNode  = rowNodes.get(r);
+                var rowNode  = rowNodes.getValue(r);
                 var cellVals = this._parseCells(rowNode, xmlDoc);
 
                 if (r === 0) {
@@ -278,7 +278,7 @@ TRACENowImportEngine.prototype = {
         var children = rowNode.getChildNodes();
 
         for (var i = 0; i < children.size(); i++) {
-            var cell  = children.get(i);
+            var cell  = children.getValue(i);
             var data  = cell.getFirstChild();  // <Data> node
             if (data) {
                 values.push(data.getTextContent() || '');
@@ -296,13 +296,13 @@ TRACENowImportEngine.prototype = {
         <sys_created_by>bareen.makhdoomi</sys_created_by>
         <sys_created_on>2026-06-22 07:45:59</sys_created_on>
         <sys_id>c3ca9f723b290750092273c5e4e45a13</sys_id>
-        <sys_mod_count>0</sys_mod_count>
+        <sys_mod_count>4</sys_mod_count>
         <sys_name>TRACENowImportEngine</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy>read</sys_policy>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sys_script_include_c3ca9f723b290750092273c5e4e45a13</sys_update_name>
         <sys_updated_by>bareen.makhdoomi</sys_updated_by>
-        <sys_updated_on>2026-06-22 07:45:59</sys_updated_on>
+        <sys_updated_on>2026-06-23 07:05:37</sys_updated_on>
     </sys_script_include>
 </record_update>

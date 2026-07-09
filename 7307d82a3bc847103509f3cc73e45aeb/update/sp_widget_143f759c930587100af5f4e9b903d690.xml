@@ -44,7 +44,6 @@
     /* ========================= LOAD CART ========================= */
     c.loadCart = function() {
         var raw = JSON.parse(sessionStorage.getItem("migration_cart") || "[]");
-        console.log('raw = ' + JSON.stringify(raw));
         c.selected_recs = raw.length;
 
         if (c.previousCartLength !== undefined && raw.length > c.previousCartLength) {
@@ -91,7 +90,6 @@
             return grouped[key];
         });
 
-        console.log('cart = ' + JSON.stringify(c.cart));
         window.dispatchEvent(new Event("cartUpdated"));
         $scope.$emit("cartUpdated");
     };
@@ -182,7 +180,6 @@
                 };
             }
 
-            console.log('Final status: ' + c.status);
 
         }).catch(function(error) {
             clearInterval(progressInterval);
@@ -197,7 +194,6 @@
                 error: true,
                 message: "Migration failed due to a connection or server error."
             };
-            console.error("Migration catch error: ", error);
         });
     };
 
@@ -1074,386 +1070,392 @@
         <public>false</public>
         <roles>admin</roles>
         <script><![CDATA[(function() {
-    data.side = $sp.getWidget('tracenow_sidebar');
+	data.side = $sp.getWidget('tracenow_sidebar');
 
-    var stats = { inserted: 0, updated: 0, failed: 0, details: [] };
-    var migrationDetails = [];
-    var engine, migration_logs = [];
+	var stats = { inserted: 0, updated: 0, failed: 0, details: [] };
+	var migrationDetails = [];
+	var engine, migration_logs = [];
 
-    /* ========================= CREATE NOTIFICATION ========================= */
-    if (input && input.action == "createNotification") {
-        var notif = new GlideRecordSecure("x_sysus_tracenow_notifications");
-        notif.initialize();
-        notif.setValue("title", input.payload.title);
-        notif.setValue("message", input.payload.message);
-        notif.setValue("type", input.payload.type);
-        notif.setValue("priority", input.payload.priority);
-        notif.setValue("user", gs.getUserID());
-        notif.setValue("read", false);
-        notif.insert();
-        data.notificationCreated = true;
-        return;
-    }
+	/* ========================= CREATE NOTIFICATION ========================= */
+	if (input && input.action == "createNotification") {
+		var notif = new GlideRecordSecure("x_sysus_tracenow_notifications");
+		notif.initialize();
+		notif.setValue("title", input.payload.title);
+		notif.setValue("message", input.payload.message);
+		notif.setValue("type", input.payload.type);
+		notif.setValue("priority", input.payload.priority);
+		notif.setValue("user", gs.getUserID());
+		notif.setValue("read", false);
+		notif.insert();
+		data.notificationCreated = true;
+		return;
+	}
 
-    /* ========================= MIGRATION EXECUTION ========================= */
-    if (input && input.action == "migrateRecords") {
-        var username, password, sourceurl;
+	/* ========================= MIGRATION EXECUTION ========================= */
+	if (input && input.action == "migrateRecords") {
+		var username, password, sourceurl;
 
-        // Migration Started Notification
-        var startNotif = new GlideRecordSecure("x_sysus_tracenow_notifications");
-        startNotif.initialize();
-        startNotif.setValue("title", "Migration started");
-        startNotif.setValue("message", "Migration process has started.");
-        startNotif.setValue("type", "migration_started");
-        startNotif.setValue("priority", "info");
-        startNotif.setValue("user", gs.getUserID());
-        startNotif.insert();
+		// Migration Started Notification
+		var startNotif = new GlideRecordSecure("x_sysus_tracenow_notifications");
+		startNotif.initialize();
+		startNotif.setValue("title", "Migration started");
+		startNotif.setValue("message", "Migration process has started.");
+		startNotif.setValue("type", "migration_started");
+		startNotif.setValue("priority", "info");
+		startNotif.setValue("user", gs.getUserID());
+		startNotif.insert();
 
-        // Load connection
-        var gr = new GlideRecordSecure('x_sysus_tracenow_connection');
-        gr.addQuery('sys_id', input.active_conn);
-        gr.query();
-        if (gr.next()) {
-            username  = gr.getValue('username');
-            password  = gr.getValue('password');
-            sourceurl = gr.getValue('url');
-            data.conn_name = gr.getValue('name');
-        }
+		// Load connection
+		var gr = new GlideRecordSecure('x_sysus_tracenow_connection');
+		gr.addQuery('sys_id', input.active_conn);
+		gr.query();
+		if (gr.next()) {
+			username  = gr.getValue('username');
+			password  = gr.getValue('password');
+			sourceurl = gr.getValue('url');
+			data.conn_name = gr.getValue('name');
+		}
 
-        var recordsToMigrate = [];
-        (input.records || []).forEach(function(tableGroup) {
-            var table = tableGroup.name;
-            (tableGroup.records || []).forEach(function(rec) {
-                if (rec.sys_id) {
-                    recordsToMigrate.push({
-                        table: table,
-                        sysId: String(rec.sys_id).trim(),
-                        number: rec.number || '',
-                        state: rec.state || '',
-                        short_description: rec.short_description || '',
-                        migrationStatus: 'pending'
-                    });
-                }
-            });
-        });
+		var recordsToMigrate = [];
+		(input.records || []).forEach(function(tableGroup) {
+			var table = tableGroup.name;
+			(tableGroup.records || []).forEach(function(rec) {
+				if (rec.sys_id) {
+					recordsToMigrate.push({
+						table: table,
+						sysId: String(rec.sys_id).trim(),
+						number: rec.number || '',
+						state: rec.state || '',
+						short_description: rec.short_description || '',
+						migrationStatus: 'pending'
+					});
+				}
+			});
+		});
 
-        /* ========== Validate Tables + Pre-check Existing Records ========== */
-        var existingRecords = {};
-        var validRecords = [];
-        var invalidTables = {};
+		/* ========== Validate Tables + Pre-check Existing Records ========== */
+		var existingRecords = {};
+		var validRecords = [];
+		var invalidTables = {};
 
-        for (var i = 0; i < recordsToMigrate.length; i++) {
-            var record = recordsToMigrate[i];
-            try {
-                if (invalidTables[record.table]) {
-                    stats.failed++;
-                    migrationDetails.push({
-                        table: record.table, sys_id: record.sysId,
-                        number: record.number, state: record.state,
-                        short_description: record.short_description,
-                        status: "failed", action: "failed",
-                        reason: "Table does not exist in target instance"
-                    });
-                    continue;
-                }
+		for (var i = 0; i < recordsToMigrate.length; i++) {
+			var record = recordsToMigrate[i];
+			try {
+				if (invalidTables[record.table]) {
+					stats.failed++;
+					migrationDetails.push({
+						table: record.table, sys_id: record.sysId,
+						number: record.number, state: record.state,
+						short_description: record.short_description,
+						status: "failed", action: "failed",
+						reason: "Table does not exist in target instance"
+					});
+					continue;
+				}
 
-                var grCheck = new GlideRecordSecure(record.table);
+				var grCheck = new GlideRecordSecure(record.table);
 
-                // ✅ CERTIFIED: get() wrapped in if() — prevents execution on false result
-                if (grCheck.get(record.sysId)) {
-                    existingRecords[record.table + ':' + record.sysId] = true;
-                } else {
-                    existingRecords[record.table + ':' + record.sysId] = false;
-                }
+				// ✅ CERTIFIED: get() wrapped in if() — prevents execution on false result
+				if (grCheck.get(record.sysId)) {
+					existingRecords[record.table + ':' + record.sysId] = true;
+				} else {
+					existingRecords[record.table + ':' + record.sysId] = false;
+				}
 
-                validRecords.push(record);
+				validRecords.push(record);
 
-            } catch (ex) {
-                invalidTables[record.table] = true;
-                stats.failed++;
-                migrationDetails.push({
-                    table: record.table, sys_id: record.sysId,
-                    number: record.number, state: record.state,
-                    short_description: record.short_description,
-                    status: "failed", action: "failed",
-                    reason: "Table does not exist in target instance"
-                });
-                gs.warn("Skipping invalid table: " + record.table + " | " + ex);
-            }
-        }
+			} catch (ex) {
+				invalidTables[record.table] = true;
+				stats.failed++;
+				migrationDetails.push({
+					table: record.table, sys_id: record.sysId,
+					number: record.number, state: record.state,
+					short_description: record.short_description,
+					status: "failed", action: "failed",
+					reason: "Table does not exist in target instance"
+				});
+				gs.warn("Skipping invalid table: " + record.table + " | " + ex);
+			}
+		}
 
-        /* ========================= Run Migration Engine ========================= */
-        try {
-            var startTime = new Date().getTime();
+		/* ========================= Run Migration Engine ========================= */
+		try {
+			var startTime = new Date().getTime();
 
-            engine = new DM_MigrationCore();
-            var result = engine.migrateMixedRecords(
-                sourceurl, username, password, validRecords,
-                { sortByTable: true, stopOnError: false }
-            );
-						migration_logs = engine.executionLogs;
-						migration_logs.push("Migration Completed");
-            var endTime = new Date().getTime();
-            var durationMs = endTime - startTime;
-            var totalSeconds = Math.floor(durationMs / 1000);
-            var minutes = Math.floor(totalSeconds / 60);
-            var seconds = totalSeconds % 60;
-            var durationText = minutes + " min " + seconds + " sec";
+			engine = new DM_MigrationCore();
+			var result = engine.migrateMixedRecords(
+				sourceurl, username, password, validRecords,
+				{ sortByTable: true, stopOnError: false }
+			);
+			//update number of new inserted record
+			validRecords.forEach(function(rec) {
+				var bridge = new global.DM_GlobalNumberBridge();
 
-            gs.info("Migration Duration: " + durationText);
-            data.duration = durationText;
-            data.sTime = new Date(startTime).toString();
-            data.eTime = new Date(endTime).toString();
+				bridge.restoreNumbers(false, rec.table);
+			})
+			migration_logs = engine.executionLogs;
+			migration_logs.push("Migration Completed");
+			var endTime = new Date().getTime();
+			var durationMs = endTime - startTime;
+			var totalSeconds = Math.floor(durationMs / 1000);
+			var minutes = Math.floor(totalSeconds / 60);
+			var seconds = totalSeconds % 60;
+			var durationText = minutes + " min " + seconds + " sec";
 
-            /* ========== Post-migration: count inserted / updated / failed ========== */
-            for (var j = 0; j < validRecords.length; j++) {
-                var vRec = validRecords[j];
-                var key = vRec.table + ':' + vRec.sysId;
-                var existedBefore = existingRecords[key];
+			gs.info("Migration Duration: " + durationText);
+			data.duration = durationText;
+			data.sTime = new Date(startTime).toString();
+			data.eTime = new Date(endTime).toString();
 
-                var grAfter = new GlideRecordSecure(vRec.table);
+			/* ========== Post-migration: count inserted / updated / failed ========== */
+			for (var j = 0; j < validRecords.length; j++) {
+				var vRec = validRecords[j];
+				var key = vRec.table + ':' + vRec.sysId;
+				var existedBefore = existingRecords[key];
 
-                // CERTIFIED: get() wrapped in if() — only process if record truly exists
-                if (grAfter.get(vRec.sysId)) {
+				var grAfter = new GlideRecordSecure(vRec.table);
 
-                    // Restore original number using GlideRecord to bypass BR/ACL
-                    if (vRec.number) {
-                        var numGr = new GlideRecordSecure(vRec.table);
-                        // CERTIFIED: get() wrapped in if()
-                        if (numGr.get(vRec.sysId)) {
-                            if (numGr.getValue('number') !== vRec.number) {
-                                numGr.setWorkflow(false);
-                                numGr.autoSysFields(false);
-                                numGr.setValue('number', vRec.number);
-                                numGr.update();
-                                gs.info('[TracenNow] Number restored: ' + vRec.table +
-                                        ' | ' + vRec.sysId + ' → ' + vRec.number);
-                            }
-                        }
-                    }
+				// CERTIFIED: get() wrapped in if() — only process if record truly exists
+				if (grAfter.get(vRec.sysId)) {
 
-                    if (existedBefore) {
-                        stats.updated++;
-                        migrationDetails.push({
-                            table: vRec.table, sys_id: vRec.sysId,
-                            number: vRec.number, state: vRec.state,
-                            short_description: vRec.short_description,
-                            status: "success", action: "updated", duration: durationText
-                        });
-                    } else {
-                        stats.inserted++;
-                        migrationDetails.push({
-                            table: vRec.table, sys_id: vRec.sysId,
-                            number: vRec.number, state: vRec.state,
-                            short_description: vRec.short_description,
-                            status: "success", action: "inserted", duration: durationText
-                        });
-                    }
+					// Restore original number using GlideRecord to bypass BR/ACL
+					if (vRec.number) {
+						var numGr = new GlideRecordSecure(vRec.table);
+						// CERTIFIED: get() wrapped in if()
+						if (numGr.get(vRec.sysId)) {
+							if (numGr.getValue('number') !== vRec.number) {
+								numGr.setWorkflow(false);
+								numGr.autoSysFields(false);
+								numGr.setValue('number', vRec.number);
+								numGr.update();
+								gs.info('[TracenNow] Number restored: ' + vRec.table +
+												' | ' + vRec.sysId + ' → ' + vRec.number);
+							}
+						}
+					}
 
-                } else {
-                    //Record does not exist after migration — mark as failed
-                    stats.failed++;
-                    migrationDetails.push({
-                        table: vRec.table, sys_id: vRec.sysId,
-                        number: vRec.number, state: vRec.state,
-                        short_description: vRec.short_description,
-                        status: "failed", action: "failed", duration: durationText,
-                        reason: "Record not found in target after migration"
-                    });
-                }
-            }
+					if (existedBefore) {
+						stats.updated++;
+						migrationDetails.push({
+							table: vRec.table, sys_id: vRec.sysId,
+							number: vRec.number, state: vRec.state,
+							short_description: vRec.short_description,
+							status: "success", action: "updated", duration: durationText
+						});
+					} else {
+						stats.inserted++;
+						migrationDetails.push({
+							table: vRec.table, sys_id: vRec.sysId,
+							number: vRec.number, state: vRec.state,
+							short_description: vRec.short_description,
+							status: "success", action: "inserted", duration: durationText
+						});
+					}
 
-            /* ========== Set Response Flags ========== */
-            var isPartial  = stats.failed > 0 && (stats.inserted + stats.updated) > 0;
-            var isAllFailed = stats.failed > 0 && (stats.inserted + stats.updated) === 0;
+				} else {
+					//Record does not exist after migration — mark as failed
+					stats.failed++;
+					migrationDetails.push({
+						table: vRec.table, sys_id: vRec.sysId,
+						number: vRec.number, state: vRec.state,
+						short_description: vRec.short_description,
+						status: "failed", action: "failed", duration: durationText,
+						reason: "Record not found in target after migration"
+					});
+				}
+			}
 
-            data.success  = !isPartial && !isAllFailed;
-            data.partial  = isPartial;
-            data.inserted = stats.inserted;
-            data.updated  = stats.updated;
-            data.failed   = stats.failed;
-            data.total    = input.cart_length;
-            data.url      = sourceurl;
-            data.migrationDetails = migrationDetails;
+			/* ========== Set Response Flags ========== */
+			var isPartial  = stats.failed > 0 && (stats.inserted + stats.updated) > 0;
+			var isAllFailed = stats.failed > 0 && (stats.inserted + stats.updated) === 0;
 
-            if (isPartial) {
-                data.message = stats.failed + " record(s) failed. " +
-                               (stats.inserted + stats.updated) + " migrated successfully.";
-            } else if (isAllFailed) {
-                data.success = false;
-                data.message = "All " + stats.failed + " record(s) failed to migrate.";
-            }
+			data.success  = !isPartial && !isAllFailed;
+			data.partial  = isPartial;
+			data.inserted = stats.inserted;
+			data.updated  = stats.updated;
+			data.failed   = stats.failed;
+			data.total    = input.cart_length;
+			data.url      = sourceurl;
+			data.migrationDetails = migrationDetails;
 
-            /* ========== Save Migration Record ========== */
-            var successRate = 0;
-            if (input.cart_length > 0) {
-                successRate = Math.round(
-                    ((stats.inserted + stats.updated) / input.cart_length) * 10000
-                ) / 100;
-            }
+			if (isPartial) {
+				data.message = stats.failed + " record(s) failed. " +
+					(stats.inserted + stats.updated) + " migrated successfully.";
+			} else if (isAllFailed) {
+				data.success = false;
+				data.message = "All " + stats.failed + " record(s) failed to migrate.";
+			}
 
-            var mig = new GlideRecordSecure('x_sysus_tracenow_migration_details');
-            mig.initialize();
-            mig.setValue('instance_url', sourceurl);
-            mig.setValue('records_fetched', input.cart_length);
-            mig.setValue('records_inserted', stats.inserted);
-            mig.setValue('records_updated', stats.updated);
-            mig.setValue('records_failed', stats.failed);
-            mig.setValue('success_rate', successRate);
-            mig.setValue('target_instance', gs.getProperty('glide.servlet.uri'));
-            var migrationSysId = mig.insert();
+			/* ========== Save Migration Record ========== */
+			var successRate = 0;
+			if (input.cart_length > 0) {
+				successRate = Math.round(
+					((stats.inserted + stats.updated) / input.cart_length) * 10000
+				) / 100;
+			}
 
-            /* ========== Save Record-Level Logs ========== */
-            if (migrationSysId) {
-                migrationDetails.forEach(function(rec) {
-                    var logGr = new GlideRecordSecure(
-                        'x_sysus_tracenow_tracenow_migration_record_log'
-                    );
-                    logGr.initialize();
-                    logGr.setValue('migration', migrationSysId);
-                    logGr.setValue('table', rec.table);
-                    logGr.setValue('source_sys_id', rec.sys_id);
-                    logGr.setValue('record_number', rec.number);
-                    logGr.setValue('status', rec.status);
-                    logGr.setValue('action', rec.action);
-                    logGr.setValue('state', rec.state);
-                    logGr.setValue('short_description', rec.short_description);
-                    logGr.setValue('duration', rec.duration || durationText);
-                    logGr.setValue('reason', rec.reason || '');
-                    logGr.setValue('migration_log', JSON.stringify(migration_logs || []));
-                    logGr.insert();
-                });
+			var mig = new GlideRecordSecure('x_sysus_tracenow_migration_details');
+			mig.initialize();
+			mig.setValue('instance_url', sourceurl);
+			mig.setValue('records_fetched', input.cart_length);
+			mig.setValue('records_inserted', stats.inserted);
+			mig.setValue('records_updated', stats.updated);
+			mig.setValue('records_failed', stats.failed);
+			mig.setValue('success_rate', successRate);
+			mig.setValue('target_instance', gs.getProperty('glide.servlet.uri'));
+			var migrationSysId = mig.insert();
 
-                /* ========== Sum Log Durations ========== */
-                var totalDurationSeconds = 0;
-                var durationGR = new GlideRecordSecure(
-                    'x_sysus_tracenow_tracenow_migration_record_log'
-                );
-                durationGR.addQuery('migration', migrationSysId);
-                durationGR.query();
-                while (durationGR.next()) {
-                    var dur = durationGR.getValue('duration') || '';
-                    var minMatch = dur.match(/(\d+)\s*min/i);
-                    var secMatch = dur.match(/(\d+)\s*sec/i);
-                    totalDurationSeconds +=
-                        ((minMatch ? parseInt(minMatch[1], 10) : 0) * 60) +
-                        (secMatch  ? parseInt(secMatch[1],  10) : 0);
-                }
-                var totalMins = Math.floor(totalDurationSeconds / 60);
-                var remSecs   = totalDurationSeconds % 60;
-                var totalDurationText = totalMins + " min " + remSecs + " sec";
+			/* ========== Save Record-Level Logs ========== */
+			if (migrationSysId) {
+				migrationDetails.forEach(function(rec) {
+					var logGr = new GlideRecordSecure(
+						'x_sysus_tracenow_tracenow_migration_record_log'
+					);
+					logGr.initialize();
+					logGr.setValue('migration', migrationSysId);
+					logGr.setValue('table', rec.table);
+					logGr.setValue('source_sys_id', rec.sys_id);
+					logGr.setValue('record_number', rec.number);
+					logGr.setValue('status', rec.status);
+					logGr.setValue('action', rec.action);
+					logGr.setValue('state', rec.state);
+					logGr.setValue('short_description', rec.short_description);
+					logGr.setValue('duration', rec.duration || durationText);
+					logGr.setValue('reason', rec.reason || '');
+					logGr.setValue('migration_log', JSON.stringify(migration_logs || []));
+					logGr.insert();
+				});
 
-                /* ========== Update Migration Duration ========== */
-                var updateMig = new GlideRecordSecure('x_sysus_tracenow_migration_details');
+				/* ========== Sum Log Durations ========== */
+				var totalDurationSeconds = 0;
+				var durationGR = new GlideRecordSecure(
+					'x_sysus_tracenow_tracenow_migration_record_log'
+				);
+				durationGR.addQuery('migration', migrationSysId);
+				durationGR.query();
+				while (durationGR.next()) {
+					var dur = durationGR.getValue('duration') || '';
+					var minMatch = dur.match(/(\d+)\s*min/i);
+					var secMatch = dur.match(/(\d+)\s*sec/i);
+					totalDurationSeconds +=
+						((minMatch ? parseInt(minMatch[1], 10) : 0) * 60) +
+						(secMatch  ? parseInt(secMatch[1],  10) : 0);
+				}
+				var totalMins = Math.floor(totalDurationSeconds / 60);
+				var remSecs   = totalDurationSeconds % 60;
+				var totalDurationText = totalMins + " min " + remSecs + " sec";
 
-                // CERTIFIED: get() wrapped in if()
-                if (updateMig.get(migrationSysId)) {
-                    updateMig.setValue('duration', totalDurationText);
-                    updateMig.update();
-                }
+				/* ========== Update Migration Duration ========== */
+				var updateMig = new GlideRecordSecure('x_sysus_tracenow_migration_details');
 
-                data.duration = totalDurationText;
-            }
+				// CERTIFIED: get() wrapped in if()
+				if (updateMig.get(migrationSysId)) {
+					updateMig.setValue('duration', totalDurationText);
+					updateMig.update();
+				}
 
-            /* ========== Result Notification ========== */
-            var resultNotif = new GlideRecordSecure("x_sysus_tracenow_notifications");
-            resultNotif.initialize();
-            if (stats.failed === 0) {
-                resultNotif.setValue("title", "Migration completed successfully");
-                resultNotif.setValue("message",
-                    (stats.inserted + stats.updated) + " records migrated successfully.");
-                resultNotif.setValue("type", "migration_success");
-                resultNotif.setValue("priority", "success");
-            } else if (isPartial) {
-                resultNotif.setValue("title",
-                    stats.failed + " record(s) failed during migration.");
-                resultNotif.setValue("message",
-                    stats.failed + " record(s) failed. " +
-                    (stats.inserted + stats.updated) + " succeeded.");
-                resultNotif.setValue("type", "migration_warning");
-                resultNotif.setValue("priority", "warning");
-            } else {
-                resultNotif.setValue("title", "Migration failed");
-                resultNotif.setValue("message", "Migration failed. No records migrated.");
-                resultNotif.setValue("type", "migration_failed");
-                resultNotif.setValue("priority", "critical");
-            }
-            resultNotif.setValue("user", gs.getUserID());
-            resultNotif.insert();
+				data.duration = totalDurationText;
+			}
 
-        } catch (e) {
-            gs.error("Migration failed: " + e);
+			/* ========== Result Notification ========== */
+			var resultNotif = new GlideRecordSecure("x_sysus_tracenow_notifications");
+			resultNotif.initialize();
+			if (stats.failed === 0) {
+				resultNotif.setValue("title", "Migration completed successfully");
+				resultNotif.setValue("message",
+														 (stats.inserted + stats.updated) + " records migrated successfully.");
+				resultNotif.setValue("type", "migration_success");
+				resultNotif.setValue("priority", "success");
+			} else if (isPartial) {
+				resultNotif.setValue("title",
+														 stats.failed + " record(s) failed during migration.");
+				resultNotif.setValue("message",
+														 stats.failed + " record(s) failed. " +
+														 (stats.inserted + stats.updated) + " succeeded.");
+				resultNotif.setValue("type", "migration_warning");
+				resultNotif.setValue("priority", "warning");
+			} else {
+				resultNotif.setValue("title", "Migration failed");
+				resultNotif.setValue("message", "Migration failed. No records migrated.");
+				resultNotif.setValue("type", "migration_failed");
+				resultNotif.setValue("priority", "critical");
+			}
+			resultNotif.setValue("user", gs.getUserID());
+			resultNotif.insert();
 
-            data.success  = false;
-            data.partial  = false;
-            data.failed   = recordsToMigrate.length;
-            data.inserted = 0;
-            data.updated  = 0;
-            data.total    = input.cart_length;
-            data.message  = e.toString();
+		} catch (e) {
+			gs.error("Migration failed: " + e);
 
-            var failedDetails = [];
-            for (var k = 0; k < recordsToMigrate.length; k++) {
-                var fRec = recordsToMigrate[k];
-                failedDetails.push({
-                    table: fRec.table, sys_id: fRec.sysId,
-                    number: fRec.number, state: fRec.state,
-                    short_description: fRec.short_description,
-                    status: "failed", action: "failed",
-                    reason: e.toString(),
-                    logs: engine ? engine.executionLogs : []
-                });
-            }
-            data.migrationDetails = failedDetails;
+			data.success  = false;
+			data.partial  = false;
+			data.failed   = recordsToMigrate.length;
+			data.inserted = 0;
+			data.updated  = 0;
+			data.total    = input.cart_length;
+			data.message  = e.toString();
 
-            var mig_gr = new GlideRecordSecure('x_sysus_tracenow_migration_details');
-            mig_gr.initialize();
-            mig_gr.setValue('instance_url', sourceurl);
-            mig_gr.setValue('records_fetched', input.cart_length);
-            mig_gr.setValue('records_inserted', 0);
-            mig_gr.setValue('records_updated', 0);
-            mig_gr.setValue('records_failed', recordsToMigrate.length);
-            mig_gr.setValue('success_rate', 0);
-            mig_gr.setValue('target_instance', gs.getProperty('glide.servlet.uri'));
-            var failedMigSysId = mig_gr.insert();
+			var failedDetails = [];
+			for (var k = 0; k < recordsToMigrate.length; k++) {
+				var fRec = recordsToMigrate[k];
+				failedDetails.push({
+					table: fRec.table, sys_id: fRec.sysId,
+					number: fRec.number, state: fRec.state,
+					short_description: fRec.short_description,
+					status: "failed", action: "failed",
+					reason: e.toString(),
+					logs: engine ? engine.executionLogs : []
+				});
+			}
+			data.migrationDetails = failedDetails;
 
-            if (failedMigSysId) {
-                failedDetails.forEach(function(rec) {
-                    var logGr = new GlideRecordSecure(
-                        'x_sysus_tracenow_tracenow_migration_record_log'
-                    );
-                    logGr.initialize();
-                    logGr.setValue('migration', failedMigSysId);
-                    logGr.setValue('table', rec.table);
-                    logGr.setValue('source_sys_id', rec.sys_id);
-                    logGr.setValue('record_number', rec.number);
-                    logGr.setValue('status', rec.status);
-                    logGr.setValue('action', rec.action);
-                    logGr.setValue('state', rec.state);
-                    logGr.setValue('short_description', rec.short_description);
-                    logGr.setValue('reason', e.toString());
-                    logGr.setValue('migration_log',
-                        JSON.stringify(migration_logs || []));
-                    logGr.insert();
-                });
-            }
+			var mig_gr = new GlideRecordSecure('x_sysus_tracenow_migration_details');
+			mig_gr.initialize();
+			mig_gr.setValue('instance_url', sourceurl);
+			mig_gr.setValue('records_fetched', input.cart_length);
+			mig_gr.setValue('records_inserted', 0);
+			mig_gr.setValue('records_updated', 0);
+			mig_gr.setValue('records_failed', recordsToMigrate.length);
+			mig_gr.setValue('success_rate', 0);
+			mig_gr.setValue('target_instance', gs.getProperty('glide.servlet.uri'));
+			var failedMigSysId = mig_gr.insert();
 
-            var failNotif = new GlideRecordSecure("x_sysus_tracenow_notifications");
-            failNotif.initialize();
-            failNotif.setValue("title", "Migration failed");
-            failNotif.setValue("message", e.toString());
-            failNotif.setValue("type", "migration_failed");
-            failNotif.setValue("priority", "critical");
-            failNotif.setValue("user", gs.getUserID());
-            failNotif.insert();
-        }
-    }
+			if (failedMigSysId) {
+				failedDetails.forEach(function(rec) {
+					var logGr = new GlideRecordSecure(
+						'x_sysus_tracenow_tracenow_migration_record_log'
+					);
+					logGr.initialize();
+					logGr.setValue('migration', failedMigSysId);
+					logGr.setValue('table', rec.table);
+					logGr.setValue('source_sys_id', rec.sys_id);
+					logGr.setValue('record_number', rec.number);
+					logGr.setValue('status', rec.status);
+					logGr.setValue('action', rec.action);
+					logGr.setValue('state', rec.state);
+					logGr.setValue('short_description', rec.short_description);
+					logGr.setValue('reason', e.toString());
+					logGr.setValue('migration_log',
+												 JSON.stringify(migration_logs || []));
+					logGr.insert();
+				});
+			}
 
-    /* ========================= GET PROGRESS ========================= */
-    if (input && input.action == "getProgress") {
-        var eng = new DM_MigrationCore();
-        data.progress = eng.getProgress();
-    }
+			var failNotif = new GlideRecordSecure("x_sysus_tracenow_notifications");
+			failNotif.initialize();
+			failNotif.setValue("title", "Migration failed");
+			failNotif.setValue("message", e.toString());
+			failNotif.setValue("type", "migration_failed");
+			failNotif.setValue("priority", "critical");
+			failNotif.setValue("user", gs.getUserID());
+			failNotif.insert();
+		}
+	}
+
+	/* ========================= GET PROGRESS ========================= */
+	if (input && input.action == "getProgress") {
+		var eng = new DM_MigrationCore();
+		data.progress = eng.getProgress();
+	}
 
 })();]]></script>
         <servicenow>false</servicenow>
@@ -1461,14 +1463,14 @@
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 10:10:28</sys_created_on>
         <sys_id>143f759c930587100af5f4e9b903d690</sys_id>
-        <sys_mod_count>92</sys_mod_count>
+        <sys_mod_count>95</sys_mod_count>
         <sys_name>tracenow_queue</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_143f759c930587100af5f4e9b903d690</sys_update_name>
         <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-06-22 06:17:01</sys_updated_on>
+        <sys_updated_on>2026-07-09 06:02:49</sys_updated_on>
         <template><![CDATA[<div class="migration-cart">
 
   <!-- Sidebar -->

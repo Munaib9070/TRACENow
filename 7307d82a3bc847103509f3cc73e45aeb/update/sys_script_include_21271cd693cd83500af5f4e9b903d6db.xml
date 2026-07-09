@@ -10,8 +10,11 @@
         <name>DM_MigrationCore</name>
         <sandbox_callable>false</sandbox_callable>
         <script><![CDATA[var DM_MigrationCore = Class.create();
+
 DM_MigrationCore.prototype = {
+
     initialize: function() {
+
             this._v37SkipAdditions = [
                 'sc_cat_item_delivery_plan', 'sc_cat_item_delivery_task',
                 'chg_model', 'metric_definition', 'sc_cat_item',
@@ -20,8 +23,10 @@ DM_MigrationCore.prototype = {
                 'sc_homepage_renderer', 'sc_catalog', 'sc_category',
                 'user_criteria', 'taxonomy', 'sp_page', 'topic',
                 'sc_cat_item_producer', 'fx_currency', 'fx_price',
+
                 'task_sla', 'metric_instance'
             ];
+
             this._migratedRecords     = {};
             this._sysIdLookup         = {};
             this._visited             = {};
@@ -31,24 +36,32 @@ DM_MigrationCore.prototype = {
             this._cacheUserNameExists = {};
             this._activityStreamDone  = {};
             this._auditRowsToFix      = [];
+
             this._cacheM2MDiscovery       = {};
             this._cacheTaskRelDiscovery   = {};
             this._cacheTablesReferencing  = {};
             this._cacheDocIdRelations     = null;
+
             this.CLEAN_RERUN = true;
             this.DEBUG       = true;
+
             this.KEEP_CACHES_ACROSS_CALLS = false;
+
             this.FAST_MODE = false;
+
             this.DEEP_RECURSION_ENABLED = false;
             this.MAX_RELATED_DEPTH      = 1;
             this.MAX_DEEP_RECORDS       = 500;
+
             this.DEEP_RECURSE_TABLES = {
-                /* Empty — recursion is off so this set isn't consulted */
+
             };
+
             this._deepStats = { migrated: 0, skipped: 0, capped: false };
+
             this.REF_DEEP_RECURSE_ENABLED    = true;
-            this.REF_DEEP_RECURSE_ALL_TABLES = false;  /* task-derived only */
-            this.REF_DEEP_RECURSE_MAX_DEPTH  = 1;      /* one level of ref-deep-recurse */
+            this.REF_DEEP_RECURSE_ALL_TABLES = false;
+            this.REF_DEEP_RECURSE_MAX_DEPTH  = 1;
             this.REF_DEEP_RECURSE_TABLES = {
                 task:              true,
                 incident:          true,
@@ -62,17 +75,19 @@ DM_MigrationCore.prototype = {
                 universal_request: true
             };
             this._refDeepDepth = 0;
+
             this._refDeepDone = {};
+
             this.USER_CHAIN = {
-                migrateGroupMemberships: true,    // sys_user_grmember — ON: required so
-                                                  // assigned_to passes 'Abort changes on
-                                                  // group' BR on change_task/change_request
-                migrateRoles:            false,   // sys_user_has_role
-                managerChainDepth:       1        // 0=none, 1=direct, 2+=org chart
+                migrateGroupMemberships: true,
+
+                migrateRoles:            false,
+                managerChainDepth:       1
             };
             this.endTime      = 0;
             this.durationMs   = 0;
             this.durationText = '';
+
             this.IDENTITY_FIELDS = {
                 caller_id:                "sys_user",
                 opened_by:                "sys_user",
@@ -84,6 +99,7 @@ DM_MigrationCore.prototype = {
                 assignment_group:         "sys_user_group",
                 manager:                  "sys_user"
             };
+
             this.SPECIAL_REF_FIELDS = {
                 service:           "cmdb_ci_service",
                 service_offering:  "service_offering",
@@ -96,8 +112,10 @@ DM_MigrationCore.prototype = {
                 assigned_to:       "sys_user",
                 assignment_group:  "sys_user_group",
                 manager:           "sys_user",
+
                 universal_request: "universal_request"
             };
+
             this.SKIP_TABLES = {
                 sys_user:          true,
                 sys_user_group:    true,
@@ -110,13 +128,16 @@ DM_MigrationCore.prototype = {
                 sys_db_object:     true,
                 sys_dictionary:    true,
                 sys_choice:        true,
-                sys_scope:                  true,   /* the scope registry itself */
-                awa_service_channel:        true,   /* Advanced Work Assignment framework */
+
+                sys_scope:                  true,
+                awa_service_channel:        true,
                 awa_service_channel_group:  true
             };
+
             for (var i = 0; i < this._v37SkipAdditions.length; i++) {
                 this.SKIP_TABLES[this._v37SkipAdditions[i]] = true;
             }
+
             this.NATURAL_KEY_TABLES = {
                 sys_user:        "user_name",
                 sys_user_group:  "name",
@@ -126,7 +147,9 @@ DM_MigrationCore.prototype = {
                 sys_choice:      null,
                 sys_dictionary:  null
             };
+
             this.AUTO_CREATE_NATURAL_KEY = true;
+
             this.NATURAL_KEY_CREATE_FIELDS = {
                 sys_user: [
                     "user_name", "first_name", "last_name", "name", "email",
@@ -146,6 +169,7 @@ DM_MigrationCore.prototype = {
                     "name", "document", "type", "time_zone"
                 ]
             };
+
             this.M2M_DEFINITIONS = [
                 {
                     table:  "task_rel_task",
@@ -155,10 +179,13 @@ DM_MigrationCore.prototype = {
                     ]
                 }
             ];
+
             this.M2M_DISCOVERY = {
+
                 enabled: true,
+
                 excludeTables: {
-                    "task_sla":             true,   // insertSLAs
+                    "task_sla":             true,
                     "sys_audit":            true,
                     "sys_audit_relation":   true,
                     "sys_journal_field":    true,
@@ -168,47 +195,42 @@ DM_MigrationCore.prototype = {
                     "sys_attachment":       true,
                     "sys_metadata":         true,
                     "sys_template":         true,
-                    "sysapproval_approver": true,   // _migrateApprovalsRecursive
+                    "sysapproval_approver": true,
                     "metric_instance":      true,
-                    "task_rel_task":        true    // M2M_DEFINITIONS
+                    "task_rel_task":        true
                 },
+
                 excludeRefTables: {
                     "sys_choice":     true,
                     "sys_dictionary": true,
                     "sys_db_object":  true
                 }
             };
+
             this.M2M_OVERRIDES = [
-                // {
-                //     table:        "task_outage",
-                //     taskField:    "task",
-                //     refField:     "cmdb_ci",
-                //     refTable:     "cmdb_ci",
-                //     primaryField: ""
-                // }
+
             ];
+
             this.RELATED_REFERENCE_FIELDS = [
                 {
                     name:    "Universal Request",
+
                     field:   "universal_request",
+
                     refTable: "universal_request",
+
                     reverseDirection: true,
                     enabled: true
                 }
-                /* Add custom relationship-style reference fields here, e.g.:
-                {
-                    name:             "Custom Workflow Link",
-                    field:            "u_workflow_parent",
-                    refTable:         "u_workflow",
-                    reverseDirection: true,
-                    enabled:          true
-                }
-                */
+
             ];
+
             this.RELATIONSHIP_M2M_HINTS = [
-                // { table: "u_universal_request_task", taskField: "task", refField: "universal_request" }
+
             ];
+
             this.M2M_RESOLVER_CONFIG = {
+
                 "_default": {
                     lookupField: "name",
                     safeFields:  [
@@ -216,6 +238,7 @@ DM_MigrationCore.prototype = {
                         "active", "operational_status"
                     ]
                 },
+
                 "cmdb_ci": {
                     lookupField: "name",
                     safeFields:  [
@@ -225,6 +248,7 @@ DM_MigrationCore.prototype = {
                         "short_description", "comments", "discovery_source"
                     ]
                 },
+
                 "service_offering": {
                     lookupField: "name",
                     safeFields:  [
@@ -232,6 +256,7 @@ DM_MigrationCore.prototype = {
                         "service_classification", "owned_by"
                     ]
                 },
+
                 "cmdb_ci_service": {
                     lookupField: "name",
                     safeFields:  [
@@ -239,21 +264,29 @@ DM_MigrationCore.prototype = {
                     ]
                 }
             };
+
             this.stats    = { total: 0, inserted: 0, updated: 0, failed: 0 };
             this.progress = { total: 0, processed: 0, percent: 0 };
+
             this._operationCounted = {};
+
             this.SOURCE_URL  = '';
             this.SOURCE_USER = '';
             this.SOURCE_PSWD = '';
+
             this.MAX_RECURSION = 50;
+
             this.executionLogs    = [];
             this.currentRecordLog = {};
+
             this.discovery  = new DM_DiscoveryEngine(this);
             this.references = new DM_ReferenceResolver(this);
             this.related    = new DM_RelatedDataMigrator(this);
-    
+
         },
+
     migrateWithDependencies: function(table, sourceSysId, depth) {
+
             if ((table === 'sys_user' || table === 'sys_user_group') &&
                 this.NATURAL_KEY_TABLES && this.NATURAL_KEY_TABLES[table]) {
                 try {
@@ -268,28 +301,36 @@ DM_MigrationCore.prototype = {
                         }
                     }
                 } catch (eNK) {
+
                 }
             }
+
             table       = String(table).trim();
             sourceSysId = String(sourceSysId).trim();
             depth       = depth || 0;
+
             if (!sourceSysId)               return '';
             if (depth > this.MAX_RECURSION) return '';
+
             if (depth > 0 && this.SKIP_TABLES && this.SKIP_TABLES[table]) {
+
                 var grSkip = new GlideRecordSecure(table);
                 if (grSkip.get(sourceSysId)) {
                     this.references._setMigrated(table, sourceSysId, sourceSysId);
                     return sourceSysId;
                 }
+
                 if (this.NATURAL_KEY_TABLES.hasOwnProperty(table)) {
                     var nkResolved = this.references._resolveByNaturalKey(table, sourceSysId);
                     var resolved   = nkResolved || sourceSysId;
                     this.references._setMigrated(table, sourceSysId, resolved);
                     return resolved;
                 }
+
                 this.references._setMigrated(table, sourceSysId, sourceSysId);
                 return sourceSysId;
             }
+
             if (depth > 0 && this.NATURAL_KEY_TABLES.hasOwnProperty(table)) {
                 var nkDep = this.references._resolveByNaturalKey(table, sourceSysId);
                 if (!nkDep && this.AUTO_CREATE_NATURAL_KEY) {
@@ -300,39 +341,51 @@ DM_MigrationCore.prototype = {
                 this.references._setMigrated(table, sourceSysId, nkResult);
                 return nkResult;
             }
+
             if (table === "sys_choice" || table === "sys_dictionary") {
                 this.references._setMigrated(table, sourceSysId, sourceSysId);
                 return sourceSysId;
             }
+
             var key = table + "_" + sourceSysId;
-            var _origKey = key;   // ★ V39 — remember the table name we ENTERED with
+            var _origKey = key;
             if (this._migratedRecords[key]) return this._migratedRecords[key];
             if (this._visited[key])         return this._migratedRecords[key] || '';
+
             this._visited[key] = true;
+
             var record = this.fetchSourceRecord(table, sourceSysId);
             if (!record) return '';
+
             var actualClass = this.discovery.normalizeRef(record.sys_class_name);
+
             if (table === "universal_request" || actualClass === "universal_request" ||
                 table === "task" && actualClass) {
                 this.logStep("  [UR-DIAG] migrateWithDependencies entered table='" + table +
                               "' actualClass='" + actualClass + "' sysId=" + sourceSysId);
             }
+
             if (actualClass &&
                 actualClass !== table &&
                 this.discovery._tableExists(actualClass)) {
+
                 var chain = this.discovery._getTableHierarchy(actualClass);
+
                 if (actualClass === "universal_request" || table === "universal_request") {
                     this.logStep("  [UR-DIAG] Class chain for '" + actualClass +
                                   "': [" + chain.join(", ") +
                                   "]  - indexOf('" + table + "') = " + chain.indexOf(table));
                 }
+
                 if (chain.indexOf(table) !== -1) {
+
                     var betterRecord = this.fetchSourceRecord(actualClass, sourceSysId);
                     if (betterRecord) {
                         this.logStep("  [UR-DIAG] Class refinement: " + table + " → " +
                                       actualClass + " for " + sourceSysId);
                         record = betterRecord;
                         table  = actualClass;
+
                         key = table + "_" + sourceSysId;
                         this._visited[key] = true;
                     } else {
@@ -345,7 +398,9 @@ DM_MigrationCore.prototype = {
                                   "' according to class hierarchy");
                 }
             }
+
             var refFields = this.discovery._getCachedRefFields(table);
+
             for (var special in this.SPECIAL_REF_FIELDS) {
                 var existsSpecial = false;
                 for (var iSp = 0; iSp < refFields.length; iSp++) {
@@ -358,20 +413,29 @@ DM_MigrationCore.prototype = {
                     });
                 }
             }
+
             for (var r = 0; r < refFields.length; r++) {
+
                 var rf = refFields[r];
                 if (!rf.refTable) continue;
+
                 var srcRef = this.discovery.normalizeRef(record[rf.field]);
                 if (!srcRef) continue;
+
                 try {
+
                     var targetRef;
+
                     if (this.SKIP_TABLES && this.SKIP_TABLES[rf.refTable]) {
+
                         var grLocal2 = new GlideRecordSecure(rf.refTable);
+
                         if (grLocal2.get(srcRef)) {
                             targetRef = srcRef;
                             this.references._setMigrated(rf.refTable, srcRef, srcRef);
                         } else if (this.NATURAL_KEY_TABLES.hasOwnProperty(rf.refTable)) {
                             targetRef = this.references._resolveByNaturalKey(rf.refTable, srcRef);
+
                                         if (!targetRef && this.AUTO_CREATE_NATURAL_KEY) {
                                             var srcNKRec = this.fetchSourceRecord(rf.refTable, srcRef);
                                             if (srcNKRec) {
@@ -384,7 +448,9 @@ DM_MigrationCore.prototype = {
                         } else {
                             targetRef = "";
                         }
+
                     } else if (this.NATURAL_KEY_TABLES.hasOwnProperty(rf.refTable)) {
+
                         targetRef = this.references._resolveByNaturalKey(rf.refTable, srcRef);
                         if (!targetRef && this.AUTO_CREATE_NATURAL_KEY) {
                             var srcNKRefRec = this.fetchSourceRecord(rf.refTable, srcRef);
@@ -392,30 +458,37 @@ DM_MigrationCore.prototype = {
                                 targetRef = this.references._createNaturalKeyRecord(rf.refTable, srcNKRefRec);
                             }
                         }
+
                     } else {
                         targetRef = this.migrateWithDependencies(rf.refTable, srcRef, depth + 1);
                     }
+
                     if (targetRef) {
                         record[rf.field] = String(targetRef);
                         this.currentRecordLog.references_migrated++;
                     } else {
                         record[rf.field] = "";
                     }
+
                 } catch (e) {
                     this.currentRecordLog.references_failed++;
                     this.currentRecordLog.errors.push("Reference failed: " + rf.field);
                     gs.warn("⚠ reference failed: " + table + "." + rf.field);
                 }
             }
+
             var targetId = this.safeUpsert(record, table, record.sys_id);
             this.references._setMigrated(table, sourceSysId, targetId);
+
             if (targetId && key !== _origKey) {
                 this._migratedRecords[_origKey] = targetId;
             }
+
             if (depth > 0 &&
                 targetId &&
                 this.REF_DEEP_RECURSE_ENABLED &&
                 (this.REF_DEEP_RECURSE_ALL_TABLES || this.REF_DEEP_RECURSE_TABLES[table])) {
+
                 if (this._refDeepDepth >= this.REF_DEEP_RECURSE_MAX_DEPTH) {
                     if (this.DEBUG) {
                         this.logStep("  ⊘ ref-deep-recurse depth cap (" +
@@ -423,15 +496,19 @@ DM_MigrationCore.prototype = {
                                       table + "/" + sourceSysId);
                     }
                 } else {
+
                     var refDoneKey = "refdeep_" + table + "_" + sourceSysId;
                     if (!this._refDeepDone[refDoneKey] &&
                         this._deepStats.migrated < this.MAX_DEEP_RECORDS) {
+
                         this._refDeepDone[refDoneKey] = true;
                         this._deepStats.migrated++;
+
                         if (this.DEBUG) {
                             this.logStep("  ↳ ref-deep-recurse: " + table + "/" + sourceSysId +
                                           " (referenced from depth " + depth + ")");
                         }
+
                         this._refDeepDepth++;
                         try {
                             this._refDeepRecurseSuite(table, sourceSysId, targetId);
@@ -443,6 +520,7 @@ DM_MigrationCore.prototype = {
                     }
                 }
             }
+
             if (depth === 0 && targetId) {
                 try { this.related.migrateTaskRelationships(table, sourceSysId, targetId); }
                     catch (e) { gs.warn('v37 suite: migrateTaskRelationships failed: ' + e); }
@@ -456,6 +534,7 @@ DM_MigrationCore.prototype = {
                     catch (e) { gs.warn('v37 suite: migrateRelatedLists failed: ' + e); }
                 try { this.related.copyAttachments(table, sourceSysId, targetId); }
                     catch (e) { gs.warn('v37 suite: copyAttachments failed: ' + e); }
+
                 if (!this.SKIP_TABLES['task_sla']) {
                     try { this.related.insertSLAs(sourceSysId, targetId); }
                         catch (e) { gs.warn('v37 suite: insertSLAs failed: ' + e); }
@@ -469,27 +548,41 @@ DM_MigrationCore.prototype = {
                         catch (e) { gs.warn('v37 suite: _postMigrationFixup failed: ' + e); }
                 }
             }
+
             return targetId;
         },
+
     _refDeepRecurseSuite: function(table, sourceId, targetId) {
+
             this.related.migrateTaskRelationships(table, sourceId, targetId);
+
             this.related.migrateRelatedM2M(table, sourceId, targetId);
+
             this.related.migrateRelatedReferenceFields(table, sourceId, targetId);
+
             this.related.migrateDocumentIdRelations(table, sourceId, targetId);
+
             this.related.migrateRelatedLists(table, sourceId, targetId, 1);
+
             this.related.copyAttachments(table, sourceId, targetId);
             this.related.insertSLAs(sourceId, targetId);
+
             this.related.migrateActivityStreamFor(table, sourceId, targetId);
         },
+
     fetchSourceRecord: function(table, sysId) {
+
             if (!table || !sysId) return null;
+
             if (!this._cacheSourceRecord) this._cacheSourceRecord = {};
             var ck = String(table).trim() + "::" + String(sysId).trim();
             if (this._cacheSourceRecord.hasOwnProperty(ck)) {
                 return this._cacheSourceRecord[ck];
             }
+
             var api     = new sn_ws.RESTMessageV2();
             var baseUrl = this.SOURCE_URL.replace(/\/+$/, '');
+
             api.setEndpoint(
                 baseUrl +
                 "/api/now/table/" + String(table).trim() +
@@ -498,75 +591,105 @@ DM_MigrationCore.prototype = {
             );
             api.setHttpMethod("GET");
             api.setBasicAuth(this.SOURCE_USER, this.SOURCE_PSWD);
-            var response = api.execute();
+
+            var response = api.executeAsync();
+            response.waitForResponse(60);   /* async transport, blocks for reply (cert: no sync execute) */
             if (response.getStatusCode() != 200) {
                 this._cacheSourceRecord[ck] = null;
                 return null;
             }
+
             var result = JSON.parse(response.getBody()).result;
             this._cacheSourceRecord[ck] = result;
             return result;
         },
+
     safeUpsert: function(record, table, sysId) {
-    
+
             var gr     = new GlideRecordSecure(table);
-            var exists = sysId && gr.getValue('sysId');
-    
+            var exists = sysId && gr.get(sysId);
+
             if (!exists) {
                 gr.initialize();
                 if (sysId) gr.setNewGuidValue(sysId);
             }
-    
+
             for (var field in record) {
-    
+
                 if (!gr.isValidField(field)) continue;
                 if (field === "sys_id") continue;
-    
+
                 var value = record[field];
                 if (value && typeof value === "object" && value.value !== undefined)
                     value = value.value;
-    
+
                 try { gr.setValue(field, value); } catch (e) {}
             }
-    
+
             var result;
             if (exists) {
                 result = gr.update();
             } else {
-                try {
-                    result = gr.insert();
-                } catch (insertErr) {
-                    var errMsg = String(insertErr || '');
-                    if (errMsg.indexOf('Duplicate entry') !== -1 ||
-                        errMsg.indexOf('duplicate') !== -1) {
-                        this.logStep('  ↻ v37 duplicate-key on insert, switching to update for ' + table + '/' + sysId);
-                        var grUpd = new GlideRecordSecure(table);
-                        if (grUpd.get(sysId)) {
-                            for (var uf in record) {
-                                if (uf === 'sys_id' || uf === 'sys_created_on' ||
-                                    uf === 'sys_created_by' || uf === 'number') continue;
-                                if (!grUpd.isValidField(uf)) continue;
-                                var uv = record[uf];
-                                if (uv && typeof uv === 'object' && uv.value !== undefined) uv = uv.value;
-                                try { grUpd.setValue(uf, uv); } catch (eF) {}
-                            }
-                            try { grUpd.update(); result = sysId; } catch (eU) {
-                                this.logStep('  ✗ v37 update fallback failed: ' + eU);
+                /* ★FIX (re-migration): GlideRecordSecure.get() above can miss an
+                   existing record (ACL/scope), so we'd fall through to insert()
+                   and hit a PRIMARY-key duplicate — which the DB reports by
+                   returning null and logging, NOT by throwing a catchable JS
+                   error. So check with a PLAIN GlideRecord (bypasses ACLs) first;
+                   if the sys_id already exists, UPDATE instead of insert. */
+                var pre = new GlideRecord(table);
+                if (sysId && pre.get(sysId)) {
+                    this.logStep('  ↻ re-migration: ' + table + '/' + sysId +
+                                 ' already exists on target — updating instead of inserting');
+                    for (var pf in record) {
+                        if (pf === 'sys_id' || pf === 'sys_created_on' ||
+                            pf === 'sys_created_by' || pf === 'number' ||
+                            pf === 'sys_mod_count' || pf === 'sys_tags') continue;
+                        if (!pre.isValidField(pf)) continue;
+                        var pv = record[pf];
+                        if (pv && typeof pv === 'object' && pv.value !== undefined) pv = pv.value;
+                        try { pre.setValue(pf, pv); } catch (ePf) {}
+                    }
+                    try {
+                        pre.update();
+                        result = sysId;
+                    } catch (ePu) {
+                        this.logStep('  ✗ re-migration update failed: ' + ePu);
+                        result = '';
+                    }
+                } else {
+                    try {
+                        result = gr.insert();
+                    } catch (insertErr) {
+                        var errMsg = String(insertErr || '');
+
+                        if (errMsg.indexOf('Duplicate entry') !== -1 ||
+                            errMsg.indexOf('duplicate') !== -1) {
+                            this.logStep('  ↻ v37 duplicate-key on insert, switching to update for ' + table + '/' + sysId);
+                            var grUpd = new GlideRecord(table);
+                            if (grUpd.get(sysId)) {
+                                for (var uf in record) {
+                                    if (uf === 'sys_id' || uf === 'sys_created_on' ||
+                                        uf === 'sys_created_by' || uf === 'number') continue;
+                                    if (!grUpd.isValidField(uf)) continue;
+                                    var uv = record[uf];
+                                    if (uv && typeof uv === 'object' && uv.value !== undefined) uv = uv.value;
+                                    try { grUpd.setValue(uf, uv); } catch (eF) {}
+                                }
+                                try { grUpd.update(); result = sysId; } catch (eU) {
+                                    this.logStep('  ✗ v37 update fallback failed: ' + eU);
+                                    result = '';
+                                }
+                            } else {
+                                this.logStep('  ✗ v37 duplicate-key but plain GR cannot read either: ' + table + '/' + sysId);
                                 result = '';
                             }
                         } else {
-                            this.logStep('  ✗ v37 duplicate-key but plain GR cannot read either: ' + table + '/' + sysId);
-                            result = '';
+                            throw insertErr;
                         }
-                    } else {
-                        throw insertErr;
                     }
                 }
             }
-    
-            /* ★ v38 — from user's uploaded SI. Number preservation via
-               _preserveOriginalNumber. WRAPPED so undefined-variable bugs and
-               SecurityException from setWorkflow can't crash safeUpsert. */
+
             try {
                 var srcNum;
                 if (record && record.number) {
@@ -576,74 +699,70 @@ DM_MigrationCore.prototype = {
                 if (srcNum && result && gr.isValidField('number')) {
                     this._preserveOriginalNumber(table, result, srcNum);
                 }
+
+                /* ★ Source-number capture ★ The target `number` field is
+                   cross-scope locked and cannot be set from this scope (see
+                   _preserveOriginalNumber, which is a no-op). Instead, persist
+                   the SOURCE number into correlation_id — a field this scope IS
+                   allowed to write (verified) — so every migrated record keeps
+                   its original number, searchable on the target. Applies to any
+                   record whose source row carries a `number`. Only writes when
+                   the value differs, so re-migration stays idempotent. */
+                if (srcNum && result && gr.isValidField('correlation_id')) {
+                    var cc = new GlideRecord(table);
+                    if (cc.get(result) &&
+                        String(cc.getValue('correlation_id')) !== String(srcNum)) {
+                        cc.setValue('correlation_id', String(srcNum));
+                        cc.update();
+                    }
+                }
             } catch (numEx) {
-                gs.warn('Number preservation failed for ' + table + ': ' + numEx.message);
+                gs.warn('Number capture failed for ' + table + ': ' + numEx.message);
             }
-    
-            /* ★ v30: diag log for the UR table specifically so we can see
-               if the insert/update is silently returning empty. */
+
             if (table === "universal_request") {
                 this.logStep("  [UR-DIAG] safeUpsert universal_request: " +
                               (exists ? "UPDATE" : "INSERT") +
                               " sysId='" + sysId + "' returned: '" + result + "'");
             }
-    
-            /* ★ v37 — removed broken number-preservation block.
-               v36 test proved cross-scope policy blocks setValue('number')
-               at UPDATE too, not just INSERT. There is no workaround from
-               inside the scoped app. Numbers will be regenerated. */
-    
-    
+
+            if (this.stats) {
+                this.stats.total++;
+                if (!result)     this.stats.failed++;
+                else if (exists) this.stats.updated++;
+                else             this.stats.inserted++;
+            }
+
             return result;
         },
 
     _preserveOriginalNumber: function(table, targetSysId, sourceNumber) {
-    
-            try {
-    
-                if (!sourceNumber || !targetSysId) return false;
-    
-                var gr = new GlideRecordSecure(table);
-                if (!gr.get(targetSysId)) return false;
-                if (!gr.isValidField('number')) return false;
-    
-                var currentNumber = gr.getValue('number');
-                if (String(currentNumber) === String(sourceNumber)) return true;
-    
-                try { gr.setWorkflow(false);    } catch (e1) {}
-                try { gr.autoSysFields(false);  } catch (e2) {}
-                try { gr.setUseEngines(false);  } catch (e3) {}
-    
-                gr.setValue('number', sourceNumber);
-                gr.update();
-    
-                var verify = new GlideRecordSecure(table);
-                if (verify.get(targetSysId)) {
-                    var finalNumber = verify.getValue('number');
-                    if (String(finalNumber) === String(sourceNumber)) {
-                        gs.info('[NUM PRESERVED] ' + table + ' -> ' + sourceNumber);
-                        return true;
-                    }
-                    gs.warn('[NUM FAILED] Wanted=' + sourceNumber + ' Actual=' + finalNumber);
-                }
-    
-            } catch (ex) {
-                gs.error('[NUM PRESERVATION ERROR] ' + ex.message);
-            }
-    
+            /* Intentionally a no-op. The scoped app CANNOT write `number`
+               (platform cross-scope policy refuses setValue('<table>.number')
+               from x_sysus_tracenow, for GlideRecordSecure AND plain GlideRecord,
+               and refuses setWorkflow too — proven by diag_number_write).
+               Number preservation is done OUT OF BAND, after the migration, by
+               the Global-scope post-pass DM_GlobalNumberSetter.applyFromSource
+               (run global_apply_numbers.js with Application = Global). That job
+               re-pulls each number from the same-sys_id source record and writes
+               it from Global scope, where the write is permitted. */
             return false;
         },
 
     migrateRecord: function(sourceUrl, username, password, table, sysId) {
+
             try {
+
                 this.startTime   = new Date().getTime();
                 this.SOURCE_URL  = sourceUrl.replace(/\/+$/, '');
                 this.SOURCE_USER = username;
                 this.SOURCE_PSWD = password;
+
                 this.executionLogs = [];
                 this._ensureRecordLog();
                 this._deepStats    = { migrated: 0, skipped: 0, capped: false };
                 this._refDeepDepth = 0;
+
                 if (!this.KEEP_CACHES_ACROSS_CALLS) {
                     this._refDeepDone           = {};
                     this._cacheSourceRecord     = {};
@@ -653,11 +772,14 @@ DM_MigrationCore.prototype = {
                     this._cacheGuessTableField  = {};
                     this._activityStreamDone    = {};
                 } else {
+
                     this._refDeepDone        = {};
                     this._activityStreamDone = {};
+
                     this._cacheFetchChildren = {};
                     this._cacheRestQuery     = {};
                 }
+
                 if (this.USER_CHAIN.migrateGroupMemberships) {
                     gs.warn("⚠⚠⚠ USER_CHAIN.migrateGroupMemberships=true — " +
                              "users will be added to source-side groups on target. " +
@@ -672,11 +794,13 @@ DM_MigrationCore.prototype = {
                     gs.warn("⚠ USER_CHAIN.managerChainDepth=" + this.USER_CHAIN.managerChainDepth +
                              " — manager chain will walk multiple levels. May pull entire org.");
                 }
+
                 if (!gs.hasRole("admin")) {
                     gs.error("❌ dm_test requires admin role. Running user '" +
                               gs.getUserName() + "' is not admin. Aborting.");
                     throw "dm_test requires admin role";
                 }
+
                 if (!this._brWarningShown) {
                     this._brWarningShown = true;
                     gs.warn("⚠ dm_test v36 (TraceNow scoped, admin-only build) — " +
@@ -685,10 +809,14 @@ DM_MigrationCore.prototype = {
                              "from a scoped app. Confirm email/notifications/workflows are " +
                              "paused on target before running large batches.");
                 }
+
                 this.logStep("]]>🚀<![CDATA[ START MIGRATION: " + table + "/" + sysId);
+
                 var targetId = this.migrateWithDependencies(table, sysId, 0);
                 if (!targetId) throw "Primary record migration failed";
+
                 this.related.migrateTaskRelationships(table, sysId, targetId);
+
                 this.related.migrateRelatedM2M(table, sysId, targetId);
                 this.related.migrateRelatedReferenceFields(table, sysId, targetId);
                 this.related.migrateDocumentIdRelations(table, sysId, targetId);
@@ -697,37 +825,50 @@ DM_MigrationCore.prototype = {
                 this.related.insertSLAs(sysId, targetId);
                 this.related.migrateM2MRelations(table, sysId, targetId);
                 this.related.migrateActivityStreamFor(table, sysId, targetId);
+
                 this._postMigrationFixup(table, targetId);
+
                 this.endTime      = new Date().getTime();
                 this.durationMs   = this.endTime - this.startTime;
                 this.durationText = (this.durationMs / 1000).toFixed(2) + " seconds";
+
                 this.logStep("✅ Migration completed in " + this.durationText);
+
                 var nP = this._numberPreservedCount || 0;
                 var nB = this._numberBlockedCount   || 0;
                 if (nP > 0 || nB > 0) {
                     this.logStep("   [NUM] Number preservation: " + nP +
                                   " preserved, " + nB + " blocked");
                 }
+
                 if (this.DEEP_RECURSION_ENABLED) {
                     this.logStep("Deep recursion: " + this._deepStats.migrated +
                                   " task-record(s) recursed" +
                                   (this._deepStats.capped ? " (CAPPED at " + this.MAX_DEEP_RECORDS + ")" : ""));
                 }
+
                 if (this.DEBUG) this.related.verifyRelatedM2M(table, targetId);
+
                 return targetId;
+
             } catch (e) {
                 gs.error("❌ Migration failed: " + e);
                 return "";
             }
         },
-    migrateRecords: function(sourceUrl, username, password, table, sysIds) { 
+
+    migrateRecords: function(sourceUrl, username, password, table, sysIds) {
+
             if (!sysIds || sysIds.length === 0) {
                 return { total: 0, success: 0, failed: 0, durationMs: 0,
                          durationText: "0.00 seconds", results: [] };
             }
+
             var batchStart = new Date().getTime();
+
             var prevFlag = this.KEEP_CACHES_ACROSS_CALLS;
             this.KEEP_CACHES_ACROSS_CALLS = true;
+
             if (!this._cacheSourceRecord)    this._cacheSourceRecord    = {};
             if (!this._cacheTableExists)     this._cacheTableExists     = {};
             if (!this._cacheGuessTableField) this._cacheGuessTableField = {};
@@ -738,19 +879,26 @@ DM_MigrationCore.prototype = {
             if (!this._cacheM2MDiscovery)    this._cacheM2MDiscovery    = {};
             if (!this._cacheTaskRelDiscovery) this._cacheTaskRelDiscovery = {};
             if (!this._cacheTablesReferencing) this._cacheTablesReferencing = {};
+
             if (!this._sysIdLookup)     this._sysIdLookup     = {};
             if (!this._migratedRecords) this._migratedRecords = {};
             if (!this._visited)         this._visited         = {};
+
             var results = [];
             var success = 0;
             var failed  = 0;
+
             gs.info("]]>📦<![CDATA[ BATCH MIGRATION START — " + sysIds.length + " record(s) of " + table);
+
             for (var i = 0; i < sysIds.length; i++) {
+
                 var sid = sysIds[i];
                 if (!sid) { failed++; continue; }
+
                 var recStart = new Date().getTime();
                 var tgt      = '';
                 var ok       = false;
+
                 try {
                     tgt = this.migrateRecord(sourceUrl, username, password, table, sid);
                     if (tgt) { ok = true; success++; }
@@ -759,7 +907,9 @@ DM_MigrationCore.prototype = {
                     gs.error("Batch item failed: " + sid + " — " + e);
                     failed++;
                 }
+
                 var recMs = new Date().getTime() - recStart;
+
                 results.push({
                     sourceId:     sid,
                     targetId:     tgt,
@@ -767,12 +917,15 @@ DM_MigrationCore.prototype = {
                     durationMs:   recMs,
                     durationText: (recMs / 1000).toFixed(2) + "s"
                 });
+
                 gs.info("  [" + (i + 1) + "/" + sysIds.length + "] " +
                          (ok ? "✔" : "✗") + " " + sid +
                          " — " + (recMs / 1000).toFixed(2) + "s" +
                          " (running total: ok=" + success + " fail=" + failed + ")");
             }
+
             this.KEEP_CACHES_ACROSS_CALLS = prevFlag;
+
             var batchMs   = new Date().getTime() - batchStart;
             var avgMs     = batchMs / sysIds.length;
             var summary = {
@@ -784,20 +937,26 @@ DM_MigrationCore.prototype = {
                 avgPerRecord: (avgMs / 1000).toFixed(2) + " seconds",
                 results:      results
             };
+
             gs.info("]]>📦<![CDATA[ BATCH MIGRATION COMPLETE — " + success + "/" + sysIds.length +
                      " succeeded in " + summary.durationText +
                      " (avg " + summary.avgPerRecord + " per record)");
+
             return summary;
         },
+
     migrateMixedRecords: function(sourceUrl, username, password, items, options) {
+
             if (!items || items.length === 0) {
                 return { total: 0, success: 0, failed: 0, durationMs: 0,
                          durationText: "0.00 seconds", byTable: {}, results: [] };
             }
+
             options = options || {};
-            var sortByTable = (options.sortByTable !== false);   // default true
-            var stopOnError = options.stopOnError === true;      // default false
+            var sortByTable = (options.sortByTable !== false);
+            var stopOnError = options.stopOnError === true;
             var onProgress  = (typeof options.onProgress === "function") ? options.onProgress : null;
+
             var clean = [];
             for (var v = 0; v < items.length; v++) {
                 var it = items[v];
@@ -810,10 +969,12 @@ DM_MigrationCore.prototype = {
                     sysId: String(it.sysId).trim()
                 });
             }
+
             if (clean.length === 0) {
                 return { total: 0, success: 0, failed: 0, durationMs: 0,
                          durationText: "0.00 seconds", byTable: {}, results: [] };
             }
+
             if (sortByTable) {
                 clean.sort(function(a, b) {
                     if (a.table < b.table) return -1;
@@ -821,9 +982,11 @@ DM_MigrationCore.prototype = {
                     return 0;
                 });
             }
+
             var batchStart = new Date().getTime();
             var prevFlag   = this.KEEP_CACHES_ACROSS_CALLS;
             this.KEEP_CACHES_ACROSS_CALLS = true;
+
             if (!this._cacheSourceRecord)      this._cacheSourceRecord      = {};
             if (!this._cacheTableExists)       this._cacheTableExists       = {};
             if (!this._cacheGuessTableField)   this._cacheGuessTableField   = {};
@@ -837,10 +1000,12 @@ DM_MigrationCore.prototype = {
             if (!this._sysIdLookup)            this._sysIdLookup            = {};
             if (!this._migratedRecords)        this._migratedRecords        = {};
             if (!this._visited)                this._visited                = {};
+
             var results = [];
             var success = 0;
             var failed  = 0;
-            var byTable = {};        
+            var byTable = {};
+
             var compStr = (function(arr) {
                 var counts = {};
                 for (var i = 0; i < arr.length; i++) counts[arr[i].table] = (counts[arr[i].table] || 0) + 1;
@@ -848,15 +1013,20 @@ DM_MigrationCore.prototype = {
                 for (var k in counts) parts.push(k + ":" + counts[k]);
                 return parts.join(", ");
             })(clean);
+
             gs.info("]]>📦<![CDATA[ MIXED BATCH MIGRATION START — " + clean.length +
                     " record(s) across multiple tables: " + compStr);
+
             for (var i = 0; i < clean.length; i++) {
+
                 var item = clean[i];
                 if (!byTable[item.table]) byTable[item.table] = { ok: 0, fail: 0 };
+
                 var recStart = new Date().getTime();
                 var tgt      = '';
                 var ok       = false;
                 var errMsg   = '';
+
                 try {
                     tgt = this.migrateRecord(sourceUrl, username, password,
                                               item.table, item.sysId);
@@ -869,7 +1039,9 @@ DM_MigrationCore.prototype = {
                     byTable[item.table].fail++;
                     errMsg = String(e);
                 }
+
                 var recMs = new Date().getTime() - recStart;
+
                 var resultEntry = {
                     table:        item.table,
                     sourceId:     item.sysId,
@@ -880,22 +1052,28 @@ DM_MigrationCore.prototype = {
                     durationText: (recMs / 1000).toFixed(2) + "s"
                 };
                 results.push(resultEntry);
+
                 gs.info("  [" + (i + 1) + "/" + clean.length + "] " +
                          (ok ? "✔" : "✗") + " " + item.table + "/" + item.sysId +
                          " — " + (recMs / 1000).toFixed(2) + "s" +
                          " (running: ok=" + success + " fail=" + failed + ")");
+
                 if (onProgress) {
                     try { onProgress(i + 1, clean.length, item, resultEntry); }
                     catch (eP) { gs.warn("onProgress callback threw: " + eP); }
                 }
+
                 if (stopOnError && !ok) {
                     gs.warn("⚠ stopOnError = true — aborting batch after first failure");
                     break;
                 }
             }
+
             this.KEEP_CACHES_ACROSS_CALLS = prevFlag;
+
             var batchMs = new Date().getTime() - batchStart;
             var avgMs   = batchMs / clean.length;
+
             var summary = {
                 total:        clean.length,
                 success:      success,
@@ -906,14 +1084,18 @@ DM_MigrationCore.prototype = {
                 byTable:      byTable,
                 results:      results
             };
+
             gs.info("]]>📦<![CDATA[ MIXED BATCH COMPLETE — " + success + "/" + clean.length +
                      " succeeded in " + summary.durationText +
                      " (avg " + summary.avgPerRecord + " per record)");
+
             for (var t in byTable) {
                 gs.info("    " + t + ": ok=" + byTable[t].ok + " fail=" + byTable[t].fail);
             }
+
             return summary;
         },
+
     _getQueueTable: function() {
             if (this._resolvedQueueTable) return this._resolvedQueueTable;
             if (this.discovery._tableExists(this.QUEUE_TABLE)) {
@@ -925,35 +1107,46 @@ DM_MigrationCore.prototype = {
             }
             return this._resolvedQueueTable;
         },
+
     queueMigration: function(table, sysIds) {
+
             if (!sysIds || sysIds.length === 0) return 0;
             var q = this._getQueueTable();
             var added = 0;
+
             for (var i = 0; i < sysIds.length; i++) {
+
                 var sid = String(sysIds[i] || "").trim();
                 if (!sid) continue;
+
                 try {
+
                     if (q.custom) {
+
                         var dup = new GlideRecordSecure(q.name);
                         dup.addQuery("source_table",  table);
                         dup.addQuery("source_sys_id", sid);
                         dup.setLimit(1);
                         dup.query();
                         if (dup.next()) continue;
+
                         var gr = new GlideRecordSecure(q.name);
                         gr.initialize();
                         gr.setValue("source_table",  table);
                         gr.setValue("source_sys_id", sid);
                         gr.setValue("status",        "pending");
                         if (gr.insert()) added++;
-    
+
                     } else {
+
                         var prefName = this.QUEUE_FALLBACK_PREFIX + table + "." + sid;
+
                         var dup2 = new GlideRecordSecure(q.name);
                         dup2.addQuery("name", prefName);
                         dup2.setLimit(1);
                         dup2.query();
                         if (dup2.next()) continue;
+
                         var pr = new GlideRecordSecure(q.name);
                         pr.initialize();
                         pr.setValue("name",  prefName);
@@ -961,15 +1154,20 @@ DM_MigrationCore.prototype = {
                         pr.setValue("type",  "string");
                         if (pr.insert()) added++;
                     }
+
                 } catch (eQ) {
                     gs.warn("Queue insert failed for " + sid + ": " + eQ);
                 }
             }
+
             gs.info("]]>📋<![CDATA[ Queued " + added + " of " + sysIds.length + " for " + table);
             return added;
         },
+
     queueMixedMigration: function(items) {
+
             if (!items || items.length === 0) return 0;
+
             var grouped = {};
             for (var i = 0; i < items.length; i++) {
                 var it = items[i];
@@ -977,18 +1175,25 @@ DM_MigrationCore.prototype = {
                 if (!grouped[it.table]) grouped[it.table] = [];
                 grouped[it.table].push(it.sysId);
             }
+
             var total = 0;
             for (var t in grouped) {
                 total += this.queueMigration(t, grouped[t]);
             }
+
             gs.info("]]>📋<![CDATA[ Total queued across all tables: " + total);
             return total;
         },
+
     processMigrationQueue: function(sourceUrl, username, password, batchSize) {
+
             batchSize = batchSize || 50;
+
             var q       = this._getQueueTable();
             var pending = [];
+
             if (q.custom) {
+
                 var gr = new GlideRecordSecure(q.name);
                 gr.addQuery("status", "pending");
                 gr.orderBy("sys_created_on");
@@ -1001,7 +1206,9 @@ DM_MigrationCore.prototype = {
                         sysId:   gr.getValue("source_sys_id")
                     });
                 }
+
             } else {
+
                 var pr = new GlideRecordSecure(q.name);
                 pr.addQuery("name", "STARTSWITH", this.QUEUE_FALLBACK_PREFIX);
                 pr.addQuery("value", "pending");
@@ -1009,6 +1216,7 @@ DM_MigrationCore.prototype = {
                 pr.setLimit(batchSize);
                 pr.query();
                 while (pr.next()) {
+
                     var n = pr.getValue("name") || "";
                     var rest = n.substring(this.QUEUE_FALLBACK_PREFIX.length);
                     var dot  = rest.indexOf(".");
@@ -1020,28 +1228,38 @@ DM_MigrationCore.prototype = {
                     });
                 }
             }
+
             if (pending.length === 0) {
                 gs.info("]]>📋<![CDATA[ Queue empty");
                 return { processed: 0, success: 0, failed: 0 };
             }
+
             gs.info("]]>📋<![CDATA[ Processing " + pending.length + " queued migration(s)");
+
             for (var m = 0; m < pending.length; m++) {
                 this._updateQueueStatus(q, pending[m].queueId, "running");
             }
+
             var byTable = {};
             for (var p = 0; p < pending.length; p++) {
                 var t = pending[p].table;
                 if (!byTable[t]) byTable[t] = [];
                 byTable[t].push(pending[p]);
             }
+
             var success = 0;
             var failed  = 0;
+
             this.KEEP_CACHES_ACROSS_CALLS = true;
+
             for (var tbl in byTable) {
                 var group = byTable[tbl];
+
                 for (var g = 0; g < group.length; g++) {
+
                     var item = group[g];
                     var ok   = false;
+
                     try {
                         var tgt = this.migrateRecord(sourceUrl, username, password,
                                                       item.table, item.sysId);
@@ -1049,17 +1267,21 @@ DM_MigrationCore.prototype = {
                     } catch (e) {
                         gs.error("Queue item failed: " + item.sysId + " — " + e);
                     }
+
                     this._updateQueueStatus(q, item.queueId, ok ? "done" : "failed");
                     if (ok) success++; else failed++;
                 }
             }
+
             gs.info("]]>📋<![CDATA[ Queue batch complete — success:" + success + " failed:" + failed);
+
             return {
                 processed: pending.length,
                 success:   success,
                 failed:    failed
             };
         },
+
     _updateQueueStatus: function(q, queueId, status) {
             try {
                 var gr = new GlideRecordSecure(q.name);
@@ -1074,9 +1296,12 @@ DM_MigrationCore.prototype = {
                 gs.warn("Queue status update failed: " + e);
             }
         },
+
     getQueueStatus: function() {
+
             var q = this._getQueueTable();
             var stats = { pending: 0, running: 0, done: 0, failed: 0, total: 0 };
+
             var gr = new GlideRecordSecure(q.name);
             if (q.custom) {
                 gr.query();
@@ -1084,20 +1309,27 @@ DM_MigrationCore.prototype = {
                 gr.addQuery("name", "STARTSWITH", this.QUEUE_FALLBACK_PREFIX);
                 gr.query();
             }
+
             while (gr.next()) {
                 var status = q.custom ? gr.getValue("status") : gr.getValue("value");
                 if (stats.hasOwnProperty(status)) stats[status]++;
                 stats.total++;
             }
+
             gs.info("]]>📊<![CDATA[ Queue: pending=" + stats.pending + " running=" + stats.running +
                      " done=" + stats.done + " failed=" + stats.failed +
                      " total=" + stats.total);
+
             return stats;
         },
+
     requeueStuckItems: function(olderThanMinutes) {
+
             olderThanMinutes = olderThanMinutes || 30;
+
             var q = this._getQueueTable();
             var gr = new GlideRecordSecure(q.name);
+
             if (q.custom) {
                 gr.addQuery("status", "running");
                 gr.addQuery("sys_updated_on", "<", gs.minutesAgo(olderThanMinutes));
@@ -1107,14 +1339,17 @@ DM_MigrationCore.prototype = {
                 gr.addQuery("sys_updated_on", "<", gs.minutesAgo(olderThanMinutes));
             }
             gr.query();
+
             var reset = 0;
             while (gr.next()) {
                 this._updateQueueStatus(q, gr.getUniqueValue(), "pending");
                 reset++;
             }
+
             gs.info("]]>🔁<![CDATA[ Requeued " + reset + " stuck item(s) older than " + olderThanMinutes + " min");
             return reset;
         },
+
     _incrementProgress: function() {
             this.progress.processed++;
             if (this.progress.total > 0) {
@@ -1122,6 +1357,7 @@ DM_MigrationCore.prototype = {
                     Math.round((this.progress.processed / this.progress.total) * 100);
             }
         },
+
     _ensureRecordLog: function() {
             if (!this.currentRecordLog) {
                 this.currentRecordLog = {
@@ -1135,26 +1371,30 @@ DM_MigrationCore.prototype = {
                 };
             }
         },
+
     _postMigrationFixup: function(table, targetId) {
+
             return;
         },
+
     logStep: function(msg) {
             this.executionLogs.push(msg);
             gs.info(msg);
         },
+
     type: 'DM_MigrationCore'
 };]]></script>
         <sys_class_name>sys_script_include</sys_class_name>
         <sys_created_by>bareen.makhdoomi</sys_created_by>
         <sys_created_on>2026-05-26 07:42:55</sys_created_on>
         <sys_id>21271cd693cd83500af5f4e9b903d6db</sys_id>
-        <sys_mod_count>11</sys_mod_count>
+        <sys_mod_count>12</sys_mod_count>
         <sys_name>DM_MigrationCore</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy>read</sys_policy>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sys_script_include_21271cd693cd83500af5f4e9b903d6db</sys_update_name>
         <sys_updated_by>bareen.makhdoomi</sys_updated_by>
-        <sys_updated_on>2026-06-17 07:40:28</sys_updated_on>
+        <sys_updated_on>2026-07-07 09:45:08</sys_updated_on>
     </sys_script_include>
 </record_update>

@@ -1040,65 +1040,67 @@ PAGE FADE ANIMATION&#13;
         return;
     }
 
-    /* =========================
-       DELETE RECORD
-    ========================== */
-    if (input && input.action === "deleteRecord") {
-        var dr = new GlideRecordSecure('x_sysus_tracenow_connection');
-        if (dr.get(input.sys_id)) {
-            if (dr.sys_created_by == gs.getUserName()) {
-                dr.deleteRecord();
+/* ========================= DELETE RECORD ========================= */
+if (input && input.action === "deleteRecord") {
+    var dr = new GlideRecordSecure('x_sysus_tracenow_connection');
+    dr.addQuery('sys_id', input.sys_id);
+    dr.addQuery('sys_created_by', gs.getUserName());
+    dr.query();
+
+    if (dr.next()) {
+        dr.deleteRecord();
+        data.success = true;
+    } else {
+        data.success = false;
+        data.error = "Record not found or unauthorized";
+    }
+    return;
+}
+
+/* ========================= CHECK CONNECTION STATUS ========================= */
+if (input && input.action == "check") {
+    data.success = false;
+    try {
+        var r = new sn_ws.RESTMessageV2();
+        r.setHttpMethod("get");
+        r.setEndpoint(input.url + "/api/now/table/sys_user?sysparm_limit=1");
+        r.setBasicAuth(input.user, input.pass);
+        r.setRequestHeader("Accept", "application/json");
+
+        var response = r.execute();
+        if (response.getStatusCode() == 200) {
+            var userName = gs.getUserName();
+
+            // Bulk deactivate others — unchanged, already correct
+            var reset = new GlideRecordSecure("x_sysus_tracenow_connection");
+            reset.addQuery("sys_created_by", userName);
+            reset.addQuery("sys_id", "!=", input.sys_id);
+            reset.query();
+            while (reset.next()) {
+                reset.setValue("state", false);
+                reset.update();
+            }
+
+            // Activate current — replaced .get() with addQuery
+            var current = new GlideRecordSecure("x_sysus_tracenow_connection");
+            current.addQuery("sys_id", input.sys_id);
+            current.addQuery("sys_created_by", userName);
+            current.query();
+
+            if (current.next()) {
+                current.setValue("state", true);
+                current.update();
                 data.success = true;
             } else {
                 data.success = false;
-                data.msg = "Unauthorized";
+                data.error = "Connection record not found or unauthorized";
             }
-        } else {
-            data.success = false;
-            data.msg = "Record not found";
         }
-        return;
+    } catch (ex) {
+        data.error = ex.message;
     }
-
-    /* =========================
-       CHECK CONNECTION STATUS
-    ========================== */
-    if (input && input.action == "check") {
-        data.success = false;
-        try {
-            var r = new sn_ws.RESTMessageV2();
-            r.setHttpMethod("get");
-            r.setEndpoint(input.url + "/api/now/table/sys_user?sysparm_limit=1");
-            r.setBasicAuth(input.user, input.pass);
-            r.setRequestHeader("Accept", "application/json");
-
-            var response = r.execute();
-            if (response.getStatusCode() == 200) {
-                var userName = gs.getUserName();
-
-                // Bulk deactivate others
-                var reset = new GlideRecordSecure("x_sysus_tracenow_connection");
-                reset.addQuery("sys_created_by", userName);
-                reset.addQuery("sys_id", "!=", input.sys_id);
-                reset.query();
-                while (reset.next()) {
-                    reset.setValue("state", false);
-                    reset.update();
-                }
-
-                // Activate current
-                var current = new GlideRecordSecure("x_sysus_tracenow_connection");
-                if (current.get(input.sys_id)) {
-                    current.setValue("state", true);
-                    current.update();
-                    data.success = true;
-                }
-            }
-        } catch (ex) {
-            data.error = ex.message;
-        }
-        return;
-    }
+    return;
+}
 
     /* =========================
        LOAD USER CONNECTION LIST
@@ -1124,14 +1126,14 @@ PAGE FADE ANIMATION&#13;
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 10:03:10</sys_created_on>
         <sys_id>efdb3158930587100af5f4e9b903d69d</sys_id>
-        <sys_mod_count>23</sys_mod_count>
+        <sys_mod_count>38</sys_mod_count>
         <sys_name>tracenow_connection_list</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_efdb3158930587100af5f4e9b903d69d</sys_update_name>
-        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
-        <sys_updated_on>2026-06-17 11:41:31</sys_updated_on>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-06-23 06:54:57</sys_updated_on>
         <template><![CDATA[<div class="dm-page-layout">
 
     <!-- LEFT SIDEBAR -->
