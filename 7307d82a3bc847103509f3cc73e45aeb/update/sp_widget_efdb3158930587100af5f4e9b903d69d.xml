@@ -1307,14 +1307,14 @@ if (input && input.action == "check") {
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 10:03:10</sys_created_on>
         <sys_id>efdb3158930587100af5f4e9b903d69d</sys_id>
-        <sys_mod_count>39</sys_mod_count>
+        <sys_mod_count>41</sys_mod_count>
         <sys_name>tracenow_connection_list</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_efdb3158930587100af5f4e9b903d69d</sys_update_name>
         <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-07-14 07:14:12</sys_updated_on>
+        <sys_updated_on>2026-07-15 12:09:12</sys_updated_on>
         <template><![CDATA[<div class="dm-page-layout">
 
   <!-- LEFT SIDEBAR -->
@@ -1500,95 +1500,6 @@ if (input && input.action == "check") {
       </a>
     </div>
   </div>
-</div>
-
-<!-- ========================
-     BROWSE TABLES FULL-PAGE LOADER
-========================= -->
-<div class="dm-page-loader-overlay" ng-if="c.browsingTables">
-  <div class="dm-page-loader-box">
-
-    <!-- Logo / Icon -->
-    <div class="dm-loader-logo">
-      <svg width="133" height="98" viewBox="0 0 133 98" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M93.4217 0H10.2803L37.2925 28.7662H65.3571V57.5325L93.4217 85.5971V0Z" fill="#116AF8"/>
-        <path d="M101.584 0H132.422L101.584 33.8613V0Z" fill="#116AF8"/>
-        <g opacity="0.42" style="mix-blend-mode:multiply">
-          <path d="M83.1415 12.0938L0 12.0938L27.0122 40.86L55.0768 40.86L55.0768 69.6262L83.1415 97.6909L83.1415 12.0938Z" fill="#116AF8"/>
-        </g>
-      </svg>
-
-    </div>
-
-    <!-- Title -->
-    <div class="dm-loader-title">Loading Tables</div>
-    <div class="dm-loader-subtitle">Fetching data from your instance, please wait…</div>
-
-    <!-- Progress Bar -->
-    <div class="dm-progress-track">
-      <div class="dm-progress-bar"></div>
-    </div>
-
-    <!-- Animated dots -->
-    <div class="dm-loader-dots">
-      <span></span>
-      <span></span>
-      <span></span>
-    </div>
-
-  </div>
-</div>
-
-<!-- CIRCLE -->
-<div class="dm-circle-wrap">
-
-  <svg viewBox="0 0 120 120">
-    <circle cx="60" cy="60" r="50" class="track"></circle>
-    <circle cx="60" cy="60" r="50"
-            class="progress"
-            stroke-dasharray="314"
-            stroke-dashoffset="{{314 - ((c.progress | number:0) * 3.14)}}">
-    </circle>
-  </svg>
-
-  <div class="dm-center">
-    {{c.progress | number:0}}%
-    <span>Synced</span>
-  </div>
-
-</div>
-
-<!-- STAGE -->
-<h3 class="dm-stage">{{c.currentStage.label}}</h3>
-<p class="dm-sub">Fetching tables from your instance...</p>
-
-<!-- STAGES -->
-<div class="dm-stage-bar">
-  <div ng-repeat="s in c.stages track by $index" class="stage">
-    <div class="bar"
-         ng-class="{'done': $index < c.stageIndex, 'active': $index == c.stageIndex}">
-    </div>
-    <div class="label">{{s.key}}</div>
-  </div>
-</div>
-
-<!-- STATS -->
-<div class="dm-stats">
-  <div>
-    <span>Records</span>
-    <b>{{c.recordsProcessed}} / {{c.totalRecords}}</b>
-  </div>
-  <div>
-    <span>Speed</span>
-    <b>2.4k/s</b>
-  </div>
-  <div>
-    <span>ETA</span>
-    <b>{{c.eta}}s</b>
-  </div>
-</div>
-
-</div>
 </div>]]></template>
     </sp_widget>
 </record_update>

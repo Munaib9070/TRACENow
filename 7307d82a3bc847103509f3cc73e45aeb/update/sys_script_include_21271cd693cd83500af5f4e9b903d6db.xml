@@ -44,6 +44,11 @@ DM_MigrationCore.prototype = {
 
             this.CLEAN_RERUN = true;
             this.DEBUG       = true;
+            // Add to DM_MigrationCore.initialize():
+this._membershipPairsProcessed = {};    // user_id|group_id
+this._roleGrantsProcessed = {};         // user_id|role_id
+this._groupParentChain = {};            // groupchain_table_sid
+this._currentManagerChain = {};         // Active manager IDs in THIS walk
 
             this.KEEP_CACHES_ACROSS_CALLS = false;
 
@@ -75,7 +80,24 @@ DM_MigrationCore.prototype = {
                 universal_request: true
             };
             this._refDeepDepth = 0;
+/* ==========================================================
+ * Idempotent processing guards
+ * ========================================================== */
 
+/* Users whose complete user-chain has already been processed */
+this._processedUsers = {};
+
+/* Groups whose memberships/manager have already been processed */
+this._processedGroups = {};
+
+/* Related-list recursion guards */
+this._processedRelatedLists = {};
+
+/* Related reference recursion guards */
+this._processedRelatedRefs = {};
+
+/* Natural-key processing guards */
+this._processedNaturalKeys = {};
             this._refDeepDone = {};
 
             this.USER_CHAIN = {
@@ -909,14 +931,47 @@ DM_MigrationCore.prototype = {
                 }
 
                 var recMs = new Date().getTime() - recStart;
+var displayValue = "";
 
-                results.push({
-                    sourceId:     sid,
-                    targetId:     tgt,
-                    success:      ok,
-                    durationMs:   recMs,
-                    durationText: (recMs / 1000).toFixed(2) + "s"
-                });
+if (tgt) {
+
+    var targetGR = new GlideRecordSecure(item.table);
+
+    if (targetGR.get(tgt)) {
+
+        if (targetGR.isValidField("number")) {
+
+            displayValue = targetGR.getValue("number");
+
+        } else if (item.table == "sys_user") {
+
+            displayValue = targetGR.getValue("user_name");
+
+        } else if (item.table == "sys_user_group") {
+
+            displayValue = targetGR.getValue("name");
+
+        } else if (targetGR.isValidField("name")) {
+
+            displayValue = targetGR.getValue("name");
+
+        } else {
+
+            displayValue = targetGR.getDisplayValue();
+        }
+    }
+}
+
+var resultEntry = {
+    table: item.table,
+    sourceId: item.sysId,
+    targetId: tgt,
+    displayValue: displayValue,
+    success: ok,
+    error: errMsg,
+    durationMs: recMs,
+    durationText: (recMs / 1000).toFixed(2) + "s"
+};
 
                 gs.info("  [" + (i + 1) + "/" + sysIds.length + "] " +
                          (ok ? "✔" : "✗") + " " + sid +
@@ -1041,16 +1096,47 @@ DM_MigrationCore.prototype = {
                 }
 
                 var recMs = new Date().getTime() - recStart;
+var displayValue = "";
 
-                var resultEntry = {
-                    table:        item.table,
-                    sourceId:     item.sysId,
-                    targetId:     tgt,
-                    success:      ok,
-                    error:        errMsg,
-                    durationMs:   recMs,
-                    durationText: (recMs / 1000).toFixed(2) + "s"
-                };
+if (tgt) {
+
+    var targetGR = new GlideRecordSecure(item.table);
+
+    if (targetGR.get(tgt)) {
+
+        if (targetGR.isValidField("number")) {
+
+            displayValue = targetGR.getValue("number");
+
+        } else if (item.table == "sys_user") {
+
+            displayValue = targetGR.getValue("user_name");
+
+        } else if (item.table == "sys_user_group") {
+
+            displayValue = targetGR.getValue("name");
+
+        } else if (targetGR.isValidField("name")) {
+
+            displayValue = targetGR.getValue("name");
+
+        } else {
+
+            displayValue = targetGR.getDisplayValue();
+        }
+    }
+}
+
+var resultEntry = {
+    table: item.table,
+    sourceId: item.sysId,
+    targetId: tgt,
+    displayValue: displayValue,
+    success: ok,
+    error: errMsg,
+    durationMs: recMs,
+    durationText: (recMs / 1000).toFixed(2) + "s"
+};
                 results.push(resultEntry);
 
                 gs.info("  [" + (i + 1) + "/" + clean.length + "] " +
@@ -1388,13 +1474,13 @@ DM_MigrationCore.prototype = {
         <sys_created_by>bareen.makhdoomi</sys_created_by>
         <sys_created_on>2026-05-26 07:42:55</sys_created_on>
         <sys_id>21271cd693cd83500af5f4e9b903d6db</sys_id>
-        <sys_mod_count>16</sys_mod_count>
+        <sys_mod_count>23</sys_mod_count>
         <sys_name>DM_MigrationCore</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy>read</sys_policy>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sys_script_include_21271cd693cd83500af5f4e9b903d6db</sys_update_name>
-        <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-07-15 07:15:44</sys_updated_on>
+        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+        <sys_updated_on>2026-07-15 12:04:08</sys_updated_on>
     </sys_script_include>
 </record_update>

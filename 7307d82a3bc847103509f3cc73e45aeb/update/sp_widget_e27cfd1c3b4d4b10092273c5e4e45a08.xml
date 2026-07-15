@@ -2253,7 +2253,8 @@ button:disabled {
 			{name:'sys_user', label:'Users'},
 			{name:'cmdb_ci', label:'Configuration Items'},
 			{name:'sc_request', label:'Requests'},
-			{name:'alm_asset', label:'Assets'}
+			{name:'alm_asset', label:'Assets'},
+			{name:'sys_user_group', label:'Groups'}
 		];
 
 		for (var i = 0; i < visibleTables.length; i++) {
@@ -2285,7 +2286,8 @@ button:disabled {
 				{name:'sys_user', label:'Users'},
 				{name:'cmdb_ci', label:'Configuration Items'},
 				{name:'sc_req_item', label:'Requested Items'},
-				{name:'alm_asset', label:'Assets'}
+				{name:'alm_asset', label:'Assets'},
+				{name:'sys_user_group', label:'Groups'}
 			];
 
 			for (var d = 0; d < defaults.length; d++) {
@@ -2363,14 +2365,14 @@ button:disabled {
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-20 09:57:42</sys_created_on>
         <sys_id>e27cfd1c3b4d4b10092273c5e4e45a08</sys_id>
-        <sys_mod_count>175</sys_mod_count>
+        <sys_mod_count>176</sys_mod_count>
         <sys_name>tracenow_browse_tables</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_e27cfd1c3b4d4b10092273c5e4e45a08</sys_update_name>
         <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-07-15 07:12:17</sys_updated_on>
+        <sys_updated_on>2026-07-15 09:14:01</sys_updated_on>
         <template><![CDATA[<div class="browse-layout"> 
   <!-- SIDEBAR -->
   <div class="dm-sidebar-slot">

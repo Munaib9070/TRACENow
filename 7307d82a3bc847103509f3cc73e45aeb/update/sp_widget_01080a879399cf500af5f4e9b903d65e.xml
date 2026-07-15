@@ -399,14 +399,14 @@ section {
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-06-10 10:07:09</sys_created_on>
         <sys_id>01080a879399cf500af5f4e9b903d65e</sys_id>
-        <sys_mod_count>75</sys_mod_count>
+        <sys_mod_count>76</sys_mod_count>
         <sys_name>tracenow_privacy_policy</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_01080a879399cf500af5f4e9b903d65e</sys_update_name>
-        <sys_updated_by>munaib.ashraf</sys_updated_by>
-        <sys_updated_on>2026-07-14 09:33:49</sys_updated_on>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-07-15 12:00:37</sys_updated_on>
         <template><![CDATA[<div class="privacy-container">
   <div class="privacy-card">
     <!-- Header -->
@@ -547,7 +547,7 @@ section {
             <li>Notify affected customers within 72 hours of confirming a breach that poses a risk to personal data.</li>
             <li>Provide a detailed incident report including the nature of the breach, data categories affected, likely consequences, and remediation steps taken.</li>
           </ol>
-          <p class="contact-line">To report a security concern, contact: <a href="mailto:servicenow@enablenow.com">servicenow@enablenow.com</a></p>
+          <p class="contact-line">To report a security concern, contact: <a href="mailto:contact@enablenow.com">contact@enablenow.com</a></p>
         </section>
 
         <!-------CONTACT DETAILS----->
@@ -560,7 +560,7 @@ section {
           <div class="contact-grid">
             <div class="contact-box">
               <div class="contact-label">General Privacy</div>
-              <a href="mailto:servicenow@enablenow.com">servicenow@enablenow.com <i class="fa fa-external-link"></i></a>
+              <a href="mailto:contact@enablenow.com">contact@enablenow.com <i class="fa fa-external-link"></i></a>
             </div>
           </div>
         </div>
