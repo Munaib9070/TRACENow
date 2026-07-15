@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_scope_privilege">
+    <sys_scope_privilege action="INSERT_OR_UPDATE">
+        <operation>read</operation>
+        <source_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</source_scope>
+        <status>allowed</status>
+        <sys_class_name>sys_scope_privilege</sys_class_name>
+        <sys_created_by>faizan.latief</sys_created_by>
+        <sys_created_on>2026-07-15 06:21:01</sys_created_on>
+        <sys_id>aaf3299e93ce87500af5f4e9b903d690</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>sn_ex_sp_user_portal_data_map</sys_name>
+        <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+        <sys_update_name>sys_scope_privilege_aaf3299e93ce87500af5f4e9b903d690</sys_update_name>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-07-15 06:21:01</sys_updated_on>
+        <target_name>sn_ex_sp_user_portal_data_map</target_name>
+        <target_scope display_value="Employee Center">4249e63a28d54d61bb6fbf61fd86cccb</target_scope>
+        <target_type>sys_db_object</target_type>
+    </sys_scope_privilege>
+</record_update>

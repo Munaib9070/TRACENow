@@ -5,7 +5,7 @@
   var c = this;
 
 	c.filters = {
-  dateRange: "30",  // ✅ default
+  dateRange: "30",  //  default
   table: "",
   type: ""
 };
@@ -348,12 +348,6 @@ c.goToDetails = function(status) {
   align-items: center;
 }
 
-/* TREND */
-.trend {
-  font-size: 13px;
-  font-weight: 600;
-  color: #16a34a;
-}
 
 /* TEXT */
 .card p {
@@ -796,14 +790,14 @@ canvas#donutChart {
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-20 09:50:40</sys_created_on>
         <sys_id>22da7d583b4d4b10092273c5e4e45a26</sys_id>
-        <sys_mod_count>34</sys_mod_count>
+        <sys_mod_count>37</sys_mod_count>
         <sys_name>tracenow_analytics</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_22da7d583b4d4b10092273c5e4e45a26</sys_update_name>
-        <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-06-22 06:55:59</sys_updated_on>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-07-15 07:21:26</sys_updated_on>
         <template><![CDATA[<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <div class="layout">
 
@@ -838,7 +832,7 @@ canvas#donutChart {
 
       <div class="hero-links">
         <a class="overview-link">
-          <i class="fa fa-bar-chart"></i> Analytics Overview
+         Analytics Overview
         </a>
       </div>
     </div>
@@ -899,7 +893,6 @@ canvas#donutChart {
         <div class="card blue">
           <div class="card-top">
             <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity-icon lucide-activity"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></div>
-            <span class="trend">+18 this week</span>
           </div>
           <p>Total Migrations</p>
           <h2>{{c.data.totalCount}}</h2>
@@ -909,17 +902,15 @@ canvas#donutChart {
         <div class="card green">
           <div class="card-top">
             <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-target-icon lucide-target"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></i></div>
-            <span class="trend">+3.2%</span>
           </div>
           <p>Success Rate</p>
           <h2>{{c.data.successRate}}%</h2>
-          <span class="sub">Last 30 days</span>
+          <span class="sub">All-time</span>
         </div>
 
         <div class="card purple">
           <div class="card-top">
             <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-database-icon lucide-database"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg></div>
-            <span class="trend">+12.5K</span>
           </div>
           <p>Total Records</p>
           <h2>{{c.data.totalRecords}}</h2>
@@ -929,7 +920,6 @@ canvas#donutChart {
         <div class="card orange">
           <div class="card-top">
             <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap-icon lucide-zap"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></div>
-            <span class="trend">-18s faster</span>
           </div>
           <p>Avg Duration</p>
           <h2>{{c.data.avgDuration}}</h2>

@@ -762,17 +762,17 @@
 	while (logGR.next()) {
 		
 		//query the record number in target instance for the migrated record
-		var tbl_gr = new GlideRecordSecure(logGR.getValue('table'));
-		tbl_gr.addQuery('sys_id', logGR.getValue('source_sys_id'));
-		tbl_gr.query();
-		while(tbl_gr.next()) {
-			tar_rec_number = tbl_gr.getValue('number');
-		}
+		//var tbl_gr = new GlideRecordSecure(logGR.getValue('table'));
+		//tbl_gr.addQuery('sys_id', logGR.getValue('source_sys_id'));
+		//tbl_gr.query();
+		//while(tbl_gr.next()) {
+			//tar_rec_number = tbl_gr.getValue('number') || '';
+		//}
 
 		data.records.push({
 
 			table: logGR.getValue('table') || '',
-			target_rec_number: tar_rec_number || '',
+			//target_rec_number: tar_rec_number || '',
 			source_id: logGR.getValue('source_sys_id') || '',
 			source_rec_number: logGR.getValue('record_number') || '',
 			short_description: logGR.getValue('short_description') || '',
@@ -817,14 +817,14 @@
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-20 10:04:31</sys_created_on>
         <sys_id>62fdf1103b8d4b10092273c5e4e45a42</sys_id>
-        <sys_mod_count>97</sys_mod_count>
+        <sys_mod_count>119</sys_mod_count>
         <sys_name>tracenow_deep_down</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_62fdf1103b8d4b10092273c5e4e45a42</sys_update_name>
         <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-06-22 12:23:20</sys_updated_on>
+        <sys_updated_on>2026-07-15 08:09:06</sys_updated_on>
         <template><![CDATA[<div class="sp-layout">
 
   <!-- ================= SIDEBAR ================= -->
@@ -866,16 +866,16 @@
         <div class="left">
           <div class="status-icon"
                ng-class="{
-                         'success': c.data.status === 'Success',
-                         'failed': c.data.status === 'Failed',
-                         'partial': c.data.status === 'Partial'
+                         'success': c.status === 'Success',
+                         'failed': c.status === 'Failed',
+                         'partial': c.status === 'Partial'
                          }">
 
             <i class="fa"
                ng-class="{
-                         'fa-check-circle': c.data.status === 'Success',
-                         'fa-times-circle': c.data.status === 'Failed',
-                         'fa-exclamation-triangle': c.data.status === 'Partial'
+                         'fa-check-circle': c.status === 'Success',
+                         'fa-times-circle': c.status === 'Failed',
+                         'fa-exclamation-triangle': c.status === 'Partial'
                          }"></i>
 
           </div>
@@ -885,11 +885,11 @@
             <div class="tags">
               <span class="tag"
                     ng-class="{
-                              'success': c.data.status === 'Success',
-                              'failed': c.data.status === 'Failed',
-                              'partial': c.data.status === 'Partial'
+                              'success': c.status === 'Success',
+                              'failed': c.status === 'Failed',
+                              'partial': c.status === 'Partial'
                               }">
-                {{c.data.status}}
+                {{c.status}}
               </span>
               <!--<span class="tag warn">Multi-Table</span>-->
             </div>
@@ -912,16 +912,17 @@
         <div class="mic-details">
 
           <div class="col">
-            <div>]]>📅<![CDATA[ <b>Timestamp</b><br>{{c.data.completedAt}}</div>
-            <div>⏱ <b>Duration</b><br>{{c.data.duration}}</div>
-            <div>]]>👤<![CDATA[ <b>Triggered By</b><br>{{c.data.current_user}}</div>
+            <div><svg style="margin-right:6px; vertical-align:middle;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days-icon lucide-calendar-days"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
+  <b>Timestamp</b><br>{{c.data.completedAt}}</div>
+            <div> <svg style="margin-right:6px; vertical-align:middle;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock4-icon lucide-clock-4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><b>Duration</b><br>{{c.data.duration}}</div>
+            <div> <svg style="margin-right:6px; vertical-align:middle;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-round-icon lucide-user-round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg><b>Triggered By</b><br>{{c.data.current_user}}</div>
           </div>
 
           <div class="col">
-            <div>]]>🗄<![CDATA[ <b>Source Instance</b><br>{{c.data.source_instance}}</div>
-            <div>]]>🧩<![CDATA[ <b>Target Instance</b><br>{{c.data.targetInstance}}</div>
-            <div>]]>📦<![CDATA[ <b>Tables</b><br>
-              <span class="pill" ng-repeat="rec in c.data.records">{{rec.table}}</span>
+            <div><svg style="margin-right:6px; vertical-align:middle;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-database-arrow-down-icon lucide-database-arrow-down"><path d="m16 19 3 3 3-3"/><path d="M19 16v6"/><path d="M21 12.536V5"/><path d="M3 12A9 3 0 0 0 15.182 14.806"/><path d="M3 5V19A9 3 0 0 0 13.318 21.968"/><ellipse cx="12" cy="5" rx="9" ry="3"/></svg> <b>Source Instance</b><br>{{c.data.source_instance}}</div>
+            <div><svg style="margin-right:6px; vertical-align:middle;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-database-arrow-up-icon lucide-database-arrow-up"><path d="M19 22v-6"/><path d="M21 12.536V5"/><path d="m22 19-3-3-3 3"/><path d="M3 12A9 3 0 0 0 14.457 14.886"/><path d="M3 5V19A9 3 0 0 0 13.318 21.968"/><ellipse cx="12" cy="5" rx="9" ry="3"/></svg> <b>Target Instance</b><br>{{c.data.targetInstance}}</div>
+            <div><svg style="margin-right:6px; vertical-align:middle;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table-icon lucide-table"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg> <b>Tables</b><br>
+              <span style="margin-top:2px; vertical-align:middle;" class="pill" ng-repeat="rec in c.data.records">{{rec.table}}</span>
             </div>
           </div>
 
@@ -950,7 +951,7 @@
         <!-- HEADER -->
         <div class="records-header">
           <div>
-            <h3>]]>📄<![CDATA[ Migration Records</h3>
+            <h3><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scroll-text-icon lucide-scroll-text"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg> Migration Records</h3>
             <p>Detailed breakdown of individual record migration status</p>
           </div>
         </div>
@@ -986,9 +987,6 @@
             <div><span class="pill">{{rec.table}}</span></div>
             <div>{{rec.source_id}}</div>
             <div>{{rec.status}}</div>
-
-
-
 
             <!-- ✅ CLEAN ACTION -->
             <div class="action" ng-click="c.openModal(rec)">]]>👁<![CDATA[ View</div>
@@ -1042,7 +1040,7 @@
     <div class="mic-modal-details" ng>
 
       <div class="box">
-        <span>Source Record ID</span>
+        <span>Record Number</span>
         <p>{{c.selectedRecord.source_rec_number}}</p>
       </div>
 
@@ -1067,8 +1065,8 @@
       </div>
 
       <div class="box">
-        <span>Target Record ID</span>
-        <p>{{c.selectedRecord.target_rec_number}}</p>
+        <span>Record ID</span>
+        <p>{{c.selectedRecord.source_id}}</p>
       </div>
 
     </div>
@@ -1091,7 +1089,7 @@
     </div>
     <!-- LOGS -->
     <div class="mic-modal-logs">
-      <h4>]]>📄<![CDATA[ Migration Log</h4>
+      <h4><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scroll-text-icon lucide-scroll-text"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg> Migration Log</h4>
 
       <div class="log-box">
         <!--<pre>

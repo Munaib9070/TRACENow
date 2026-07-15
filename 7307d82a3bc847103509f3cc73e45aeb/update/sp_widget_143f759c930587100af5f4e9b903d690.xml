@@ -1183,17 +1183,81 @@
 			var startTime = new Date().getTime();
 
 			engine = new DM_MigrationCore();
-			var result = engine.migrateMixedRecords(
-				sourceurl, username, password, validRecords,
-				{ sortByTable: true, stopOnError: false }
-			);
-			//update number of new inserted record
-			validRecords.forEach(function(rec) {
-				var bridge = new global.DM_GlobalNumberBridge();
+			engine.SOURCE_URL  = sourceurl;
+			engine.SOURCE_USER = username;
+			engine.SOURCE_PSWD = password;
+			engine.DEBUG       = true;
+			engine.FAST_MODE   = false;
+			var ok = 0;
+			var fail = 0;
+			var result = false;
+			var migratedTables = [];
 
-				bridge.restoreNumbers(false, rec.table);
-			})
-			migration_logs = engine.executionLogs;
+			for (var i = 0; i < validRecords.length; i++) {
+
+				var rec = validRecords[i];
+
+				try {
+
+					var startMs = new GlideDateTime().getNumericValue();
+
+					var targetSysId = engine.migrateWithDependencies(
+						rec.table,
+						rec.sysId,
+						0
+					);
+
+					var secs = Math.round(
+						(new GlideDateTime().getNumericValue() - startMs) / 1000
+					);
+
+					if (targetSysId) {
+
+						ok++;
+
+						if (migratedTables.indexOf(rec.table) === -1) {
+							migratedTables.push(rec.table);
+						}
+
+						var v = new GlideRecordSecure(rec.table);
+
+						if (v.get(targetSysId)) {
+
+							gs.info('target number : ' +
+											v.getValue('number') +
+											' (auto-value until bridge runs)');
+
+							gs.info('correlation_id : ' +
+											v.getValue('correlation_id') +
+											' (source number for the bridge)');
+						}
+
+					} else {
+
+						fail++;
+
+						gs.warn('✗ no target sys_id — migration did not complete for ' +
+										rec.table + '/' + rec.sysId);
+					}
+
+				} catch (e) {
+
+					fail++;
+					gs.error('✗ migration threw: ' +
+									 e + ' | ' + (e.stack || ''));
+				}
+			}
+
+			result = (ok > 0);
+
+			// Restore numbers once per table
+			if (result && migratedTables.length) {
+
+				var bridge = new global.DM_GlobalNumberBridge();
+				bridge.restoreNumbers(false, migratedTables);
+			}
+
+			migration_logs = engine.executionLogs || [];
 			migration_logs.push("Migration Completed");
 			var endTime = new Date().getTime();
 			var durationMs = endTime - startTime;
@@ -1402,7 +1466,7 @@
 					number: fRec.number, state: fRec.state,
 					short_description: fRec.short_description,
 					status: "failed", action: "failed",
-					reason: e.toString(),
+					reason: e.message.match(/-\s*(.*?)\s*\(/)[1].toString(),
 					logs: engine ? engine.executionLogs : []
 				});
 			}
@@ -1433,9 +1497,9 @@
 					logGr.setValue('action', rec.action);
 					logGr.setValue('state', rec.state);
 					logGr.setValue('short_description', rec.short_description);
-					logGr.setValue('reason', e.toString());
+					logGr.setValue('reason', rec.reason);
 					logGr.setValue('migration_log',
-												 JSON.stringify(migration_logs || []));
+												 JSON.stringify(rec.logs || []));
 					logGr.insert();
 				});
 			}
@@ -1463,14 +1527,14 @@
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 10:10:28</sys_created_on>
         <sys_id>143f759c930587100af5f4e9b903d690</sys_id>
-        <sys_mod_count>95</sys_mod_count>
+        <sys_mod_count>102</sys_mod_count>
         <sys_name>tracenow_queue</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_143f759c930587100af5f4e9b903d690</sys_update_name>
         <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-07-09 06:02:49</sys_updated_on>
+        <sys_updated_on>2026-07-15 07:13:07</sys_updated_on>
         <template><![CDATA[<div class="migration-cart">
 
   <!-- Sidebar -->

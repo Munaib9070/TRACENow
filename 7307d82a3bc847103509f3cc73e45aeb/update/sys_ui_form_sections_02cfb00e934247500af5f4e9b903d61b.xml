@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update>
+    <sys_ui_form_sections form_id="02cfb00e934247500af5f4e9b903d61b" sys_domain="global" table="alm_information_asset" version="3">
+        <sys_ui_form_section action="INSERT_OR_UPDATE">
+            <position>0</position>
+            <sys_created_by>bareen.makhdoomi</sys_created_by>
+            <sys_created_on>2026-07-14 09:04:25</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>6ecfb00e934247500af5f4e9b903d6a1</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_overrides/>
+            <sys_ui_form display_value="alm_information_asset" name="alm_information_asset" sys_domain="global" view="Default view">02cfb00e934247500af5f4e9b903d61b</sys_ui_form>
+            <sys_ui_section caption="NULL" display_value="" name="alm_information_asset" sys_domain="global" view="Default view">e6cfb00e934247500af5f4e9b903d66e</sys_ui_section>
+            <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+            <sys_updated_on>2026-07-14 09:04:25</sys_updated_on>
+        </sys_ui_form_section>
+        <sys_ui_form_section action="INSERT_OR_UPDATE">
+            <position>1</position>
+            <sys_created_by>bareen.makhdoomi</sys_created_by>
+            <sys_created_on>2026-07-14 09:04:26</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>fecfb00e934247500af5f4e9b903d6ca</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_overrides/>
+            <sys_ui_form display_value="alm_information_asset" name="alm_information_asset" sys_domain="global" view="Default view">02cfb00e934247500af5f4e9b903d61b</sys_ui_form>
+            <sys_ui_section caption="General" display_value="General" name="alm_information_asset" sys_domain="global" view="Default view">e6cfb00e934247500af5f4e9b903d6a2</sys_ui_section>
+            <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+            <sys_updated_on>2026-07-14 09:04:26</sys_updated_on>
+        </sys_ui_form_section>
+        <sys_ui_form_section action="INSERT_OR_UPDATE">
+            <position>2</position>
+            <sys_created_by>bareen.makhdoomi</sys_created_by>
+            <sys_created_on>2026-07-14 09:04:24</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>dacfb00e934247500af5f4e9b903d653</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_overrides/>
+            <sys_ui_form display_value="alm_information_asset" name="alm_information_asset" sys_domain="global" view="Default view">02cfb00e934247500af5f4e9b903d61b</sys_ui_form>
+            <sys_ui_section caption="Financial" display_value="Financial" name="alm_information_asset" sys_domain="global" view="Default view">9acfb00e934247500af5f4e9b903d646</sys_ui_section>
+            <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+            <sys_updated_on>2026-07-14 09:04:24</sys_updated_on>
+        </sys_ui_form_section>
+        <sys_ui_form_section action="INSERT_OR_UPDATE">
+            <position>3</position>
+            <sys_created_by>bareen.makhdoomi</sys_created_by>
+            <sys_created_on>2026-07-14 09:04:25</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>6ecfb00e934247500af5f4e9b903d66d</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_overrides/>
+            <sys_ui_form display_value="alm_information_asset" name="alm_information_asset" sys_domain="global" view="Default view">02cfb00e934247500af5f4e9b903d61b</sys_ui_form>
+            <sys_ui_section caption="Contracts" display_value="Contracts" name="alm_information_asset" sys_domain="global" view="Default view">56cfb00e934247500af5f4e9b903d654</sys_ui_section>
+            <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+            <sys_updated_on>2026-07-14 09:04:25</sys_updated_on>
+        </sys_ui_form_section>
+        <sys_ui_form_section action="INSERT_OR_UPDATE">
+            <position>4</position>
+            <sys_created_by>bareen.makhdoomi</sys_created_by>
+            <sys_created_on>2026-07-14 09:04:27</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>03cff00e934247500af5f4e9b903d64f</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_overrides/>
+            <sys_ui_form display_value="alm_information_asset" name="alm_information_asset" sys_domain="global" view="Default view">02cfb00e934247500af5f4e9b903d61b</sys_ui_form>
+            <sys_ui_section caption="Activities" display_value="Activities" name="alm_information_asset" sys_domain="global" view="Default view">7acfb00e934247500af5f4e9b903d6cb</sys_ui_section>
+            <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+            <sys_updated_on>2026-07-14 09:04:27</sys_updated_on>
+        </sys_ui_form_section>
+        <sys_ui_form_section action="INSERT_OR_UPDATE">
+            <position>5</position>
+            <sys_created_by>bareen.makhdoomi</sys_created_by>
+            <sys_created_on>2026-07-14 09:04:24</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>12cfb00e934247500af5f4e9b903d646</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_overrides/>
+            <sys_ui_form display_value="alm_information_asset" name="alm_information_asset" sys_domain="global" view="Default view">02cfb00e934247500af5f4e9b903d61b</sys_ui_form>
+            <sys_ui_section caption="Depreciation" display_value="Depreciation" name="alm_information_asset" sys_domain="global" view="Default view">42cfb00e934247500af5f4e9b903d61f</sys_ui_section>
+            <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+            <sys_updated_on>2026-07-14 09:04:24</sys_updated_on>
+        </sys_ui_form_section>
+        <sys_ui_form action="INSERT_OR_UPDATE">
+            <name>alm_information_asset</name>
+            <roles/>
+            <sys_class_name>sys_ui_form</sys_class_name>
+            <sys_created_by>bareen.makhdoomi</sys_created_by>
+            <sys_created_on>2026-07-14 09:04:23</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>02cfb00e934247500af5f4e9b903d61b</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_name>alm_information_asset</sys_name>
+            <sys_overrides/>
+            <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
+            <sys_policy/>
+            <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
+            <sys_update_name>sys_ui_form_sections_02cfb00e934247500af5f4e9b903d61b</sys_update_name>
+            <sys_updated_by>bareen.makhdoomi</sys_updated_by>
+            <sys_updated_on>2026-07-14 09:04:23</sys_updated_on>
+            <sys_user/>
+            <view display_value="Default view" name="NULL">Default view</view>
+            <view_name/>
+        </sys_ui_form>
+    </sys_ui_form_sections>
+</record_update>

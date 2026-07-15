@@ -506,7 +506,7 @@
     var successRate = parseFloat(gr.getValue('success_rate')) || 0;
 
     var successCount = parseInt(gr.getValue('records_inserted')) + parseInt(gr.getValue('records_updated'))//Math.round((successRate / 100) * total);
-    var failedCount = gr.getValue('records_failed');
+    var failedCount = parseInt(gr.getValue('records_failed'));
 
     data.runs.push({
       id: gr.getValue('number') || gr.getUniqueValue(),
@@ -529,14 +529,14 @@
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-20 10:09:54</sys_created_on>
         <sys_id>4d4fb9543b8d4b10092273c5e4e45ac1</sys_id>
-        <sys_mod_count>13</sys_mod_count>
+        <sys_mod_count>15</sys_mod_count>
         <sys_name>tracenow_migration_details</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_4d4fb9543b8d4b10092273c5e4e45ac1</sys_update_name>
-        <sys_updated_by>muslim.altaf</sys_updated_by>
-        <sys_updated_on>2026-06-16 09:34:05</sys_updated_on>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-07-14 07:09:26</sys_updated_on>
         <template><![CDATA[<div class="layout">
 
   <!-- SIDEBAR -->
@@ -571,14 +571,14 @@
     <div class="breadcrumb">
       <span class="inactive">
         <a href="/_tracenow?id=tracenow_analytics">
-          <i class="fa fa-bar-chart"></i> Analytics Overview
+          Analytics Overview
         </a>
       </span>
 
       <i class="fa fa-angle-right sep"></i>
 
       <span class="active">
-        <i class="fa fa-line-chart"></i> Migration Runs
+        Migration Runs
       </span>
     </div>
 

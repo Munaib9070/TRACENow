@@ -399,14 +399,14 @@ section {
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-06-10 10:07:09</sys_created_on>
         <sys_id>01080a879399cf500af5f4e9b903d65e</sys_id>
-        <sys_mod_count>73</sys_mod_count>
+        <sys_mod_count>75</sys_mod_count>
         <sys_name>tracenow_privacy_policy</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_01080a879399cf500af5f4e9b903d65e</sys_update_name>
         <sys_updated_by>munaib.ashraf</sys_updated_by>
-        <sys_updated_on>2026-06-22 11:28:37</sys_updated_on>
+        <sys_updated_on>2026-07-14 09:33:49</sys_updated_on>
         <template><![CDATA[<div class="privacy-container">
   <div class="privacy-card">
     <!-- Header -->
@@ -556,7 +556,7 @@ section {
             <div class="icon-box"><i class="fa fa-envelope-o"></i></div>
             <h2>Contact Us</h2>
           </div>
-          <p class="contact-description">If you have questions, concerns, or requests related to this Privacy Policy or the handling of your data, please contact our team:</p>
+          <p class="contact-description">If you have questions, concerns, or requests related to this Privacy Policy or the handling of your data, please contact our team. You can also visit our <a href="/_tracenow?id=tracenow_contact">Contact Us</a> page to submit an inquiry or find additional ways to reach us.</p>
           <div class="contact-grid">
             <div class="contact-box">
               <div class="contact-label">General Privacy</div>
@@ -567,7 +567,7 @@ section {
 
         <!------FOOTER------>
         <div class="policy-footer">
-          <div class="policy-version">Policy version 2.0 · Effective June 9, 2026</div>
+          <div class="policy-version">Policy version 1.0</div>
           <a href="#" ng-click="c.scrollTo('intro', $event)" class="back-to-top">
             <i class="fa fa-angle-up"></i> Back to top
           </a>

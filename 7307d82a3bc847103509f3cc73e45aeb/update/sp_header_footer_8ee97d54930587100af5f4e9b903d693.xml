@@ -1038,14 +1038,14 @@
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 09:47:14</sys_created_on>
         <sys_id>8ee97d54930587100af5f4e9b903d693</sys_id>
-        <sys_mod_count>9</sys_mod_count>
+        <sys_mod_count>10</sys_mod_count>
         <sys_name>tracenow_header</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_header_footer_8ee97d54930587100af5f4e9b903d693</sys_update_name>
-        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
-        <sys_updated_on>2026-06-17 07:53:07</sys_updated_on>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-07-15 08:06:23</sys_updated_on>
         <template><![CDATA[<header class="dm-header">
 
 <a class="dm-logo" href="/_tracenow">
@@ -1169,20 +1169,21 @@ ng-show="showMenu">
 <div class="help-modal" ng-show="showHelp">
 
 <div class="help-header">
-Data Migration Manager
+Tracenow
 </div>
 
 <div class="help-content">
 
 <p>
-Data Migration Manager helps administrators migrate
-records securely between ServiceNow instances including
-incidents, tasks, attachments, and related lists.
+TraceNow helps administrators securely transfer
+records between ServiceNow instances with a streamlined and reliable migration process.
+Migrate incidents, tasks, attachments, related lists,
+and other supported records while maintaining data integrity.
 </p>
 
 <p>
-Use Connections, Migration Cart, Run Migration,
-History, and Settings pages to manage migrations.
+Use Connections, Migration Queue, Run Migration, Reports,
+and Analytics to configure connections, select records, execute migrations, monitor progress.
 </p>
 
 </div>

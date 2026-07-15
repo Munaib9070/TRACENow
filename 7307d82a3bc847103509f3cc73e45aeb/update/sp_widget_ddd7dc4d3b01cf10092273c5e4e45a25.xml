@@ -3,198 +3,206 @@
         <category>custom</category>
         <client_script><![CDATA[api.controller = function($scope, spUtil) {
 
-    var c = this;
+	var c = this;
 
-    c.files = [];
-    c.submitting = false;
+	c.files = [];
+	c.submitting = false;
 
-    /* =====================================
+	/* =====================================
        FIELD ERRORS
     ===================================== */
 
-    c.errors = {};
+	c.errors = {};
 
-    /* =====================================
+	/* =====================================
        HANDLE FILES
     ===================================== */
 
-    c.handleFiles = function(files) {
+	c.handleFiles = function(files) {
 
-        $scope.$apply(function() {
+		$scope.$apply(function() {
 
-            for (var i = 0; i < files.length; i++) {
+			for (var i = 0; i < files.length; i++) {
 
-                c.files.push({
-                    name: files[i].name,
-                    raw: files[i]
-                });
+				c.files.push({
+					name: files[i].name,
+					raw: files[i]
+				});
 
-            }
+			}
 
-        });
+		});
 
-    };
+	};
 
-    /* =====================================
+	/* =====================================
        REMOVE FILE
     ===================================== */
 
-    c.removeFile = function(index) {
+	c.removeFile = function(index) {
 
-        c.files.splice(index, 1);
+		c.files.splice(index, 1);
 
-    };
+	};
 
-    /* =====================================
+	/* =====================================
        VALIDATE FORM
     ===================================== */
 
-    c.validateForm = function() {
+	c.validateForm = function() {
 
-        c.errors = {};
+		c.errors = {};
 
-        if (!c.data.full_name) {
-            c.errors.full_name = "Please fill this field";
-        }
+		if (!c.data.full_name) {
+			c.errors.full_name = "Please fill this field";
+		}
 
-        if (!c.data.email) {
-            c.errors.email = "Please fill this field";
-        }
+		if (!c.data.email) {
+			c.errors.email = "Please fill this field";
+		}
 
-        if (!c.data.issue_type) {
-            c.errors.issue_type = "Please select an issue type";
-        }
+		if (!c.data.issue_type) {
+			c.errors.issue_type = "Please select an issue type";
+		}
 
-        if (!c.data.priority) {
-            c.errors.priority = "Please select a priority";
-        }
+		if (!c.data.priority) {
+			c.errors.priority = "Please select a priority";
+		}
 
-        if (!c.data.subject) {
-            c.errors.subject = "Please fill this field";
-        }
+		if (!c.data.subject) {
+			c.errors.subject = "Please fill this field";
+		}
 
-        if (!c.data.description) {
-            c.errors.description = "Please fill this field";
-        }
+		if (!c.data.description) {
+			c.errors.description = "Please fill this field";
+		}
 
-        return Object.keys(c.errors).length === 0;
+		return Object.keys(c.errors).length === 0;
 
-    };
+	};
 
-    /* =====================================
+	/* =====================================
        SUBMIT FORM
     ===================================== */
 
-    c.submitRequest = function() {
+	c.submitRequest = function() {
 
-        /* VALIDATE */
-        if (!c.validateForm()) {
+		/* VALIDATE */
+		if (!c.validateForm()) {
 
-            spUtil.addErrorMessage(
-                "Please fill all required fields."
-            );
+			spUtil.addErrorMessage(
+				"Please fill all required fields."
+			);
 
-            return;
-        }
+			return;
+		}
 
-        c.submitting = true;
+		c.submitting = true;
 
-        c.data.action = "submit_support_request";
+		// c.data.action = "";
 
-        c.server.update().then(function(response) {
+		c.server.get({
+			action:"submit_support_request",
+			full_name: c.data.full_name,
+			email: c.data.email,
+			issue_type: c.data.issue_type,
+			priority: c.data.priority,
+			subject: c.data.subject,
+			description: c.data.description
+		}).then(function(response) {
 
-            c.submitting = false;
+			c.submitting = false;
 
-            if (response.data.sys_id) {
+			if (response.data.sys_id) {
 
-                spUtil.addInfoMessage(
-                    "Support request submitted successfully."
-                );
+				spUtil.addInfoMessage(
+					"Support request submitted successfully."
+				);
 
-                uploadAttachments(response.data.sys_id);
+				uploadAttachments(response.data.sys_id);
 
-                clearForm();
+				clearForm();
 
-            } else {
+			} else {
 
-                spUtil.addErrorMessage(
-                    "Failed to submit request."
-                );
+				spUtil.addErrorMessage(
+					"Failed to submit request."
+				);
 
-            }
+			}
 
-        });
+		});
 
-    };
+	};
 
-    /* =====================================
+	/* =====================================
        UPLOAD ATTACHMENTS
     ===================================== */
 
-    function uploadAttachments(recordSysId) {
+	function uploadAttachments(recordSysId) {
 
-        if (!c.files.length)
-            return;
+		if (!c.files.length)
+			return;
 
-        var formData = new FormData();
+		var formData = new FormData();
 
-        angular.forEach(c.files, function(fileObj) {
+		angular.forEach(c.files, function(fileObj) {
 
-            formData.append(
-                "attachFile",
-                fileObj.raw
-            );
+			formData.append(
+				"attachFile",
+				fileObj.raw
+			);
 
-        });
+		});
 
-        var xhr = new XMLHttpRequest();
+		var xhr = new XMLHttpRequest();
 
-        xhr.open(
-            "POST",
-            "/api/now/attachment/upload" +
-            "?table_name=x_sysus_tracenow_support_request" +
-            "&table_sys_id=" + recordSysId,
-            true
-        );
+		xhr.open(
+			"POST",
+			"/api/now/attachment/upload" +
+			"?table_name=x_sysus_tracenow_support_request" +
+			"&table_sys_id=" + recordSysId,
+			true
+		);
 
-        xhr.setRequestHeader(
-            "X-UserToken",
-            window.g_ck
-        );
+		xhr.setRequestHeader(
+			"X-UserToken",
+			window.g_ck
+		);
 
-        xhr.send(formData);
+		xhr.send(formData);
 
-    }
+	}
 
-    /* =====================================
+	/* =====================================
        CLEAR FORM
     ===================================== */
 
-    function clearForm() {
+	function clearForm() {
 
-        /* RESET FORM DATA */
-				
-        c.data = {};
+		/* RESET FORM DATA */
 
-        /* RESET ERRORS */
-        c.errors = {};
+		c.data = {};
 
-        /* RESET FILES */
-        c.files = [];
+		/* RESET ERRORS */
+		c.errors = {};
 
-        /* RESET FILE INPUT */
-        var fileInput = document.querySelector(
-            '.tn-upload-box input[type="file"]'
-        );
+		/* RESET FILES */
+		c.files = [];
 
-        if (fileInput) {
-            fileInput.value = "";
-        }
+		/* RESET FILE INPUT */
+		var fileInput = document.querySelector(
+			'.tn-upload-box input[type="file"]'
+		);
 
-        /* REFRESH UI */
-        $scope.$applyAsync();
+		if (fileInput) {
+			fileInput.value = "";
+		}
 
-    }
+		/* REFRESH UI */
+		$scope.$applyAsync();
+
+	}
 
 };]]></client_script>
         <controller_as>c</controller_as>
@@ -1228,14 +1236,14 @@
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-22 10:33:25</sys_created_on>
         <sys_id>ddd7dc4d3b01cf10092273c5e4e45a25</sys_id>
-        <sys_mod_count>68</sys_mod_count>
+        <sys_mod_count>91</sys_mod_count>
         <sys_name>tracenow_contact</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_ddd7dc4d3b01cf10092273c5e4e45a25</sys_update_name>
         <sys_updated_by>munaib.ashraf</sys_updated_by>
-        <sys_updated_on>2026-06-22 11:37:31</sys_updated_on>
+        <sys_updated_on>2026-07-14 07:32:43</sys_updated_on>
         <template><![CDATA[<div class="tn-page-layout">
   <div class="tn-left-sidebar">
         <sp-widget widget="data.side"></sp-widget>
@@ -1256,7 +1264,6 @@
 <path d="M101.584 0H132.422L101.584 33.8613V0Z" fill="white"/>
 </svg>
 
-</svg>
 
 
         </div>
@@ -1297,13 +1304,13 @@
   <!-- TOPICS -->
   <section class="tn-topics-section">
     <div class="tn-container">
-      <h2 class="tn-section-title">Browse Support Topics</h2>
+      <h2 class="tn-section-title">Support Topics</h2>
 
       <div class="tn-topic-grid">
         <!-- CARD -->
         <div class="tn-topic-card">
           <div class="tn-topic-icon">
-            <i class="fa fa-database"></i>
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-database-icon lucide-database"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
           </div>
 
           <h3>Migration Issues</h3>
@@ -1314,7 +1321,7 @@
         <!-- CARD -->
         <div class="tn-topic-card">
           <div class="tn-topic-icon">
-            <i class="fa fa-bolt"></i>
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap-icon lucide-zap"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>
           </div>
 
           <h3>Performance</h3>
@@ -1325,7 +1332,7 @@
         <!-- CARD -->
         <div class="tn-topic-card">
           <div class="tn-topic-icon">
-            <i class="fa fa-shield"></i>
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check-icon lucide-shield-check"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
           </div>
 
           <h3>Security & Access</h3>
@@ -1336,7 +1343,7 @@
         <!-- CARD -->
         <div class="tn-topic-card">
           <div class="tn-topic-icon">
-            <i class="fa fa-file-text-o"></i>
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text-icon lucide-file-text"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
           </div>
 
           <h3>Documentation</h3>
@@ -1358,7 +1365,7 @@
           <!-- HEADER -->
           <div class="tn-form-header">
             <div class="tn-form-header-icon">
-              <i class="fa fa-comment-o"></i>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle-icon lucide-message-circle"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></svg>
             </div>
 
             <h2>Submit a Support Request</h2>
@@ -1604,7 +1611,7 @@
           <!-- RESPONSE -->
           <div class="tn-response-card">
             <div class="tn-response-icon">
-              <i class="fa fa-clock-o"></i>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-icon lucide-clock"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
             </div>
 
             <h3>Expected Response Time</h3>
@@ -1615,7 +1622,7 @@
             </p>
 
             <div class="tn-response-badge">
-              <i class="fa fa-check-circle-o"></i>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-icon lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
 
               Enterprise: Priority Support
             </div>
@@ -1625,7 +1632,7 @@
           <div class="tn-critical-card">
             <div class="tn-critical-top">
               <div class="tn-critical-icon">
-                <i class="fa fa-exclamation-circle"></i>
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-alert-icon lucide-circle-alert"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
               </div>
 
               <h3>Critical Issue?</h3>
@@ -1637,7 +1644,7 @@
             </p>
 
             <div class="tn-critical-email">
-              <i class="fa fa-envelope-o"></i>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail-icon lucide-mail"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
               <a href="mailto:servicenow@enablenow.com">
               servicenow@enablenow.com
               </a>  

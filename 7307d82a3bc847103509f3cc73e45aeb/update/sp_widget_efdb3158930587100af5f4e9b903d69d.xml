@@ -321,672 +321,853 @@ var checkLoader = setInterval(function() {
 
 };]]></client_script>
         <controller_as>c</controller_as>
-        <css>.dm-modal-overlay {&#13;
-  position: fixed;&#13;
-  top: 0;&#13;
-  left: 0;&#13;
-  width: 100%;&#13;
-  height: 100%;&#13;
-  background: rgba(17, 106, 248, 0.15);&#13;
-  backdrop-filter: blur(4px);&#13;
-  display: flex;&#13;
-  align-items: center;&#13;
-  justify-content: center;&#13;
-  z-index: 9999;&#13;
-}&#13;
-&#13;
-.dm-modal {&#13;
-  background: #fff;&#13;
-  border-radius: 16px;&#13;
-  padding: 25px;&#13;
-  width: 350px;&#13;
-  text-align: center;&#13;
-  box-shadow: 0 20px 40px rgba(17, 106, 248, 0.2);&#13;
-  animation: scaleIn 0.2s ease;&#13;
-}&#13;
-&#13;
-.dm-modal-icon {&#13;
-  color: #ef4444;&#13;
-  margin-bottom: 10px;&#13;
-}&#13;
-&#13;
-.dm-modal h3 {&#13;
-  margin: 10px 0;&#13;
-  font-size: 20px;&#13;
-}&#13;
-&#13;
-.dm-modal p {&#13;
-  color: #64748b;&#13;
-  font-size: 14px;&#13;
-}&#13;
-&#13;
-.dm-modal-actions {&#13;
-  margin-top: 20px;&#13;
-  display: flex;&#13;
-  justify-content: center;&#13;
-}&#13;
-.dm-modal-actions button{&#13;
-	flex:1;&#13;
-}&#13;
-.dm-btn.cancel {&#13;
-  background: #e2e8f0;&#13;
-  color: #1e293b;&#13;
-}&#13;
-&#13;
-.dm-btn.delete {&#13;
-  background: #ef4444;&#13;
-  color: #fff;&#13;
-}&#13;
-&#13;
-.dm-btn {&#13;
-  padding: 10px 16px;&#13;
-  border: none;&#13;
-  border-radius: 10px;&#13;
-  cursor: pointer;&#13;
-  font-weight: 500;&#13;
-}&#13;
-&#13;
-.dm-btn:hover {&#13;
-  opacity: 0.9;&#13;
-}&#13;
-.dm-btn.browse{&#13;
-  background: #116AF8;&#13;
-  color: white;&#13;
-  text-decoration: none;&#13;
-  padding: 10px 18px;&#13;
-  border-radius: 8px;&#13;
-  font-weight: 500;&#13;
-  box-shadow: 0 4px 12px rgba(17, 106, 248, 0.25);&#13;
-}&#13;
-&#13;
-.dm-btn.browse:hover{&#13;
-  background: #0A50F5;&#13;
-  box-shadow: 0 6px 16px rgba(10, 80, 245, 0.3);&#13;
-}&#13;
-@keyframes scaleIn {&#13;
-  from { transform: scale(0.9); opacity: 0; }&#13;
-  to { transform: scale(1); opacity: 1; }&#13;
-}&#13;
-&#13;
-&#13;
-.dm-snackbar {&#13;
-  position: fixed;&#13;
-  bottom: 30px;&#13;
-  right: 30px;&#13;
-  opacity: 0;&#13;
-  transform: translateY(20px);&#13;
-  transition: all 0.3s ease;&#13;
-  z-index: 9999;&#13;
-}&#13;
-&#13;
-.dm-snackbar.show {&#13;
-  opacity: 1;&#13;
-  transform: translateY(0);&#13;
-}&#13;
-&#13;
-.snackbar-box {&#13;
-  display: flex;&#13;
-  align-items: flex-start;&#13;
-  gap: 14px;&#13;
-  min-width: 320px;&#13;
-  max-width: 400px;&#13;
-  background: #E8F1FE;&#13;
-  border: 2px solid #116AF8;&#13;
-  border-radius: 12px;&#13;
-  padding: 16px 18px;&#13;
-  box-shadow: 0 8px 20px rgba(17, 106, 248, 0.15);&#13;
-}&#13;
-&#13;
-.snackbar-icon {&#13;
-  color: #116AF8;&#13;
-  flex-shrink: 0;&#13;
-}&#13;
-&#13;
-.snackbar-title {&#13;
-  font-weight: 600;&#13;
-  font-size: 16px;&#13;
-  color: #1e293b;&#13;
-}&#13;
-&#13;
-.snackbar-desc {&#13;
-  font-size: 14px;&#13;
-  color: #475569;&#13;
-  margin-top: 4px;&#13;
-}&#13;
-/* ================================&#13;
-PAGE LAYOUT&#13;
-================================ */&#13;
-&#13;
-.dm-page-layout {&#13;
-  display: flex;&#13;
-  max-height: calc(100vh - 64px);&#13;
-  position: relative;&#13;
-  background: linear-gradient(&#13;
-    to bottom right,&#13;
-    #ffffff 0%,&#13;
-    rgba(155, 192, 252, 0.08) 50%,&#13;
-    rgba(17, 106, 248, 0.12) 100%&#13;
-  );&#13;
-}&#13;
-.dm-sidebar-slot {&#13;
-  flex-basis: 260px;&#13;
-  flex-shrink: 0;&#13;
-  height: 100%;&#13;
-}&#13;
-&#13;
-.dm-wrapper {&#13;
-  position: relative;&#13;
-  display: flex;&#13;
-  flex-direction: column;&#13;
-  height: 100%;&#13;
-  gap: 30px;&#13;
-  margin: 0 auto;&#13;
-  overflow-y: auto;&#13;
-  height: calc(100vh - 64px);&#13;
-  width: 100%;&#13;
-  padding: 30px 15%;&#13;
-}&#13;
-@media(max-width:1600px){&#13;
-  .dm-wrapper{&#13;
-  	padding: 30px;&#13;
-  }&#13;
-}&#13;
-&#13;
-/* ================================&#13;
-HEADER&#13;
-================================ */&#13;
-&#13;
-.dm-header {&#13;
-  display: flex;&#13;
-  justify-content: space-between;&#13;
-  align-items: center;&#13;
-}&#13;
-&#13;
-.dm-header h1 {&#13;
-  margin: 0;&#13;
-  font-size: 28px;&#13;
-  color: #0A50F5;&#13;
-}&#13;
-&#13;
-.dm-header p {&#13;
-  margin-top: 6px;&#13;
-  color: #64748b;&#13;
-}&#13;
-&#13;
-/* ================================&#13;
-PRIMARY BUTTON&#13;
-================================ */&#13;
-&#13;
-.dm-btn-primary {&#13;
-  background: linear-gradient(135deg, #116AF8, #0A50F5);&#13;
-  box-shadow: 0 8px 20px rgba(17, 106, 248, 0.3);&#13;
-  color: #fff;&#13;
-  border: none;&#13;
-  padding: 11px 18px;&#13;
-  border-radius: 10px;&#13;
-  font-weight: 600;&#13;
-  cursor: pointer;&#13;
-  transition: .2s;&#13;
-}&#13;
-&#13;
-.dm-btn-primary:hover {&#13;
-  transform: translateY(-2px);&#13;
-  box-shadow: 0 12px 25px rgba(10, 80, 245, 0.4);&#13;
-  background: linear-gradient(135deg, #0A50F5, #116AF8);&#13;
-}&#13;
-&#13;
-/* ================================&#13;
-BANNER&#13;
-================================ */&#13;
-&#13;
-.dm-banner {&#13;
-  display: flex;&#13;
-  gap: 14px;&#13;
-  align-items: flex-start;&#13;
-  background: linear-gradient(135deg, #E8F1FE, #F0F6FE);&#13;
-  border: 2px solid #9BC0FC;&#13;
-  color: #000;&#13;
-  padding: 18px;&#13;
-  border-radius: 14px;&#13;
-  margin-bottom: 28px;&#13;
-}&#13;
-&#13;
-.dm-banner-icon {&#13;
-  font-size: 22px;&#13;
-  background: #fff;&#13;
-  color: #116AF8;&#13;
-  padding: 10px 10px;&#13;
-  border-radius: 10px;&#13;
-  box-shadow: 0 2px 8px rgba(17, 106, 248, 0.15);&#13;
-}&#13;
-&#13;
-/* ================================&#13;
-GRID (RECTANGLE CARDS)&#13;
-================================ */&#13;
-&#13;
-.dm-grid {&#13;
-  display: grid;&#13;
-  grid-template-columns: repeat(auto-fill, minmax(520px,1fr));&#13;
-  gap: 22px;&#13;
-}&#13;
-&#13;
-/* ================================&#13;
-CARD DESIGN&#13;
-================================ */&#13;
-&#13;
-.dm-card {&#13;
-  background: rgba(255,255,255,.95);&#13;
-  border: 1px solid #e5e7eb;&#13;
-  border-radius: 16px;&#13;
-  padding: 22px;&#13;
-  backdrop-filter: blur(6px);&#13;
-  box-shadow: 0 12px 10px rgba(17, 106, 248, 0.08);&#13;
-  transition: .25s ease;&#13;
-  position: relative;&#13;
-  transform-style: preserve-3d;&#13;
-  will-change: transform, box-shadow;&#13;
-}&#13;
-&#13;
-/* MAIN HOVER EFFECT */&#13;
-&#13;
-.dm-card:hover {&#13;
-  transform: translateY(-10px) scale(1.02);&#13;
-  box-shadow:&#13;
-    0 20px 40px rgba(17, 106, 248, 0.25),&#13;
-    0 0 0 1px rgba(155, 192, 252, 0.4) inset;&#13;
-}&#13;
-&#13;
-/* GRADIENT BORDER GLOW */&#13;
-&#13;
-.dm-card::before {&#13;
-  content: "";&#13;
-  position: absolute;&#13;
-  inset: -1px;&#13;
-  border-radius: inherit;&#13;
-  background: linear-gradient(&#13;
-    120deg,&#13;
-    rgba(17, 106, 248, 0.4),&#13;
-    rgba(155, 192, 252, 0.3),&#13;
-    transparent 70%&#13;
-  );&#13;
-  opacity: 0;&#13;
-  transition: opacity .35s ease;&#13;
-  z-index: -1;&#13;
-}&#13;
-&#13;
-.dm-card:hover::before {&#13;
-  opacity: 1;&#13;
-}&#13;
-&#13;
-/* ================================&#13;
-CARD HEADER&#13;
-================================ */&#13;
-&#13;
-.dm-card-header {&#13;
-  display: flex;&#13;
-  justify-content: space-between;&#13;
-  align-items: flex-start;&#13;
-  position: relative;&#13;
-  overflow: hidden;&#13;
-}&#13;
-&#13;
-.dm-card-header h3 {&#13;
-  margin: 0;&#13;
-  font-size: 20px;&#13;
-  color: #0A50F5;&#13;
-}&#13;
-&#13;
-.dm-url {&#13;
-  font-size: 14px;&#13;
-  color: #64748b;&#13;
-  margin-top: 4px;&#13;
-}&#13;
-&#13;
-/* LIGHT SWEEP EFFECT */&#13;
-&#13;
-.dm-card-header::after {&#13;
-  content: "";&#13;
-  position: absolute;&#13;
-  top: 0;&#13;
-  left: -120%;&#13;
-  width: 80%;&#13;
-  height: 100%;&#13;
-  background: linear-gradient(&#13;
-    110deg,&#13;
-    transparent,&#13;
-    rgba(155, 192, 252, 0.5),&#13;
-    transparent&#13;
-  );&#13;
-  transform: skewX(-20deg);&#13;
-}&#13;
-&#13;
-.dm-card:hover .dm-card-header::after {&#13;
-  animation: cardSweep .8s ease forwards;&#13;
-}&#13;
-&#13;
-@keyframes cardSweep {&#13;
-  to { left: 140%; }&#13;
-}&#13;
-&#13;
-/* ================================&#13;
-STATUS BADGE&#13;
-================================ */&#13;
-&#13;
-.dm-status {&#13;
-  padding: 4px 12px;&#13;
-  border-radius: 999px;&#13;
-  font-size: 12px;&#13;
-  font-weight: 600;&#13;
-}&#13;
-&#13;
-.dm-status.success {&#13;
-  background: #E8F1FE;&#13;
-  color: #0A50F5;&#13;
-  border: 1px solid #9BC0FC;&#13;
-}&#13;
-&#13;
-.dm-status.danger {&#13;
-  background: #fee2e2;&#13;
-  color: #dc2626;&#13;
-}&#13;
-&#13;
-.dm-card:hover .dm-status.success {&#13;
-  box-shadow: 0 0 14px rgba(17, 106, 248, 0.4);&#13;
-}&#13;
-&#13;
-.dm-card:hover .dm-status.danger {&#13;
-  box-shadow: 0 0 14px rgba(239, 68, 68, 0.4);&#13;
-}&#13;
-&#13;
-/* ================================&#13;
-CARD BODY&#13;
-================================ */&#13;
-&#13;
-.dm-card-body {&#13;
-  display: flex;&#13;
-  justify-content: space-between;&#13;
-  margin-top: 18px;&#13;
-}&#13;
-&#13;
-.dm-info label {&#13;
-  font-size: 12px;&#13;
-  color: #64748b;&#13;
-}&#13;
-&#13;
-.dm-info div {&#13;
-  font-weight: 500;&#13;
-  margin-top: 3px;&#13;
-  color: #1e293b;&#13;
-}&#13;
-&#13;
-/* Divider */&#13;
-&#13;
-.dm-divider {&#13;
-  border: none;&#13;
-  border-top: 1px solid #e5e7eb;&#13;
-  margin: 18px 0;&#13;
-}&#13;
-&#13;
-/* ================================&#13;
-BUTTONS&#13;
-================================ */&#13;
-&#13;
-.dm-actions {&#13;
-  display: flex;&#13;
-  gap: 10px;&#13;
-}&#13;
-&#13;
-.dm-btn {&#13;
-  border: none;&#13;
-  padding: 7px 14px;&#13;
-  border-radius: 9px;&#13;
-  font-weight: 500;&#13;
-  cursor: pointer;&#13;
-  transition: .2s ease;&#13;
-  position: relative;&#13;
-}&#13;
-&#13;
-.dm-btn:active {&#13;
-  transform: scale(.95);&#13;
-}&#13;
-&#13;
-/* CONNECT */&#13;
-&#13;
-.dm-btn.connect {&#13;
-  background: linear-gradient(135deg, #E8F1FE, #D4E4FD);&#13;
-  color: #0A50F5;&#13;
-  border: 1px solid #9BC0FC;&#13;
-}&#13;
-&#13;
-.dm-btn.connect:hover {&#13;
-  background: linear-gradient(135deg, #D4E4FD, #9BC0FC);&#13;
-  box-shadow: 0 4px 12px rgba(17, 106, 248, 0.3);&#13;
-  transform: translateY(-1px);&#13;
-}&#13;
-&#13;
-/* EDIT */&#13;
-&#13;
-.dm-btn.edit {&#13;
-  background: #f1f5f9;&#13;
-  color: #334155;&#13;
-}&#13;
-&#13;
-.dm-btn.edit:hover {&#13;
-  background: #e2e8f0;&#13;
-  transform: translateY(-1px);&#13;
-}&#13;
-&#13;
-/* DELETE */&#13;
-&#13;
-.dm-btn.delete {&#13;
-  background: #fee2e2;&#13;
-  color: #dc2626;&#13;
-}&#13;
-&#13;
-.dm-btn.delete:hover {&#13;
-  background: #fecaca;&#13;
-  animation: dmPulse .6s ease;&#13;
-}&#13;
-&#13;
-@keyframes dmPulse {&#13;
-  0% { transform: scale(1); }&#13;
-  50% { transform: scale(1.06); }&#13;
-  100% { transform: scale(1); }&#13;
-}&#13;
-&#13;
-/* ================================&#13;
-EMPTY STATE&#13;
-================================ */&#13;
-&#13;
-.dm-empty-state {&#13;
-  grid-column: 1/-1;&#13;
-  display: flex;&#13;
-  justify-content: center;&#13;
-}&#13;
-&#13;
-.dm-empty-card {&#13;
-  text-align: center;&#13;
-  display: flex;&#13;
-  flex-direction: column;&#13;
-  gap: 10px;&#13;
-  padding: 40px;&#13;
-  border: 2px dashed #9BC0FC;&#13;
-  border-radius: 14px;&#13;
-  background: linear-gradient(135deg, #F5F9FE, #EBF3FE);&#13;
-}&#13;
-&#13;
-&#13;
-/* ================================&#13;
-PAGE FADE ANIMATION&#13;
-================================ */&#13;
-&#13;
-@keyframes dmFadeIn {&#13;
-  from {&#13;
-    opacity: 0;&#13;
-    transform: translateY(8px);&#13;
-  }&#13;
-  to {&#13;
-    opacity: 1;&#13;
-    transform: translateY(0);&#13;
-  }&#13;
-}&#13;
-&#13;
-/* =========================&#13;
-   ADVANCED LOADER&#13;
-========================= */&#13;
-&#13;
-.dm-adv-loader-overlay {&#13;
-  position: fixed;&#13;
-  inset: 0;&#13;
-  background: linear-gradient(180deg, #F4F7FE, #EAF0FC);&#13;
-  display: flex;&#13;
-  align-items: center;&#13;
-  justify-content: center;&#13;
-  z-index: 99999;&#13;
-}&#13;
-&#13;
-.dm-adv-loader-card {&#13;
-  width: 420px;&#13;
-  padding: 30px;&#13;
-  border-radius: 22px;&#13;
-  background: rgba(255,255,255,0.95);&#13;
-  backdrop-filter: blur(10px);&#13;
-  box-shadow: 0 30px 60px rgba(10,80,245,0.25);&#13;
-  text-align: center;&#13;
-}&#13;
-&#13;
-/* HEADER */&#13;
-.dm-adv-loader-header {&#13;
-  display: flex;&#13;
-  justify-content: space-between;&#13;
-  margin-bottom: 20px;&#13;
-}&#13;
-&#13;
-.dm-adv-loader-left {&#13;
-  display: flex;&#13;
-  gap: 10px;&#13;
-  align-items: center;&#13;
-}&#13;
-&#13;
-.dm-logo-glow {&#13;
-  position: absolute;&#13;
-  width: 60px;&#13;
-  height: 60px;&#13;
-  background: radial-gradient(circle, #116AF8, transparent);&#13;
-  filter: blur(20px);&#13;
-}&#13;
-&#13;
-.dm-small-label {&#13;
-  font-size: 10px;&#13;
-  color: #116AF8;&#13;
-  letter-spacing: 2px;&#13;
-}&#13;
-&#13;
-.dm-title {&#13;
-  font-size: 16px;&#13;
-  font-weight: 600;&#13;
-}&#13;
-&#13;
-/* CIRCLE */&#13;
-.dm-circle-wrap {&#13;
-  position: relative;&#13;
-  width: 120px;&#13;
-  height: 120px;&#13;
-  margin: 20px auto;&#13;
-}&#13;
-&#13;
-.dm-circle-wrap svg {&#13;
-  transform: rotate(-90deg);&#13;
-}&#13;
-&#13;
-.track {&#13;
-  fill: none;&#13;
-  stroke: #eef2fb;&#13;
-  stroke-width: 8;&#13;
-}&#13;
-&#13;
-.progress {&#13;
-  fill: none;&#13;
-  stroke: #116AF8;&#13;
-  stroke-width: 8;&#13;
-  stroke-linecap: round;&#13;
-  transition: stroke-dashoffset 0.3s;&#13;
-}&#13;
-&#13;
-.dm-center {&#13;
-  position: absolute;&#13;
-  inset: 0;&#13;
-  display: flex;&#13;
-  flex-direction: column;&#13;
-  justify-content: center;&#13;
-  align-items: center;&#13;
-  font-size: 22px;&#13;
-  font-weight: 600;&#13;
-}&#13;
-&#13;
-.dm-center span {&#13;
-  font-size: 10px;&#13;
-  color: #999;&#13;
-}&#13;
-&#13;
-/* STAGE */&#13;
-.dm-stage {&#13;
-  margin-top: 10px;&#13;
-  font-size: 18px;&#13;
-}&#13;
-&#13;
-.dm-sub {&#13;
-  font-size: 13px;&#13;
-  color: #64748b;&#13;
-}&#13;
-&#13;
-/* STAGES */&#13;
-.dm-stage-bar {&#13;
-  display: flex;&#13;
-  margin-top: 20px;&#13;
-  gap: 5px;&#13;
-}&#13;
-&#13;
-.stage {&#13;
-  flex: 1;&#13;
-  text-align: center;&#13;
-}&#13;
-&#13;
-.bar {&#13;
-  height: 4px;&#13;
-  background: #e5e7eb;&#13;
-}&#13;
-&#13;
-.bar.active {&#13;
-  background: #116AF8;&#13;
-}&#13;
-&#13;
-.bar.done {&#13;
-  background: #0A50F5;&#13;
-}&#13;
-&#13;
-.label {&#13;
-  font-size: 10px;&#13;
-  margin-top: 5px;&#13;
-}&#13;
-&#13;
-/* STATS */&#13;
-.dm-stats {&#13;
-  display: flex;&#13;
-  justify-content: space-between;&#13;
-  margin-top: 20px;&#13;
-  background: #eef4ff;&#13;
-  padding: 10px;&#13;
-  border-radius: 12px;&#13;
-}&#13;
-&#13;
-.dm-stats span {&#13;
-  font-size: 10px;&#13;
-  color: #64748b;&#13;
-}&#13;
-&#13;
-.dm-stats b {&#13;
-  display: block;&#13;
+        <css>.dm-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(17, 106, 248, 0.15);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.dm-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 25px;
+  width: 350px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(17, 106, 248, 0.2);
+  animation: scaleIn 0.2s ease;
+}
+
+.dm-modal-icon {
+  color: #ef4444;
+  margin-bottom: 10px;
+}
+
+.dm-modal h3 {
+  margin: 10px 0;
+  font-size: 20px;
+}
+
+.dm-modal p {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.dm-modal-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+.dm-modal-actions button{
+	flex:1;
+}
+.dm-btn.cancel {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.dm-btn.delete {
+  background: #ef4444;
+  color: #fff;
+}
+
+.dm-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.dm-btn:hover {
+  opacity: 0.9;
+}
+.dm-btn.browse{
+  background: #116AF8;
+  color: white;
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(17, 106, 248, 0.25);
+}
+
+.dm-btn.browse:hover{
+  background: #0A50F5;
+  box-shadow: 0 6px 16px rgba(10, 80, 245, 0.3);
+}
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+
+.dm-snackbar {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+  z-index: 9999;
+}
+
+.dm-snackbar.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.snackbar-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 320px;
+  max-width: 400px;
+  background: #E8F1FE;
+  border: 2px solid #116AF8;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 8px 20px rgba(17, 106, 248, 0.15);
+}
+
+.snackbar-icon {
+  color: #116AF8;
+  flex-shrink: 0;
+}
+
+.snackbar-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.snackbar-desc {
+  font-size: 14px;
+  color: #475569;
+  margin-top: 4px;
+}
+/* ================================
+PAGE LAYOUT
+================================ */
+
+.dm-page-layout {
+  display: flex;
+  max-height: calc(100vh - 64px);
+  position: relative;
+  background: linear-gradient(
+    to bottom right,
+    #ffffff 0%,
+    rgba(155, 192, 252, 0.08) 50%,
+    rgba(17, 106, 248, 0.12) 100%
+  );
+}
+.dm-sidebar-slot {
+  flex-basis: 260px;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+.dm-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 30px;
+  margin: 0 auto;
+  overflow-y: auto;
+  height: calc(100vh - 64px);
+  width: 100%;
+  padding: 30px 15%;
+}
+@media(max-width:1600px){
+  .dm-wrapper{
+  	padding: 30px;
+  }
+}
+
+/* ================================
+HEADER
+================================ */
+
+.dm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dm-header h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #0A50F5;
+}
+
+.dm-header p {
+  margin-top: 6px;
+  color: #64748b;
+}
+
+/* ================================
+PRIMARY BUTTON
+================================ */
+
+.dm-btn-primary {
+  background: linear-gradient(135deg, #116AF8, #0A50F5);
+  box-shadow: 0 8px 20px rgba(17, 106, 248, 0.3);
+  color: #fff;
+  border: none;
+  padding: 11px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.dm-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(10, 80, 245, 0.4);
+  background: linear-gradient(135deg, #0A50F5, #116AF8);
+}
+
+/* ================================
+BANNER
+================================ */
+
+.dm-banner {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: linear-gradient(135deg, #E8F1FE, #F0F6FE);
+  border: 2px solid #9BC0FC;
+  color: #000;
+  padding: 18px;
+  border-radius: 14px;
+  margin-bottom: 28px;
+}
+
+.dm-banner-icon {
+  font-size: 22px;
+  background: #fff;
+  color: #116AF8;
+  padding: 10px 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(17, 106, 248, 0.15);
+}
+
+/* ================================
+GRID (RECTANGLE CARDS)
+================================ */
+
+.dm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(520px,1fr));
+  gap: 22px;
+}
+
+/* ================================
+CARD DESIGN
+================================ */
+
+.dm-card {
+  background: rgba(255,255,255,.95);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 22px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 12px 10px rgba(17, 106, 248, 0.08);
+  transition: .25s ease;
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform, box-shadow;
+}
+
+/* MAIN HOVER EFFECT */
+
+.dm-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow:
+    0 20px 40px rgba(17, 106, 248, 0.25),
+    0 0 0 1px rgba(155, 192, 252, 0.4) inset;
+}
+
+/* GRADIENT BORDER GLOW */
+
+.dm-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    120deg,
+    rgba(17, 106, 248, 0.4),
+    rgba(155, 192, 252, 0.3),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity .35s ease;
+  z-index: -1;
+}
+
+.dm-card:hover::before {
+  opacity: 1;
+}
+
+/* ================================
+CARD HEADER
+================================ */
+
+.dm-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  overflow: hidden;
+}
+
+.dm-card-header h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #0A50F5;
+}
+
+.dm-url {
+  font-size: 14px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* LIGHT SWEEP EFFECT */
+
+.dm-card-header::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 80%;
+  height: 100%;
+  background: linear-gradient(
+    110deg,
+    transparent,
+    rgba(155, 192, 252, 0.5),
+    transparent
+  );
+  transform: skewX(-20deg);
+}
+
+.dm-card:hover .dm-card-header::after {
+  animation: cardSweep .8s ease forwards;
+}
+
+@keyframes cardSweep {
+  to { left: 140%; }
+}
+
+/* ================================
+STATUS BADGE
+================================ */
+
+.dm-status {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dm-status.success {
+  background: #E8F1FE;
+  color: #0A50F5;
+  border: 1px solid #9BC0FC;
+}
+
+.dm-status.danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.dm-card:hover .dm-status.success {
+  box-shadow: 0 0 14px rgba(17, 106, 248, 0.4);
+}
+
+.dm-card:hover .dm-status.danger {
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.4);
+}
+
+/* ================================
+CARD BODY
+================================ */
+
+.dm-card-body {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 18px;
+}
+
+.dm-info label {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.dm-info div {
+  font-weight: 500;
+  margin-top: 3px;
+  color: #1e293b;
+}
+
+/* Divider */
+
+.dm-divider {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 18px 0;
+}
+
+/* ================================
+BUTTONS
+================================ */
+
+.dm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.dm-btn {
+  border: none;
+  padding: 7px 14px;
+  border-radius: 9px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: .2s ease;
+  position: relative;
+}
+
+.dm-btn:active {
+  transform: scale(.95);
+}
+
+/* CONNECT */
+
+.dm-btn.connect {
+  background: linear-gradient(135deg, #E8F1FE, #D4E4FD);
+  color: #0A50F5;
+  border: 1px solid #9BC0FC;
+}
+
+.dm-btn.connect:hover {
+  background: linear-gradient(135deg, #D4E4FD, #9BC0FC);
+  box-shadow: 0 4px 12px rgba(17, 106, 248, 0.3);
+  transform: translateY(-1px);
+}
+
+/* EDIT */
+
+.dm-btn.edit {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.dm-btn.edit:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+/* DELETE */
+
+.dm-btn.delete {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.dm-btn.delete:hover {
+  background: #fecaca;
+  animation: dmPulse .6s ease;
+}
+
+@keyframes dmPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* ================================
+EMPTY STATE
+================================ */
+
+.dm-empty-state {
+  grid-column: 1/-1;
+  display: flex;
+  justify-content: center;
+}
+
+.dm-empty-card {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 40px;
+  border: 2px dashed #9BC0FC;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #F5F9FE, #EBF3FE);
+}
+
+
+/* ================================
+PAGE FADE ANIMATION
+================================ */
+
+@keyframes dmFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================
+   ADVANCED LOADER
+========================= */
+
+.dm-adv-loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, #F4F7FE, #EAF0FC);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}
+
+.dm-adv-loader-card {
+  width: 420px;
+  padding: 30px;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 30px 60px rgba(10,80,245,0.25);
+  text-align: center;
+}
+
+/* HEADER */
+.dm-adv-loader-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.dm-adv-loader-left {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.dm-logo-glow {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, #116AF8, transparent);
+  filter: blur(20px);
+}
+
+.dm-small-label {
+  font-size: 10px;
+  color: #116AF8;
+  letter-spacing: 2px;
+}
+
+.dm-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* CIRCLE */
+.dm-circle-wrap {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 20px auto;
+}
+
+.dm-circle-wrap svg {
+  transform: rotate(-90deg);
+}
+
+.track {
+  fill: none;
+  stroke: #eef2fb;
+  stroke-width: 8;
+}
+
+.progress {
+  fill: none;
+  stroke: #116AF8;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.3s;
+}
+
+.dm-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.dm-center span {
+  font-size: 10px;
+  color: #999;
+}
+
+/* STAGE */
+.dm-stage {
+  margin-top: 10px;
+  font-size: 18px;
+}
+
+.dm-sub {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* STAGES */
+.dm-stage-bar {
+  display: flex;
+  margin-top: 20px;
+  gap: 5px;
+}
+
+.stage {
+  flex: 1;
+  text-align: center;
+}
+
+.bar {
+  height: 4px;
+  background: #e5e7eb;
+}
+
+.bar.active {
+  background: #116AF8;
+}
+
+.bar.done {
+  background: #0A50F5;
+}
+
+.label {
+  font-size: 10px;
+  margin-top: 5px;
+}
+
+/* STATS */
+.dm-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  background: #eef4ff;
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.dm-stats span {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.dm-stats b {
+  display: block;
+}
+/* ================================
+   FULL-PAGE LOADER OVERLAY
+================================ */
+.dm-page-loader-overlay {
+    position: fixed;
+    inset: 0;
+
+    /* Blurry transparent gradient using your colors */
+    background: linear-gradient(
+        135deg,
+        rgba(17, 106, 248, 0.08),
+        rgba(10, 80, 245, 0.10),
+        rgba(155, 192, 252, 0.08)
+    );
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    animation: dm-fade-in 0.3s ease;
+}
+
+@keyframes dm-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Subtle glow background */
+.dm-page-loader-overlay::before {
+    content: "";
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(
+        circle,
+        rgba(17, 106, 248, 0.25),
+        transparent 70%
+    );
+    filter: blur(60px);
+    z-index: -1;
+}
+
+/* ================================
+   LOADER CARD
+================================ */
+.dm-page-loader-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+
+    /* Glass effect card */
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    padding: 50px 60px;
+    border-radius: 22px;
+
+    border: 1px solid rgba(155, 192, 252, 0.35);
+
+    box-shadow:
+        0 12px 50px rgba(17, 106, 248, 0.25),
+        0 0 0 1px rgba(17, 106, 248, 0.08),
+        inset 0 1px 0 rgba(255,255,255,0.6);
+
+    min-width: 340px;
+
+    animation: dm-slide-up 0.35s ease;
+}
+
+@keyframes dm-slide-up {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ================================
+   LOGO
+================================ */
+.dm-loader-logo {
+    width: 78px;
+    height: 78px;
+    border-radius: 0 !important;
+    background: transparent !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:none !important;
+    margin-bottom: 6px;
+    animation: dm-pulse-logo 1.8s ease-in-out infinite;
+}
+
+@keyframes dm-pulse-logo {
+    0%, 100% { box-shadow: 0 8px 30px rgba(17, 106, 248, 0.45); }
+    50%       { box-shadow: 0 8px 45px rgba(17, 106, 248, 0.7);  }
+}
+
+/* ================================
+   TEXT
+================================ */
+.dm-loader-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0A50F5;
+    letter-spacing: -0.3px;
+    margin-top: 4px;
+}
+
+.dm-loader-subtitle {
+    font-size: 13px;
+    color: #6b7280;
+    text-align: center;
+    max-width: 240px;
+    line-height: 1.5;
+}
+
+/* ================================
+   PROGRESS BAR
+================================ */
+.dm-progress-track {
+    width: 100%;
+    height: 6px;
+    background: #e8f0fe;
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 6px;
+}
+
+.dm-progress-bar {
+    height: 100%;
+    width: 40%;
+    border-radius: 99px;
+
+    background: linear-gradient(
+        90deg,
+        #116AF8,
+        #9BC0FC,
+        #0A50F5,
+        #116AF8
+    );
+
+    background-size: 300% 100%;
+
+    animation: dm-progress-slide 1.3s ease-in-out infinite;
+}
+
+@keyframes dm-progress-slide {
+    0%   { background-position: 100% 0; width: 30%; margin-left: 0%;   }
+    50%  { background-position: 0% 0;   width: 55%; margin-left: 20%;  }
+    100% { background-position: 100% 0; width: 30%; margin-left: 70%;  }
+}
+
+/* ================================
+   DOTS
+================================ */
+.dm-loader-dots {
+    display: flex;
+    gap: 7px;
+    margin-top: 4px;
+}
+
+.dm-loader-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #9BC0FC;
+    animation: dm-dot-bounce 1.2s ease-in-out infinite;
+}
+
+.dm-loader-dots span:nth-child(1) { animation-delay: 0s;    background: #116AF8; }
+.dm-loader-dots span:nth-child(2) { animation-delay: 0.2s;  background: #0A50F5; }
+.dm-loader-dots span:nth-child(3) { animation-delay: 0.4s;  background: #9BC0FC; }
+
+@keyframes dm-dot-bounce {
+    0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+    40%            { transform: scale(1.3); opacity: 1;   }
 }</css>
         <data_table>sp_instance</data_table>
         <demo_data/>
@@ -1126,289 +1307,288 @@ if (input && input.action == "check") {
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 10:03:10</sys_created_on>
         <sys_id>efdb3158930587100af5f4e9b903d69d</sys_id>
-        <sys_mod_count>38</sys_mod_count>
+        <sys_mod_count>39</sys_mod_count>
         <sys_name>tracenow_connection_list</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_efdb3158930587100af5f4e9b903d69d</sys_update_name>
         <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-06-23 06:54:57</sys_updated_on>
+        <sys_updated_on>2026-07-14 07:14:12</sys_updated_on>
         <template><![CDATA[<div class="dm-page-layout">
 
-    <!-- LEFT SIDEBAR -->
-    <div class="dm-sidebar-slot">
-        <sp-widget widget="data.side"></sp-widget>
+  <!-- LEFT SIDEBAR -->
+  <div class="dm-sidebar-slot">
+    <sp-widget widget="data.side"></sp-widget>
+  </div>
+
+  <!-- Main Content -->
+  <div class="dm-wrapper">
+
+    <!-- Header -->
+    <div class="dm-header">
+      <div>
+        <h1>Connections</h1>
+        <p>Manage your ServiceNow instance connections</p>
+      </div>
+      <a class="dm-btn-primary" href="/_tracenow?id=tracenow_connection">+ New Connection</a>
     </div>
 
-    <!-- Main Content -->
-    <div class="dm-wrapper">
-
-        <!-- Header -->
-        <div class="dm-header">
-            <div>
-                <h1>Connections</h1>
-                <p>Manage your ServiceNow instance connections</p>
-            </div>
-            <a class="dm-btn-primary" href="/_tracenow?id=tracenow_connection">+ New Connection</a>
-        </div>
-
-        <!-- Info Banner -->
-        <div class="dm-banner">
-            <div class="dm-banner-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" x2="12" y1="8" y2="12" />
-                    <line x1="12" x2="12.01" y1="16" y2="16" />
-                </svg>
-            </div>
-            <div class="dm-banner-text">
-                <strong>Secure Connection Storage</strong>
-                <p>Your connection credentials are encrypted and stored securely. You only need to configure them once.</p>
-            </div>
-        </div>
-
-        <!-- Content Area -->
-        <div class="dm-grid">
-
-            <!-- EMPTY STATE -->
-            <div ng-if="!c.data.cons || c.data.cons.length === 0" class="dm-empty-state">
-                <div class="dm-empty-card">
-                    <div class="dm-empty-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24"
-                            fill="none" stroke="#0a5f6d" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round">
-                            <path d="m19 5 3-3" />
-                            <path d="m2 22 3-3" />
-                            <path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z" />
-                            <path d="M7.5 13.5 10 11" />
-                            <path d="M10.5 16.5 13 14" />
-                            <path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z" />
-                        </svg>
-                    </div>
-                    <h3>No Connections Found</h3>
-                    <p>Get started by creating your first ServiceNow instance connection.</p>
-                    <a href="/_tracenow?id=tracenow_connection" class="dm-btn-primary">+ Create New Connection</a>
-                </div>
-            </div>
-
-            <!-- CONNECTION CARDS -->
-            <div ng-repeat="i in c.data.cons" class="dm-card"
-                ng-class="{'active-border': i.state == true || i.state == 'true'}">
-
-                <div class="dm-card-header">
-                    <div>
-                        <h3>{{i.name}}</h3>
-                        <div class="dm-url">{{i.url}}</div>
-                    </div>
-                    <span class="dm-status"
-                        ng-class="{
-                            'success': (i.state == true || i.state == 'true'),
-                            'danger':  (i.state == false || i.state == 'false' || !i.state)
-                        }">
-                        <i class="fa"
-                            ng-class="{
-                                'fa-check-circle': (i.state == true || i.state == 'true'),
-                                'fa-times-circle': (i.state == false || i.state == 'false' || !i.state)
-                            }"></i>
-                        {{(i.state == true || i.state == 'true') ? 'Active' : 'Inactive'}}
-                    </span>
-                </div>
-
-                <div class="dm-card-body">
-                    <div class="dm-info">
-                        <label>Username</label>
-                        <div>{{i.user}}</div>
-                    </div>
-                    <div class="dm-info">
-                        <label>Last Updated</label>
-                        <div>{{i.date}}</div>
-                    </div>
-                </div>
-
-                <hr class="dm-divider">
-
-                <div class="dm-actions">
-                    <button class="dm-btn connect"
-                        ng-click="c.setId(i.sys_id, i.url, i.user, i.pass)"
-                        ng-disabled="i.connecting">
-                        <i class="fa" ng-class="i.connecting ? 'fa-spinner fa-spin' : 'fa-plug'"></i>
-                        {{i.connecting ? 'Connecting...' : 'Connect'}}
-                    </button>
-
-                    <button class="dm-btn edit" ng-click="c.editConnection(i.sys_id)">
-                        <i class="fa fa-pencil"></i> Edit
-                    </button>
-
-                    <button class="dm-btn delete"
-                        ng-click="c.openDeleteModal(i.sys_id, i.name)"
-                        ng-disabled="c.deletingId === i.sys_id">
-                        <i class="fa" ng-class="c.deletingId === i.sys_id ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
-                        {{c.deletingId === i.sys_id ? 'Deleting...' : 'Delete'}}
-                    </button>
-                </div>
-            </div>
-
-        </div>
+    <!-- Info Banner -->
+    <div class="dm-banner">
+      <div class="dm-banner-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" x2="12" y1="8" y2="12" />
+          <line x1="12" x2="12.01" y1="16" y2="16" />
+        </svg>
+      </div>
+      <div class="dm-banner-text">
+        <strong>Secure Connection Storage</strong>
+        <p>Your connection credentials are encrypted and stored securely. You only need to configure them once.</p>
+      </div>
     </div>
+
+    <!-- Content Area -->
+    <div class="dm-grid">
+
+      <!-- EMPTY STATE -->
+      <div ng-if="!c.data.cons || c.data.cons.length === 0" class="dm-empty-state">
+        <div class="dm-empty-card">
+          <div class="dm-empty-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24"
+                 fill="none" stroke="#0a5f6d" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <path d="m19 5 3-3" />
+              <path d="m2 22 3-3" />
+              <path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z" />
+              <path d="M7.5 13.5 10 11" />
+              <path d="M10.5 16.5 13 14" />
+              <path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z" />
+            </svg>
+          </div>
+          <h3>No Connections Found</h3>
+          <p>Get started by creating your first ServiceNow instance connection.</p>
+          <a href="/_tracenow?id=tracenow_connection" class="dm-btn-primary">+ Create New Connection</a>
+        </div>
+      </div>
+
+      <!-- CONNECTION CARDS -->
+      <div ng-repeat="i in c.data.cons" class="dm-card"
+           ng-class="{'active-border': i.state == true || i.state == 'true'}">
+
+        <div class="dm-card-header">
+          <div>
+            <h3>{{i.name}}</h3>
+            <div class="dm-url">{{i.url}}</div>
+          </div>
+          <span class="dm-status"
+                ng-class="{
+                          'success': (i.state == true || i.state == 'true'),
+                          'danger':  (i.state == false || i.state == 'false' || !i.state)
+                          }">
+            <i class="fa"
+               ng-class="{
+                         'fa-check-circle': (i.state == true || i.state == 'true'),
+                         'fa-times-circle': (i.state == false || i.state == 'false' || !i.state)
+                         }"></i>
+            {{(i.state == true || i.state == 'true') ? 'Active' : 'Inactive'}}
+          </span>
+        </div>
+
+        <div class="dm-card-body">
+          <div class="dm-info">
+            <label>Username</label>
+            <div>{{i.user}}</div>
+          </div>
+          <div class="dm-info">
+            <label>Last Updated</label>
+            <div>{{i.date}}</div>
+          </div>
+        </div>
+
+        <hr class="dm-divider">
+
+        <div class="dm-actions">
+          <button class="dm-btn connect"
+                  ng-click="c.setId(i.sys_id, i.url, i.user, i.pass)"
+                  ng-disabled="i.connecting">
+            <i class="fa" ng-class="i.connecting ? 'fa-spinner fa-spin' : 'fa-plug'"></i>
+            {{i.connecting ? 'Connecting...' : 'Connect'}}
+          </button>
+
+          <button class="dm-btn edit" ng-click="c.editConnection(i.sys_id)">
+            <i class="fa fa-pencil"></i> Edit
+          </button>
+
+          <button class="dm-btn delete"
+                  ng-click="c.openDeleteModal(i.sys_id, i.name)"
+                  ng-disabled="c.deletingId === i.sys_id">
+            <i class="fa" ng-class="c.deletingId === i.sys_id ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
+            {{c.deletingId === i.sys_id ? 'Deleting...' : 'Delete'}}
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 <!-- ========================
      SNACKBAR
 ========================= -->
 <div class="dm-snackbar" ng-class="{'show': c.showSnackbar}">
-    <div class="snackbar-box">
-        <div class="snackbar-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none"
-                stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M9 12l2 2 4-4"></path>
-            </svg>
-        </div>
-        <div class="snackbar-text">
-            <div class="snackbar-title">Success</div>
-            <div class="snackbar-desc">{{c.snakbarName}} | {{c.snackbarMessage}}</div>
-        </div>
+  <div class="snackbar-box">
+    <div class="snackbar-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none"
+           stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9 12l2 2 4-4"></path>
+      </svg>
     </div>
+    <div class="snackbar-text">
+      <div class="snackbar-title">Success</div>
+      <div class="snackbar-desc">{{c.snakbarName}} | {{c.snackbarMessage}}</div>
+    </div>
+  </div>
 </div>
 
 <!-- ========================
      DELETE MODAL
 ========================= -->
 <div class="dm-modal-overlay" ng-if="c.showDeleteModal">
-    <div class="dm-modal">
-        <div class="dm-modal-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none"
-                stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6l-1 14H6L5 6"></path>
-                <path d="M10 11v6"></path>
-                <path d="M14 11v6"></path>
-            </svg>
-        </div>
-        <h3>Delete Connection</h3>
-        <p>Are you sure you want to delete <b>{{c.selectedConnectionName}}</b>?</p>
-        <div class="dm-modal-actions">
-            <button class="dm-btn cancel" ng-click="c.closeModal()">Cancel</button>
-            <button class="dm-btn delete" ng-click="c.confirmDelete()">Delete</button>
-        </div>
+  <div class="dm-modal">
+    <div class="dm-modal-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none"
+           stroke="currentColor" stroke-width="2">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6l-1 14H6L5 6"></path>
+        <path d="M10 11v6"></path>
+        <path d="M14 11v6"></path>
+      </svg>
     </div>
+    <h3>Delete Connection</h3>
+    <p>Are you sure you want to delete <b>{{c.selectedConnectionName}}</b>?</p>
+    <div class="dm-modal-actions">
+      <button class="dm-btn cancel" ng-click="c.closeModal()">Cancel</button>
+      <button class="dm-btn delete" ng-click="c.confirmDelete()">Delete</button>
+    </div>
+  </div>
 </div>
 
 <!-- ========================
      CONNECT SUCCESS MODAL
 ========================= -->
 <div class="dm-modal-overlay" ng-if="c.showConnectModal">
-    <div class="dm-modal">
-        <div class="dm-modal-icon success">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none"
-                stroke="currentColor" stroke-width="2">
-                <path d="M20 6L9 17l-5-5"></path>
-            </svg>
-        </div>
-        <h3>Connection Successful</h3>
-        <p>You are now connected to this instance.</p>
-     <div class="dm-modal-actions">
-    <button class="dm-btn cancel" ng-click="c.closeConnectModal()">Close</button>
-    <a href="/_tracenow?id=tracenow_browse_table&sys_id= {{ c.connectedSysId}}"
-   class="dm-btn browse"
-   ng-click="c.startBrowse()">
-        <i class="fa fa-table"></i> Browse Tables
-    </a>
-</div>
+  <div class="dm-modal">
+    <div class="dm-modal-icon success">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none"
+           stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"></path>
+      </svg>
     </div>
+    <h3>Connection Successful</h3>
+    <p>You are now connected to this instance.</p>
+    <div class="dm-modal-actions">
+      <button class="dm-btn cancel" ng-click="c.closeConnectModal()">Close</button>
+      <a href="/_tracenow?id=tracenow_browse_table&sys_id= {{ c.connectedSysId}}"
+         class="dm-btn browse"
+         ng-click="c.startBrowse()">
+        <i class="fa fa-table"></i> Browse Tables
+      </a>
+    </div>
+  </div>
 </div>
 
 <!-- ========================
      BROWSE TABLES FULL-PAGE LOADER
 ========================= -->
-<div class="dm-adv-loader-overlay" ng-if="c.browsingTables">
+<div class="dm-page-loader-overlay" ng-if="c.browsingTables">
+  <div class="dm-page-loader-box">
 
-  <div class="dm-adv-loader-card">
-
-    <!-- HEADER -->
-    <div class="dm-adv-loader-header">
-      <div class="dm-adv-loader-left">
-        <div class="dm-logo-glow"></div>
-
-        <!-- SAME SVG LOGO -->
-        <svg width="46" height="46" viewBox="0 0 48 48">
-          <defs>
-            <linearGradient id="chevLight" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#5B95FB"/>
-              <stop offset="100%" stop-color="#116AF8"/>
-            </linearGradient>
-            <linearGradient id="chevDark" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#0A50F5"/>
-              <stop offset="100%" stop-color="#0837B8"/>
-            </linearGradient>
-          </defs>
-
-          <path d="M6 8 L24 8 L18 18 L6 18 Z" fill="url(#chevLight)" />
-          <path d="M6 18 L18 18 L12 28 L6 22 Z" fill="url(#chevDark)" />
-          <path d="M42 8 L24 8 L30 18 L42 18 Z" fill="url(#chevLight)" />
-          <path d="M42 18 L30 18 L36 28 L42 22 Z" fill="url(#chevDark)" />
-        </svg>
-
-        <div>
-          <div class="dm-small-label">IN PROGRESS</div>
-          <div class="dm-title">Loading Tables</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- CIRCLE -->
-    <div class="dm-circle-wrap">
-
-      <svg viewBox="0 0 120 120">
-        <circle cx="60" cy="60" r="50" class="track"></circle>
-        <circle cx="60" cy="60" r="50"
-                class="progress"
-                stroke-dasharray="314"
-                stroke-dashoffset="{{314 - ((c.progress | number:0) * 3.14)}}">
-        </circle>
+    <!-- Logo / Icon -->
+    <div class="dm-loader-logo">
+      <svg width="133" height="98" viewBox="0 0 133 98" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M93.4217 0H10.2803L37.2925 28.7662H65.3571V57.5325L93.4217 85.5971V0Z" fill="#116AF8"/>
+        <path d="M101.584 0H132.422L101.584 33.8613V0Z" fill="#116AF8"/>
+        <g opacity="0.42" style="mix-blend-mode:multiply">
+          <path d="M83.1415 12.0938L0 12.0938L27.0122 40.86L55.0768 40.86L55.0768 69.6262L83.1415 97.6909L83.1415 12.0938Z" fill="#116AF8"/>
+        </g>
       </svg>
 
-      <div class="dm-center">
-        {{c.progress | number:0}}%
-        <span>Synced</span>
-      </div>
-
     </div>
 
-    <!-- STAGE -->
-    <h3 class="dm-stage">{{c.currentStage.label}}</h3>
-    <p class="dm-sub">Fetching tables from your instance...</p>
+    <!-- Title -->
+    <div class="dm-loader-title">Loading Tables</div>
+    <div class="dm-loader-subtitle">Fetching data from your instance, please wait…</div>
 
-    <!-- STAGES -->
-    <div class="dm-stage-bar">
-      <div ng-repeat="s in c.stages track by $index" class="stage">
-        <div class="bar"
-             ng-class="{'done': $index < c.stageIndex, 'active': $index == c.stageIndex}">
-        </div>
-        <div class="label">{{s.key}}</div>
-      </div>
+    <!-- Progress Bar -->
+    <div class="dm-progress-track">
+      <div class="dm-progress-bar"></div>
     </div>
 
-    <!-- STATS -->
-    <div class="dm-stats">
-      <div>
-        <span>Records</span>
-        <b>{{c.recordsProcessed}} / {{c.totalRecords}}</b>
-      </div>
-      <div>
-        <span>Speed</span>
-        <b>2.4k/s</b>
-      </div>
-      <div>
-        <span>ETA</span>
-        <b>{{c.eta}}s</b>
-      </div>
+    <!-- Animated dots -->
+    <div class="dm-loader-dots">
+      <span></span>
+      <span></span>
+      <span></span>
     </div>
 
   </div>
+</div>
+
+<!-- CIRCLE -->
+<div class="dm-circle-wrap">
+
+  <svg viewBox="0 0 120 120">
+    <circle cx="60" cy="60" r="50" class="track"></circle>
+    <circle cx="60" cy="60" r="50"
+            class="progress"
+            stroke-dasharray="314"
+            stroke-dashoffset="{{314 - ((c.progress | number:0) * 3.14)}}">
+    </circle>
+  </svg>
+
+  <div class="dm-center">
+    {{c.progress | number:0}}%
+    <span>Synced</span>
+  </div>
+
+</div>
+
+<!-- STAGE -->
+<h3 class="dm-stage">{{c.currentStage.label}}</h3>
+<p class="dm-sub">Fetching tables from your instance...</p>
+
+<!-- STAGES -->
+<div class="dm-stage-bar">
+  <div ng-repeat="s in c.stages track by $index" class="stage">
+    <div class="bar"
+         ng-class="{'done': $index < c.stageIndex, 'active': $index == c.stageIndex}">
+    </div>
+    <div class="label">{{s.key}}</div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="dm-stats">
+  <div>
+    <span>Records</span>
+    <b>{{c.recordsProcessed}} / {{c.totalRecords}}</b>
+  </div>
+  <div>
+    <span>Speed</span>
+    <b>2.4k/s</b>
+  </div>
+  <div>
+    <span>ETA</span>
+    <b>{{c.eta}}s</b>
+  </div>
+</div>
+
+</div>
 </div>]]></template>
     </sp_widget>
 </record_update>

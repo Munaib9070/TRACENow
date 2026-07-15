@@ -3,644 +3,644 @@
         <category>custom</category>
         <client_script><![CDATA[api.controller = function($scope, $timeout, $filter) {
 
-    var c = this;
+	var c = this;
 	//c.loadingTables = true;
-    c.searchingTables = false;
-    c.records = [];
-    c.view = "tables";
-    c.selectedTable = null;
-    c.pageSelectAll = false;
-    c.allSelected = false;
-    c.currentPage = 1;
-    c.pageSize = 10;
-    c.check = sessionStorage.getItem('currentId');
-    c.isMigrating = false;
-    c.loadingRecords = false;
-    c.loadingTables = true;
-    c.showSnackbar = false;
-    c.snackbarMessage = '';
-    c.previewOpen = false;
-    c.previewData = {};
-    c.tableSearch = '';
-    c.recordSearch = '';
-
-    c.inserted = 0;
-    c.updated = 0;
-    c.total = 0;
-    c.count = 0;
-    c.conn_name = c.data.instanceName;
-    c.url = '';
-    c.isCompleted = false;
-    c.migrationResult = {};
-    c.selected_recs = 0;
-    c.showModal = false;
-    c.progress = 0;
-	
-		//store connection name in session
-		sessionStorage.setItem('conn_name', c.conn_name);
-    /* ===== TABLE LOADER WATCH ===== */
-$scope.$watch(
-  function () {
-    return c.data.tables;
-  },
-  function (newVal) {
-    if (newVal && newVal.length) {
-
-      // ]]>🔥<![CDATA[ tell previous page loader to finish
-      sessionStorage.setItem("tablesLoaded", "true");
-
-      $timeout(function () {
-        c.loadingTables = false;
-      }, 300);
-    }
-  }
-);
-
-    c.availableFilterFields = [
-        { key:'number', label:'Number' }
-    ];
-
-    c.filters = [{
-        field: 'number',
-        operator: 'contains',
-        value: '',
-        logic: 'AND'
-    }];
-
-    /* ================= TABLE DISPLAY CONTROL ================= */
-
- c.searchTimeout = null;
-
-c.getVisibleTables = function() {
-    return c.data.tables || [];
-};
-
-c.searchTables = function() {
-
-    if (c.searchTimeout) {
-        $timeout.cancel(c.searchTimeout);
-    }
-
-    c.searchTimeout = $timeout(function() {
-
-        c.searchingTables = true;
-
-        c.server.get({
-            action: 'searchTables',
-            search: c.tableSearch || ''
-        }).then(function(response) {
-
-            c.data.tables = response.data.tables || [];
-
-            c.loadingTables = false;
-        });
-
-    }, 300);
-};
-
-    /* ================= STATES ================= */
-
-    c.getStateLabel = function(state) {
-
-        var map = {
-            "-5": "New",
-            "-4": "Assess",
-            "-3": "Authorize",
-            "-2": "Scheduled",
-            "-1": "Implement",
-            "0": "Review",
-            "1": "New",
-            "2": "In Progress",
-            "3": "Closed",
-            "4": "Canceled",
-            "7": "Closed"
-        };
-
-        return map[String(state)] || state || "-";
-    };
-
-    /* ================= TOAST ================= */
-
-    c.showToast = function(msg) {
-
-        c.snackbarMessage = msg;
-        c.showSnackbar = true;
-
-        $timeout(function() {
-            c.showSnackbar = false;
-        }, 3000);
-    };
-
-    /* ================= PREVIEW ================= */
-
-    c.openPreview = function(record) {
-        c.previewData = angular.copy(record);
-        c.previewOpen = true;
-    };
-
-    c.closePreview = function() {
-        c.previewOpen = false;
-    };
-
-    /* ================= DYNAMIC FILTER FIELDS ================= */
-
-    c.setAvailableFilterFields = function(tableName) {
-
-        var map = {
-            incident: [
-                { key:'number', label:'Number' },
-                { key:'short_description', label:'Description' },
-                { key:'sys_updated_by', label:'Updated By' },
-                { key:'state', label:'State' }
-            ],
-
-            sc_req_item: [
-                { key:'number', label:'Number' },
-                { key:'short_description', label:'Description' },
-                { key:'sys_updated_by', label:'Updated By' },
-                { key:'state', label:'State' }
-            ],
-
-            change_request: [
-                { key:'number', label:'Number' },
-                { key:'short_description', label:'Description' },
-                { key:'sys_updated_by', label:'Updated By' },
-                { key:'state', label:'State' }
-            ],
-
-            problem: [
-                { key:'number', label:'Number' },
-                { key:'short_description', label:'Description' },
-                { key:'sys_updated_by', label:'Updated By' },
-                { key:'state', label:'State' }
-            ],
-
-            task: [
-                { key:'number', label:'Number' },
-                { key:'short_description', label:'Description' },
-                { key:'sys_updated_by', label:'Updated By' },
-                { key:'state', label:'State' }
-            ],
+	c.searchingTables = false;
+	c.records = [];
+	c.view = "tables";
+	c.selectedTable = null;
+	c.pageSelectAll = false;
+	c.allSelected = false;
+	c.currentPage = 1;
+	c.pageSize = 10;
+	c.check = sessionStorage.getItem('currentId');
+	c.isMigrating = false;
+	c.loadingRecords = false;
+	c.loadingTables = true;
+	c.showSnackbar = false;
+	c.snackbarMessage = '';
+	c.previewOpen = false;
+	c.previewData = {};
+	c.tableSearch = '';
+	c.recordSearch = '';
+
+	c.inserted = 0;
+	c.updated = 0;
+	c.total = 0;
+	c.count = 0;
+	c.conn_name = c.data.instanceName;
+	c.url = '';
+	c.isCompleted = false;
+	c.migrationResult = {};
+	c.selected_recs = 0;
+	c.showModal = false;
+	c.progress = 0;
+
+	//store connection name in session
+	sessionStorage.setItem('conn_name', c.conn_name);
+	/* ===== TABLE LOADER WATCH ===== */
+	$scope.$watch(
+		function () {
+			return c.data.tables;
+		},
+		function (newVal) {
+			if (newVal && newVal.length) {
+
+				// ]]>🔥<![CDATA[ tell previous page loader to finish
+				sessionStorage.setItem("tablesLoaded", "true");
+
+				$timeout(function () {
+					c.loadingTables = false;
+				}, 300);
+			}
+		}
+	);
+
+	c.availableFilterFields = [
+		{ key:'number', label:'Number' }
+	];
+
+	c.filters = [{
+		field: 'number',
+		operator: 'contains',
+		value: '',
+		logic: 'AND'
+	}];
+
+	/* ================= TABLE DISPLAY CONTROL ================= */
+
+	c.searchTimeout = null;
+
+	c.getVisibleTables = function() {
+		return c.data.tables || [];
+	};
+
+	c.searchTables = function() {
+
+		if (c.searchTimeout) {
+			$timeout.cancel(c.searchTimeout);
+		}
+
+		c.searchTimeout = $timeout(function() {
+
+			c.searchingTables = true;
+
+			c.server.get({
+				action: 'searchTables',
+				search: c.tableSearch || ''
+			}).then(function(response) {
+
+				c.data.tables = response.data.tables || [];
+
+				c.loadingTables = false;
+			});
+
+		}, 300);
+	};
+
+	/* ================= STATES ================= */
+
+	c.getStateLabel = function(state) {
+
+		var map = {
+			"-5": "New",
+			"-4": "Assess",
+			"-3": "Authorize",
+			"-2": "Scheduled",
+			"-1": "Implement",
+			"0": "Review",
+			"1": "New",
+			"2": "In Progress",
+			"3": "Closed",
+			"4": "Canceled",
+			"7": "Closed"
+		};
+
+		return map[String(state)] || state || "-";
+	};
+
+	/* ================= TOAST ================= */
+
+	c.showToast = function(msg) {
+
+		c.snackbarMessage = msg;
+		c.showSnackbar = true;
+
+		$timeout(function() {
+			c.showSnackbar = false;
+		}, 3000);
+	};
+
+	/* ================= PREVIEW ================= */
+
+	c.openPreview = function(record) {
+		c.previewData = angular.copy(record);
+		c.previewOpen = true;
+	};
+
+	c.closePreview = function() {
+		c.previewOpen = false;
+	};
+
+	/* ================= DYNAMIC FILTER FIELDS ================= */
+
+	c.setAvailableFilterFields = function(tableName) {
+
+		var map = {
+			incident: [
+				{ key:'number', label:'Number' },
+				{ key:'short_description', label:'Description' },
+				{ key:'sys_updated_by', label:'Updated By' },
+				{ key:'state', label:'State' }
+			],
+
+			sc_req_item: [
+				{ key:'number', label:'Number' },
+				{ key:'short_description', label:'Description' },
+				{ key:'sys_updated_by', label:'Updated By' },
+				{ key:'state', label:'State' }
+			],
+
+			change_request: [
+				{ key:'number', label:'Number' },
+				{ key:'short_description', label:'Description' },
+				{ key:'sys_updated_by', label:'Updated By' },
+				{ key:'state', label:'State' }
+			],
+
+			problem: [
+				{ key:'number', label:'Number' },
+				{ key:'short_description', label:'Description' },
+				{ key:'sys_updated_by', label:'Updated By' },
+				{ key:'state', label:'State' }
+			],
+
+			task: [
+				{ key:'number', label:'Number' },
+				{ key:'short_description', label:'Description' },
+				{ key:'sys_updated_by', label:'Updated By' },
+				{ key:'state', label:'State' }
+			],
 
-            sys_user: [
-                { key:'name', label:'Name' },
-                { key:'user_name', label:'User ID' },
-                { key:'sys_updated_by', label:'Updated By' }
-            ],
+			sys_user: [
+				{ key:'name', label:'Name' },
+				{ key:'user_name', label:'User ID' },
+				{ key:'sys_updated_by', label:'Updated By' }
+			],
 
-            sys_user_group: [
-                { key:'name', label:'Name' },
-                { key:'sys_updated_by', label:'Updated By' }
-            ],
+			sys_user_group: [
+				{ key:'name', label:'Name' },
+				{ key:'sys_updated_by', label:'Updated By' }
+			],
 
-            cmdb_ci: [
-                { key:'name', label:'Name' },
-                { key:'sys_updated_by', label:'Updated By' }
-            ],
+			cmdb_ci: [
+				{ key:'name', label:'Name' },
+				{ key:'sys_updated_by', label:'Updated By' }
+			],
 
-            alm_asset: [
-                { key:'asset_tag', label:'Asset Tag' },
-                { key:'sys_updated_by', label:'Updated By' }
-            ]
-        };
+			alm_asset: [
+				{ key:'asset_tag', label:'Asset Tag' },
+				{ key:'sys_updated_by', label:'Updated By' }
+			]
+		};
 
-        c.availableFilterFields = map[tableName] || [
-            { key:'name', label:'Name' },
-            { key:'sys_updated_by', label:'Updated By' }
-        ];
-    };
+		c.availableFilterFields = map[tableName] || [
+			{ key:'name', label:'Name' },
+			{ key:'sys_updated_by', label:'Updated By' }
+		];
+	};
 
-    /* ================= FILTERS ================= */
+	/* ================= FILTERS ================= */
 
-    c.addFilter = function(type) {
-        c.filters.push({
-            field: c.availableFilterFields[0].key,
-            operator: 'contains',
-            value: '',
-            logic: type
-        });
-    };
+	c.addFilter = function(type) {
+		c.filters.push({
+			field: c.availableFilterFields[0].key,
+			operator: 'contains',
+			value: '',
+			logic: type
+		});
+	};
 
-    c.removeFilter = function(index) {
-        c.filters.splice(index, 1);
-    };
+	c.removeFilter = function(index) {
+		c.filters.splice(index, 1);
+	};
 
-    c.dynamicFilter = function(record) {
-
-        var result = true;
+	c.dynamicFilter = function(record) {
+
+		var result = true;
 
-        angular.forEach(c.filters, function(f, index) {
-
-            if (!f.value) return;
-
-            var rawVal = f.field === 'state' ? c.getStateLabel(record.state) : record[f.field];
-            var val = String(rawVal || '').trim().toLowerCase();
-            var target = String(f.value || '').trim().toLowerCase();
+		angular.forEach(c.filters, function(f, index) {
+
+			if (!f.value) return;
+
+			var rawVal = f.field === 'state' ? c.getStateLabel(record.state) : record[f.field];
+			var val = String(rawVal || '').trim().toLowerCase();
+			var target = String(f.value || '').trim().toLowerCase();
 
-            var match = false;
+			var match = false;
 
-            if (f.operator === 'contains')
-                match = val.indexOf(target) !== -1;
+			if (f.operator === 'contains')
+				match = val.indexOf(target) !== -1;
 
-            if (f.operator === 'starts')
-                match = val.indexOf(target) === 0;
+			if (f.operator === 'starts')
+				match = val.indexOf(target) === 0;
 
-            if (f.operator === 'is')
-                match = val === target;
+			if (f.operator === 'is')
+				match = val === target;
 
-            if (index === 0) {
-                result = match;
-            } else {
-                result = f.logic === 'AND' ? result && match : result || match;
-            }
+			if (index === 0) {
+				result = match;
+			} else {
+				result = f.logic === 'AND' ? result && match : result || match;
+			}
 
-        });
+		});
 
-        if (c.filters.every(function(f) {
-            return !f.value;
-        })) return true;
+		if (c.filters.every(function(f) {
+			return !f.value;
+		})) return true;
 
-        return result;
-    };
+		return result;
+	};
 
-    /* ================= RECORD SEARCH ================= */
+	/* ================= RECORD SEARCH ================= */
 
-    c.recordSearchFilter = function(record) {
+	c.recordSearchFilter = function(record) {
 
-        if (!c.recordSearch || !c.recordSearch.trim()) return true;
+		if (!c.recordSearch || !c.recordSearch.trim()) return true;
 
-        var q = c.recordSearch.toLowerCase();
+		var q = c.recordSearch.toLowerCase();
 
-        for (var i = 0; i < c.columns.length; i++) {
+		for (var i = 0; i < c.columns.length; i++) {
 
-            var key = c.columns[i].key;
-            var value = record[key];
+			var key = c.columns[i].key;
+			var value = record[key];
 
-            if (key === 'state') value = c.getStateLabel(value);
+			if (key === 'state') value = c.getStateLabel(value);
 
-            if (String(value || '').toLowerCase().indexOf(q) !== -1) return true;
-        }
+			if (String(value || '').toLowerCase().indexOf(q) !== -1) return true;
+		}
 
-        return false;
-    };
+		return false;
+	};
 
-    $scope.$watch('c.filters', function() {
-        c.currentPage = 1;
-        c.syncSelectionStates();
-    }, true);
+	$scope.$watch('c.filters', function() {
+		c.currentPage = 1;
+		c.syncSelectionStates();
+	}, true);
 
-    /* ================= OPEN TABLE ================= */
+	/* ================= OPEN TABLE ================= */
 
-    c.openTable = function(table) {
+	c.openTable = function(table) {
 
-        c.selectedTable = table;
-        c.view = "records";
-        c.currentPage = 1;
-        c.loadingRecords = true;
+		c.selectedTable = table;
+		c.view = "records";
+		c.currentPage = 1;
+		c.loadingRecords = true;
 
-        c.setAvailableFilterFields(table.name);
+		c.setAvailableFilterFields(table.name);
 
-        c.filters = [{
-            field: c.availableFilterFields[0].key,
-            operator: 'contains',
-            value: '',
-            logic: 'AND'
-        }];
+		c.filters = [{
+			field: c.availableFilterFields[0].key,
+			operator: 'contains',
+			value: '',
+			logic: 'AND'
+		}];
 
-        c.server.get({
-            action: "getRecords",
-            table: table.name
-        }).then(function(response) {
+		c.server.get({
+			action: "getRecords",
+			table: table.name
+		}).then(function(response) {
 
-            c.records = response.data.records || [];
-            c.setDynamicColumns(c.records);
-            c.recordSearch = '';
-            if (response.data.totalCount !== undefined) {
-                table.count = response.data.totalCount;
-            }
+			c.records = response.data.records || [];
+			c.setDynamicColumns(c.records);
+			c.recordSearch = '';
+			if (response.data.totalCount !== undefined) {
+				table.count = response.data.totalCount;
+			}
 
-            angular.forEach(c.records, function(r) {
-                r.selected = false;
-            });
+			angular.forEach(c.records, function(r) {
+				r.selected = false;
+			});
 
-            c.loadingRecords = false;
-            c.syncSelectionStates();
-        });
-    };
+			c.loadingRecords = false;
+			c.syncSelectionStates();
+		});
+	};
 
-    c.backToTables = function() {
-        c.view = "tables";
-        c.records = [];
-    };
+	c.backToTables = function() {
+		c.view = "tables";
+		c.records = [];
+	};
 
-    /* KEEP REST OF YOUR CURRENT SCRIPT EXACTLY SAME BELOW */
+	/* KEEP REST OF YOUR CURRENT SCRIPT EXACTLY SAME BELOW */
 
 
 
-    /* ================= DYNAMIC COLUMNS ================= */
+	/* ================= DYNAMIC COLUMNS ================= */
 
-    c.setDynamicColumns = function(records) {
+	c.setDynamicColumns = function(records) {
 
-        if (!records || !records.length) return;
+		if (!records || !records.length) return;
 
-        function hasField(field) {
-            return records.some(function(r) {
-                return r.hasOwnProperty(field);
-            });
-        }
+		function hasField(field) {
+			return records.some(function(r) {
+				return r.hasOwnProperty(field);
+			});
+		}
 
-        c.columns = [];
+		c.columns = [];
 
-        var priorityFields = ['name', 'user_name', 'label', 'number'];
-        var primaryField = '';
+		var priorityFields = ['name', 'user_name', 'label', 'number'];
+		var primaryField = '';
 
-        for (var i = 0; i < priorityFields.length; i++) {
-            if (hasField(priorityFields[i])) {
-                primaryField = priorityFields[i];
-                break;
-            }
-        }
+		for (var i = 0; i < priorityFields.length; i++) {
+			if (hasField(priorityFields[i])) {
+				primaryField = priorityFields[i];
+				break;
+			}
+		}
 
-        if (primaryField) {
-            c.columns.push({
-                key: primaryField,
-                label: primaryField.replace(/_/g, ' ').toUpperCase()
-            });
-        }
+		if (primaryField) {
+			c.columns.push({
+				key: primaryField,
+				label: primaryField.replace(/_/g, ' ').toUpperCase()
+			});
+		}
 
-        var columnMap = [
-            { key: 'user_name', label: 'USER ID' },
-            { key: 'name', label: 'NAME' },
-            { key: 'sys_updated_by', label: 'UPDATED BY' },
-            { key: 'sys_updated_on', label: 'UPDATED ON' },
-            { key: 'state', label: 'STATE' }
-        ];
+		var columnMap = [
+			{ key: 'user_name', label: 'USER ID' },
+			{ key: 'name', label: 'NAME' },
+			{ key: 'sys_updated_by', label: 'UPDATED BY' },
+			{ key: 'sys_updated_on', label: 'UPDATED ON' },
+			{ key: 'state', label: 'STATE' }
+		];
 
-        columnMap.forEach(function(col) {
+		columnMap.forEach(function(col) {
 
-            var alreadyAdded = c.columns.some(function(cCol) {
-                return cCol.key === col.key;
-            });
+			var alreadyAdded = c.columns.some(function(cCol) {
+				return cCol.key === col.key;
+			});
 
-            if (!alreadyAdded && hasField(col.key)) {
-                c.columns.push(col);
-            }
-        });
-    };
-	
+			if (!alreadyAdded && hasField(col.key)) {
+				c.columns.push(col);
+			}
+		});
+	};
+
 	c.migrateSelected = function() {
 
-    if (c.isMigrating) return;
+		if (c.isMigrating) return;
 
-    c.isMigrating = true;
+		c.isMigrating = true;
 
-    /* =========================
+		/* =========================
        RESET MODAL STATE
     ========================== */
-    c.logs = [];
-    c.showModal = true;
-    c.progress = 0;
-    c.migrationResult = {};
-    c.isCompleted = false;
-    c.total = c.getSelectedCount();
+		c.logs = [];
+		c.showModal = true;
+		c.progress = 0;
+		c.migrationResult = {};
+		c.isCompleted = false;
+		c.total = c.getSelectedCount();
 
-    var selectedRecordsByTable = {};
+		var selectedRecordsByTable = {};
 
-    if (c.selectedTable && c.selectedTable.name) {
-        selectedRecordsByTable[c.selectedTable.name] = [];
+		if (c.selectedTable && c.selectedTable.name) {
+			selectedRecordsByTable[c.selectedTable.name] = [];
 
-        angular.forEach(c.records, function(r) {
-            if (r.selected) {
-                selectedRecordsByTable[c.selectedTable.name].push(r);
-            }
-        });
-    }
-    c.tableCount = Object.keys(selectedRecordsByTable).length;
-    c.logs.push("Starting migration...");
+			angular.forEach(c.records, function(r) {
+				if (r.selected) {
+					selectedRecordsByTable[c.selectedTable.name].push(r);
+				}
+			});
+		}
+		c.tableCount = Object.keys(selectedRecordsByTable).length;
+		c.logs.push("Starting migration...");
 
-    var progressInterval;
-    /* =========================
+		var progressInterval;
+		/* =========================
        FAKE PROGRESS
     ========================== */
-    progressInterval = setInterval(function() {
+		progressInterval = setInterval(function() {
 
-        if (c.progress < 90) {
-            c.progress += Math.floor(Math.random() * 5) + 1;
-        }
+			if (c.progress < 90) {
+				c.progress += Math.floor(Math.random() * 5) + 1;
+			}
 
-        if (c.progress > 90) {
-            c.progress = 90;
-        }
+			if (c.progress > 90) {
+				c.progress = 90;
+			}
 
-        $scope.$applyAsync();
+			$scope.$applyAsync();
 
-    }, 500);
+		}, 500);
 
-    c.server.get({
-        action: "migrateRecords",
-        totalrecs: c.total,
-        active_conn: sessionStorage.getItem('currentId'),
-        records: Object.keys(selectedRecordsByTable).map(function(table) {
-            return {
-                name: table,
-                records: selectedRecordsByTable[table],
-								state: selectedRecordsByTable[table].state
-            };
-        })
-    })
+		c.server.get({
+			action: "migrateRecords",
+			totalrecs: c.total,
+			active_conn: sessionStorage.getItem('currentId'),
+			records: Object.keys(selectedRecordsByTable).map(function(table) {
+				return {
+					name: table,
+					records: selectedRecordsByTable[table],
+					state: selectedRecordsByTable[table].state
+				};
+			})
+		})
 
-    .then(function(response) {
+			.then(function(response) {
 
-        clearInterval(progressInterval);
-        c.progress = 100;
-        c.isMigrating = false;
+			clearInterval(progressInterval);
+			c.progress = 100;
+			c.isMigrating = false;
 
-        if (response.data.success) {
+			if (response.data.success) {
 
-            /* =========================
+				/* =========================
                SUCCESS STATE
             ========================== */
-            c.logs.push("Migration started at " + response.data.sTime);
-            c.logs.push("Migration completed at " + response.data.eTime);
+				c.logs.push("Migration started at " + response.data.sTime);
+				c.logs.push("Migration completed at " + response.data.eTime);
 
-            c.isCompleted = true;
-            c.conn_name = response.data.instanceName;
-            c.inserted = response.data.inserted;
-            c.updated = response.data.updated;
-					  c.duration = response.data.duration;
-            c.url = response.data.instanceUrl;
-            c.migrationResult = {
-                error: false,
-                data: response.data.result
-            };
+				c.isCompleted = true;
+				c.conn_name = response.data.instanceName;
+				c.inserted = response.data.inserted;
+				c.updated = response.data.updated;
+				c.duration = response.data.duration;
+				c.url = response.data.instanceUrl;
+				c.migrationResult = {
+					error: false,
+					data: response.data.result
+				};
 
-            angular.forEach(c.records, function(r) {
-                r.selected = false;
-            });
+				angular.forEach(c.records, function(r) {
+					r.selected = false;
+				});
 
-            c.syncSelectionStates();
+				c.syncSelectionStates();
 
-        } else {
+			} else {
 
-            /* =========================
+				/* =========================
                FAILURE (SERVER RESPONSE)
             ========================== */
-            c.isCompleted = true;
-            c.isMigrating = false;
+				c.isCompleted = true;
+				c.isMigrating = false;
 
-            c.migrationResult = {
-                error: true,
-                message: response.data.message || "Migration failed"
-            };
-        }
+				c.migrationResult = {
+					error: true,
+					message: response.data.message || "Migration failed"
+				};
+			}
 
-    })
+		})
 
-    .catch(function(error) {
+			.catch(function(error) {
 
-        /* =========================
+			/* =========================
            ERROR HANDLING (NETWORK / SERVER ERROR)
         ========================== */
-        clearInterval(progressInterval);
+			clearInterval(progressInterval);
 
-        c.isMigrating = false;
-        c.progress = 0;
-        c.isCompleted = true;
+			c.isMigrating = false;
+			c.progress = 0;
+			c.isCompleted = true;
 
 
-        var errMsg = "Unexpected error occurred";
+			var errMsg = "Unexpected error occurred";
 
-        if (error && error.data && error.data.message) {
-            errMsg = error.data.message;
-        }
+			if (error && error.data && error.data.message) {
+				errMsg = error.data.message;
+			}
 
-        c.migrationResult = {
-            error: true,
-            message: errMsg
-        };
-    });
+			c.migrationResult = {
+				error: true,
+				message: errMsg
+			};
+		});
 
-};
-	
-		
+	};
 
-    /* ================= SELECTION ================= */
 
-    c.getSelectedCount = function() {
-        return c.records.filter(function(r) { return r.selected; }).length;
-    };
 
-    c.toggleCurrentPage = function() {
+	/* ================= SELECTION ================= */
 
-         var filtered = $filter('filter')($filter('filter')(c.records, c.dynamicFilter), c.recordSearchFilter);
-        var start = (c.currentPage - 1) * c.pageSize;
-        var end = c.currentPage * c.pageSize;
+	c.getSelectedCount = function() {
+		return c.records.filter(function(r) { return r.selected; }).length;
+	};
 
-        var currentPageRecords = filtered.slice(start, end);
+	c.toggleCurrentPage = function() {
 
-        var allChecked = currentPageRecords.length && currentPageRecords.every(function(r) {
-            return r.selected;
-        });
+		var filtered = $filter('filter')($filter('filter')(c.records, c.dynamicFilter), c.recordSearchFilter);
+		var start = (c.currentPage - 1) * c.pageSize;
+		var end = c.currentPage * c.pageSize;
 
-        angular.forEach(currentPageRecords, function(r) {
-            r.selected = !allChecked;
-        });
+		var currentPageRecords = filtered.slice(start, end);
 
-        c.syncSelectionStates();
-    };
+		var allChecked = currentPageRecords.length && currentPageRecords.every(function(r) {
+			return r.selected;
+		});
 
-    c.selectAllRecords = function() {
+		angular.forEach(currentPageRecords, function(r) {
+			r.selected = !allChecked;
+		});
 
-         var filtered = $filter('filter')($filter('filter')(c.records, c.dynamicFilter), c.recordSearchFilter);
+		c.syncSelectionStates();
+	};
 
-        c.allSelected = !c.allSelected;
+	c.selectAllRecords = function() {
 
-        angular.forEach(filtered, function(r) {
-            r.selected = c.allSelected;
-        });
+		var filtered = $filter('filter')($filter('filter')(c.records, c.dynamicFilter), c.recordSearchFilter);
 
-        c.syncSelectionStates();
-    };
+		c.allSelected = !c.allSelected;
 
-    c.syncSelectionStates = function() {
+		angular.forEach(filtered, function(r) {
+			r.selected = c.allSelected;
+		});
 
-         var filtered = $filter('filter')($filter('filter')(c.records, c.dynamicFilter), c.recordSearchFilter);
-        var start = (c.currentPage - 1) * c.pageSize;
-        var end = c.currentPage * c.pageSize;
+		c.syncSelectionStates();
+	};
 
-        var current = filtered.slice(start, end);
+	c.syncSelectionStates = function() {
 
-        c.pageSelectAll = current.length > 0 && current.every(function(r) {
-            return r.selected;
-        });
+		var filtered = $filter('filter')($filter('filter')(c.records, c.dynamicFilter), c.recordSearchFilter);
+		var start = (c.currentPage - 1) * c.pageSize;
+		var end = c.currentPage * c.pageSize;
 
-        c.allSelected = filtered.length > 0 && filtered.every(function(r) {
-            return r.selected;
-        });
-    };
+		var current = filtered.slice(start, end);
 
-    /* ================= CART ================= */
+		c.pageSelectAll = current.length > 0 && current.every(function(r) {
+			return r.selected;
+		});
 
-    c.addSelectedToCart = function() {
+		c.allSelected = filtered.length > 0 && filtered.every(function(r) {
+			return r.selected;
+		});
+	};
 
-        var cart = JSON.parse(sessionStorage.getItem("migration_cart") || "[]");
-        var existingMap = {};
+	/* ================= CART ================= */
 
-        angular.forEach(cart, function(item) {
-            existingMap[item.sys_id] = true;
-        });
+	c.addSelectedToCart = function() {
 
-        var added = 0;
-        var skipped = 0;
+		var cart = JSON.parse(sessionStorage.getItem("migration_cart") || "[]");
+		var existingMap = {};
 
-					angular.forEach(c.records, function(r) {
+		angular.forEach(cart, function(item) {
+			existingMap[item.sys_id] = true;
+		});
 
-            if (r.selected) {
+		var added = 0;
+		var skipped = 0;
 
-                if (!existingMap[r.sys_id]) {
-                    cart.push(r);
-                    existingMap[r.sys_id] = true;
-                    added++;
-                } else {
-                    skipped++;
-                }
+		angular.forEach(c.records, function(r) {
 
-                r.selected = false;
-            }
-        });
-        sessionStorage.setItem("migration_cart", JSON.stringify(cart));
-        window.dispatchEvent(new Event("cartUpdated"));
+			if (r.selected) {
 
-        c.syncSelectionStates();
+				if (!existingMap[r.sys_id]) {
+					cart.push(r);
+					existingMap[r.sys_id] = true;
+					added++;
+				} else {
+					skipped++;
+				}
 
-        if (added > 0 && skipped === 0) c.showToast("Added to queue successfully");
-        if (added > 0 && skipped > 0) c.showToast(added + " added, " + skipped + " already in queue");
-        if (added === 0 && skipped > 0) c.showToast("Selected records already exist in queue");
-    };
-    c.closeModal = function() {
-        c.showModal = false;
-    };
+				r.selected = false;
+			}
+		});
+		sessionStorage.setItem("migration_cart", JSON.stringify(cart));
+		window.dispatchEvent(new Event("cartUpdated"));
 
-    /* ================= PAGINATION ================= */
+		c.syncSelectionStates();
 
-    c.getTotalPages = function() {
-        var filtered = $filter('filter')($filter('filter')(c.records, c.dynamicFilter), c.recordSearchFilter);
-        return Math.ceil(filtered.length / c.pageSize) || 1;
-    };
+		if (added > 0 && skipped === 0) c.showToast("Added to queue successfully");
+		if (added > 0 && skipped > 0) c.showToast(added + " added, " + skipped + " already in queue");
+		if (added === 0 && skipped > 0) c.showToast("Selected records already exist in queue");
+	};
+	c.closeModal = function() {
+		c.showModal = false;
+	};
 
-    c.nextPage = function() {
-        if (c.currentPage < c.getTotalPages()) {
-            c.currentPage++;
-            c.syncSelectionStates();
-        }
-    };
+	/* ================= PAGINATION ================= */
 
-    c.prevPage = function() {
-        if (c.currentPage > 1) {
-            c.currentPage--;
-            c.syncSelectionStates();
-        }
-    };
+	c.getTotalPages = function() {
+		var filtered = $filter('filter')($filter('filter')(c.records, c.dynamicFilter), c.recordSearchFilter);
+		return Math.ceil(filtered.length / c.pageSize) || 1;
+	};
+
+	c.nextPage = function() {
+		if (c.currentPage < c.getTotalPages()) {
+			c.currentPage++;
+			c.syncSelectionStates();
+		}
+	};
+
+	c.prevPage = function() {
+		if (c.currentPage > 1) {
+			c.currentPage--;
+			c.syncSelectionStates();
+		}
+	};
 
 };
 ]]></client_script>
@@ -1580,6 +1580,39 @@ button:disabled {
 
   margin: 0 auto 20px;
 }
+/* ===== Icon ===== */
+  .modal-icon {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 20px;
+  border-radius: 16px;
+
+  //background: linear-gradient(to right, #22d3ee, #06b6d4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 30px;
+  transform: rotate(-10deg);
+}
+/* ===== ICON PULSE ANIMATION ===== */
+@keyframes zoomPulse {
+  0% {
+    transform: scale(1) rotate(-10deg);
+  }
+
+  50% {
+    transform: scale(1.15) rotate(-10deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(-10deg);
+  }
+}
+
+.icon-animate {
+  animation: zoomPulse 1.6s ease-in-out infinite;
+}
 
 /* TEXT */
 .success-title {
@@ -1753,8 +1786,67 @@ button:disabled {
 			});
 			var startTime = new Date().getTime(); // milliseconds
 			engine = new DM_MigrationCore();
-			var result = engine.migrateMixedRecords(sourceurl, username, password, recordsToMigrate, { sortByTable: true, stopOnError: false });
+			engine.SOURCE_URL  = sourceurl;
+			engine.SOURCE_USER = username;
+			engine.SOURCE_PSWD = password;
+			engine.DEBUG       = true;
+			engine.FAST_MODE   = false;
+
+			var ok = 0;
+			var fail = 0;
+			var result = false;
+
+			for (var i = 0; i < recordsToMigrate.length; i++) {
+
+				var rec = recordsToMigrate[i];
+
+				try {
+
+					var startMs = new GlideDateTime().getNumericValue();
+
+					var targetSysId = engine.migrateWithDependencies(
+						rec.table,
+						rec.sysId,
+						0
+					);
+
+					if (targetSysId) {
+
+						ok++;
+
+
+						var verify = new GlideRecordSecure(rec.table);
+
+						if (verify.get(targetSysId)) {
+
+							gs.info('target number: ' + verify.getValue('number'));
+							gs.info('correlation_id: ' + verify.getValue('correlation_id'));
+						}
+
+					} else {
+
+						fail++;
+
+						gs.warn(
+							'No target sys_id returned for ' +
+							rec.table + '/' + rec.sysId
+						);
+					}
+
+				} catch (e) {
+					migration_logs = engine.executionLogs;
+					migration_logs.push("Migration Completed");
+					fail++;
+					gs.error(
+						'Migration failed for ' +
+						rec.table + '/' + rec.sysId +
+						' : ' + e
+					);
+				}
+			}
+			result = (ok > 0);
 			if(result) {
+				console.log('result done');
 				//update number of new inserted record
 				recordsToMigrate.forEach(function(rec) {
 					var bridge = new global.DM_GlobalNumberBridge();
@@ -1767,8 +1859,7 @@ button:disabled {
 				})
 			}
 			else data.success = false;
-			migration_logs = engine.executionLogs;
-			migration_logs.push("Migration Completed");
+
 			var endTime = new Date().getTime();
 
 			var durationMs = endTime - startTime;
@@ -1782,6 +1873,8 @@ button:disabled {
 			gs.info("Migration Duration: " + durationText);
 
 			data.duration = durationText;
+			migration_logs = engine.executionLogs;
+			migration_logs.push("Migration Completed");
 			//check the stats after migration
 			var migrationDetails = [];
 			recordsToMigrate.forEach(function(record) {
@@ -1966,6 +2059,7 @@ button:disabled {
 		}
 
 		catch (e) {
+			console.log('migration_logs = ' + JSON.stringify(migration_logs));
 			data.success = false;
 			data.message = "All " + input.totalrecs + " record(s) failed to migrate.";
 
@@ -1984,7 +2078,8 @@ button:disabled {
 					status: "failed",
 					action: "failed",
 					duration: data.duration || "0 min 0 sec",
-					reason: e.message ? e.message : e.toString()
+					logs: migration_logs || [],
+					reason: e.message.match(/-\s*(.*?)\s*\(/)[1].toString()
 				});
 			}
 
@@ -2075,7 +2170,7 @@ button:disabled {
 							 */
 							logGr.setValue(
 								'migration_log',
-								JSON.stringify(migration_logs || [])
+								JSON.stringify(rec.logs || [])
 							);
 
 							logGr.insert();
@@ -2155,7 +2250,7 @@ button:disabled {
 			{name:'incident', label:'Incidents'},
 			{name:'change_request', label:'Change Requests'},
 			{name:'problem', label:'Problems'},
-			{name:'task', label:'Tasks'},
+			{name:'sys_user', label:'Users'},
 			{name:'cmdb_ci', label:'Configuration Items'},
 			{name:'sc_request', label:'Requests'},
 			{name:'alm_asset', label:'Assets'}
@@ -2187,7 +2282,7 @@ button:disabled {
 				{name:'incident', label:'Incidents'},
 				{name:'change_request', label:'Change Requests'},
 				{name:'problem', label:'Problems'},
-				{name:'task', label:'Tasks'},
+				{name:'sys_user', label:'Users'},
 				{name:'cmdb_ci', label:'Configuration Items'},
 				{name:'sc_req_item', label:'Requested Items'},
 				{name:'alm_asset', label:'Assets'}
@@ -2268,429 +2363,427 @@ button:disabled {
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-20 09:57:42</sys_created_on>
         <sys_id>e27cfd1c3b4d4b10092273c5e4e45a08</sys_id>
-        <sys_mod_count>147</sys_mod_count>
+        <sys_mod_count>175</sys_mod_count>
         <sys_name>tracenow_browse_tables</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_e27cfd1c3b4d4b10092273c5e4e45a08</sys_update_name>
         <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-07-09 06:26:57</sys_updated_on>
+        <sys_updated_on>2026-07-15 07:12:17</sys_updated_on>
         <template><![CDATA[<div class="browse-layout"> 
-    <!-- SIDEBAR -->
-    <div class="dm-sidebar-slot">
-        <sp-widget widget="data.side"></sp-widget>
-    </div>
- 
-    <div ng-if="!c.check" class="not-connected">
-      <h1>
-        Oops!
-      </h1>
-      <p>
-        You are not connected to any instance!        
-      </p>
-    </div>
- 
-    <div class="browse-wrapper" ng-if="c.check">
+  <!-- SIDEBAR -->
+  <div class="dm-sidebar-slot">
+    <sp-widget widget="data.side"></sp-widget>
+  </div>
 
-<!-- TABLE VIEW -->
-<div ng-if="c.view=='tables'">
+  <div ng-if="!c.check" class="not-connected">
+    <h1>
+      Oops!
+    </h1>
+    <p>
+      You are not connected to any instance!        
+    </p>
+  </div>
 
-    <!-- HEADER -->
-    <div class="browse-header-modern">
+  <div class="browse-wrapper" ng-if="c.check">
+
+    <!-- TABLE VIEW -->
+    <div ng-if="c.view=='tables'">
+
+      <!-- HEADER -->
+      <div class="browse-header-modern">
         <h1>Browse Records</h1>
         <p>
-            Select tables from
-            <span>{{c.data.instanceName}}</span>
+          Select tables from
+          <span>{{c.data.instanceName}}</span>
         </p>
-    </div>
+      </div>
 
-    <!-- SEARCH CONTAINER -->
-<div class="table-search-wrapper">
-    <div class="table-search-bar-modern">
+      <!-- SEARCH CONTAINER -->
+      <div class="table-search-wrapper">
+        <div class="table-search-bar-modern">
 
-        <i class="fa fa-search"></i>
+          <i class="fa fa-search"></i>
 
-<input type="text"
-       ng-model="c.tableSearch"
-       ng-change="c.searchTables()"
-       placeholder="Search tables by name or description...">
-    </div>
-</div>
+          <input type="text"
+                 ng-model="c.tableSearch"
+                 ng-change="c.searchTables()"
+                 placeholder="Search tables by name or description...">
+        </div>
+      </div>
 
-    <!-- TABLE COUNT -->
-    <div class="table-count-line" ng-if="!c.loadingTables">
+      <!-- TABLE COUNT -->
+      <div class="table-count-line" ng-if="!c.loadingTables">
         Showing {{c.getVisibleTables().length}} tables
-    </div>
+      </div>
 
-    <!-- TABLE CARDS -->
-    <div class="cards-grid" ng-if="!c.loadingTables">
+      <!-- TABLE CARDS -->
+      <div class="cards-grid" ng-if="!c.loadingTables">
         <div class="table-card" ng-repeat="t in c.getVisibleTables()">
-            <div class="card-top">
-                <div class="count">{{t.count}}</div>
-                <div class="title">{{t.label}}</div>
-                <div class="name">{{t.name}}</div>
-            </div>
+          <div class="card-top">
+            <div class="count">{{t.count}}</div>
+            <div class="title">{{t.label}}</div>
+            <div class="name">{{t.name}}</div>
+          </div>
 
-            <button class="browse-btn" ng-click="c.openTable(t)">
-                Browse Records
+          <button class="browse-btn" ng-click="c.openTable(t)">
+            Browse Records
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECORD VIEW -->
+    <div ng-if="c.view=='records'" class="records-wrapper">
+
+      <!-- LOADER -->
+      <div ng-if="c.loadingRecords" class="skeleton-wrapper">
+        <div class="skeleton-header"></div>
+        <div class="skeleton-row" ng-repeat="n in [1,2,3,4,5,6]">
+          <div class="sk-cell"></div>
+          <div class="sk-cell"></div>
+          <div class="sk-cell"></div>
+          <div class="sk-cell"></div>
+          <div class="sk-cell"></div>
+          <div class="sk-cell"></div>
+          <div class="sk-cell"></div>
+        </div>
+      </div>
+
+      <!-- CONTENT -->
+      <div ng-if="!c.loadingRecords">
+
+        <a class="back-link-modern" ng-click="c.backToTables()">
+          <i class="fa fa-angle-left"> </i>  Back to all tables
+        </a>
+
+        <div class="modern-record-header">
+          <h1>{{c.selectedTable.label}}</h1>
+          <div class="header-badges">
+            <span class="badge-table">{{c.selectedTable.name}}</span>
+            <span class="badge-count">{{c.records.length}} total records</span>
+          </div>
+        </div>
+
+        <!-- SELECTION BAR -->
+        <div class="selection-bar" ng-show="c.getSelectedCount() > 0">
+          <div class="selection-left">
+            <div class="selection-count">{{c.getSelectedCount()}}</div>
+            <div>
+              <strong>{{c.getSelectedCount()}} record{{c.getSelectedCount()==1?'':'s'}} selected</strong>
+              <div class="selection-sub">
+                From table {{c.selectedTable.label}}
+              </div>
+            </div>
+          </div>
+
+          <div class="selection-actions">
+            <button class="queue-btn"
+                    ng-click="c.addSelectedToCart()"
+                    ng-disabled="c.isMigrating">
+              <i class="fa fa-shopping-cart"></i> Add to Queue
             </button>
+
+            <button class="migrate-btn"
+                    ng-click="!c.isMigrating && c.migrateSelected()"
+                    ng-disabled="c.isMigrating">
+              <i class="fa"
+                 ng-class="c.isMigrating ? 'fa-spinner fa-spin' : 'fa-bolt'"></i>
+              {{c.isMigrating ? 'Migrating...' : 'Migrate Now'}}
+            </button>
+          </div>
         </div>
-    </div>
 
-</div>
-          
- 
-        <!-- RECORD VIEW -->
-        <div ng-if="c.view=='records'" class="records-wrapper">
- 
-            <!-- LOADER -->
-            <div ng-if="c.loadingRecords" class="skeleton-wrapper">
-                <div class="skeleton-header"></div>
-                <div class="skeleton-row" ng-repeat="n in [1,2,3,4,5,6]">
-                    <div class="sk-cell"></div>
-                    <div class="sk-cell"></div>
-                    <div class="sk-cell"></div>
-                    <div class="sk-cell"></div>
-                    <div class="sk-cell"></div>
-                    <div class="sk-cell"></div>
-                    <div class="sk-cell"></div>
-                </div>
+        <!-- FILTER -->
+        <div class="sn-filter-bar">
+
+          <div class="filter-title">
+            <i class="fa fa-filter"></i> Filters
+          </div>
+
+          <div class="filter-list">
+            <div class="filter-row" ng-repeat="f in c.filters track by $index">
+
+              <div class="logic-line" ng-if="$index > 0">
+                <span class="logic-label">{{f.logic}}</span>
+              </div>
+
+              <!-- FIELD -->
+              <select ng-model="f.field"
+                      ng-options="field.key as field.label for field in c.availableFilterFields">
+              </select>
+
+              <!-- OPERATOR -->
+              <select ng-model="f.operator">
+                <option value="contains">Contains</option>
+                <option value="starts">Starts With</option>
+                <option value="is">Is</option>
+              </select>
+
+              <!-- VALUE -->
+              <input type="text"
+                     ng-model="f.value"
+                     placeholder="Value">
+
+              <button class="remove-filter-btn"
+                      ng-if="c.filters.length > 1"
+                      ng-click="c.removeFilter($index)">
+                ×
+              </button>
             </div>
- 
-            <!-- CONTENT -->
-            <div ng-if="!c.loadingRecords">
- 
-                <a class="back-link-modern" ng-click="c.backToTables()">
-                    <i class="fa fa-angle-left"> </i>  Back to all tables
-                </a>
- 
-                <div class="modern-record-header">
-                    <h1>{{c.selectedTable.label}}</h1>
-                    <div class="header-badges">
-                        <span class="badge-table">{{c.selectedTable.name}}</span>
-                        <span class="badge-count">{{c.records.length}} total records</span>
-                    </div>
-                </div>
- 
-                <!-- SELECTION BAR -->
-                <div class="selection-bar" ng-show="c.getSelectedCount() > 0">
-                    <div class="selection-left">
-                        <div class="selection-count">{{c.getSelectedCount()}}</div>
-                        <div>
-                            <strong>{{c.getSelectedCount()}} record{{c.getSelectedCount()==1?'':'s'}} selected</strong>
-                            <div class="selection-sub">
-                                From table {{c.selectedTable.label}}
-                            </div>
-                        </div>
-                    </div>
- 
-                    <div class="selection-actions">
-                        <button class="queue-btn"
-                                ng-click="c.addSelectedToCart()"
-                                ng-disabled="c.isMigrating">
-                            <i class="fa fa-shopping-cart"></i> Add to Queue
-                        </button>
- 
-                        <button class="migrate-btn"
-                                ng-click="!c.isMigrating && c.migrateSelected()"
-                                ng-disabled="c.isMigrating">
-                            <i class="fa"
-                               ng-class="c.isMigrating ? 'fa-spinner fa-spin' : 'fa-bolt'"></i>
-                            {{c.isMigrating ? 'Migrating...' : 'Migrate Now'}}
-                        </button>
-                    </div>
-                </div>
- 
-                <!-- FILTER -->
-                <div class="sn-filter-bar">
- 
-                    <div class="filter-title">
-                        <i class="fa fa-filter"></i> Filters
-                    </div>
- 
-                    <div class="filter-list">
-                        <div class="filter-row" ng-repeat="f in c.filters track by $index">
- 
-                            <div class="logic-line" ng-if="$index > 0">
-                                <span class="logic-label">{{f.logic}}</span>
-                            </div>
+          </div>
 
-                            <!-- FIELD -->
-                            <select ng-model="f.field"
-                                    ng-options="field.key as field.label for field in c.availableFilterFields">
-                            </select>
+          <div class="filter-bottom-row">
+            <div class="filter-actions">
+              <button class="filter-link-btn" ng-click="c.addFilter('AND')">
+                + Add AND
+              </button>
 
-                            <!-- OPERATOR -->
-                            <select ng-model="f.operator">
-                                <option value="contains">Contains</option>
-                                <option value="starts">Starts With</option>
-                                <option value="is">Is</option>
-                            </select>
-
-                            <!-- VALUE -->
-                            <input type="text"
-                                   ng-model="f.value"
-                                   placeholder="Value">
- 
-                            <button class="remove-filter-btn"
-                                    ng-if="c.filters.length > 1"
-                                    ng-click="c.removeFilter($index)">
-                                ×
-                            </button>
-                        </div>
-                    </div>
- 
-                    <div class="filter-bottom-row">
-                        <div class="filter-actions">
-                            <button class="filter-link-btn" ng-click="c.addFilter('AND')">
-                                + Add AND
-                            </button>
- 
-                            <button class="filter-link-btn" ng-click="c.addFilter('OR')">
-                                + Add OR
-                            </button>
-                        </div>
- 
-                        <button class="select-all-btn" ng-click="c.selectAllRecords()">
-                            {{c.allSelected ? 'Deselect All' : 'Select All'}}
-                        </button>
-                    </div>
-                </div>
-  
-                <!-- RECORD SEARCH BAR -->
-                <div class="record-search-wrapper">
-                    <div class="record-search-bar">
-                        <i class="fa fa-search"></i>
-                        <input type="text"
-                               ng-model="c.recordSearch"
-                               placeholder="Search records...">
-                    </div>
-                </div>
- 
-                <!-- RECORD HEADER -->
-                <div class="record-header">
-
-                    <div>
-                        <input type="checkbox"
-                               ng-checked="c.pageSelectAll"
-                               ng-click="c.toggleCurrentPage()">
-                    </div>
-
-                    <div ng-repeat="col in c.columns">
-                        {{col.label}}
-                    </div>
-
-                    <div>PREVIEW</div>
-                </div>
-
-                <!-- RECORD ROW -->
-                <div class="record-row"
-                     ng-repeat="r in (c.records | filter:c.dynamicFilter | filter:c.recordSearchFilter).slice((c.currentPage-1)*c.pageSize, c.currentPage*c.pageSize)">
-
-                    <div>
-                        <input type="checkbox"
-                               ng-model="r.selected"
-                               ng-change="c.syncSelectionStates()">
-                    </div>
-
-                    <div ng-repeat="col in c.columns">
-
-                        <span ng-if="col.key === 'state'" class="state-pill">
-                            {{c.getStateLabel(r[col.key])}}
-                        </span>
-
-                        <span ng-if="col.key !== 'state'">
-                            {{r[col.key] || '-'}}
-                        </span>
-                    </div>
-
-                    <div class="preview-cell">
-                        <i class="fa fa-eye preview-icon"
-                           ng-click="c.openPreview(r)"></i>
-                    </div>
-                </div>
-
-                <!-- PAGINATION -->
-                <div class="pagination-bar"
-                     ng-if="(c.records | filter:c.dynamicFilter).length > c.pageSize">
- 
-                    <button class="page-btn"
-                            ng-disabled="c.currentPage==1"
-                            ng-click="c.prevPage()">
-                        Previous
-                    </button>
- 
-                    <span>
-                        Page {{c.currentPage}} of {{c.getTotalPages()}}
-                    </span>
- 
-                    <button class="page-btn"
-                            ng-disabled="c.currentPage==c.getTotalPages()"
-                            ng-click="c.nextPage()">
-                        Next
-                    </button>
-                </div>
+              <button class="filter-link-btn" ng-click="c.addFilter('OR')">
+                + Add OR
+              </button>
             </div>
+
+            <button class="select-all-btn" ng-click="c.selectAllRecords()">
+              {{c.allSelected ? 'Deselect All' : 'Select All'}}
+            </button>
+          </div>
         </div>
+
+        <!-- RECORD SEARCH BAR -->
+        <div class="record-search-wrapper">
+          <div class="record-search-bar">
+            <i class="fa fa-search"></i>
+            <input type="text"
+                   ng-model="c.recordSearch"
+                   placeholder="Search records...">
+          </div>
+        </div>
+
+        <!-- RECORD HEADER -->
+        <div class="record-header">
+
+          <div>
+            <input type="checkbox"
+                   ng-checked="c.pageSelectAll"
+                   ng-click="c.toggleCurrentPage()">
+          </div>
+
+          <div ng-repeat="col in c.columns">
+            {{col.label}}
+          </div>
+
+          <div>PREVIEW</div>
+        </div>
+
+        <!-- RECORD ROW -->
+        <div class="record-row"
+             ng-repeat="r in (c.records | filter:c.dynamicFilter | filter:c.recordSearchFilter).slice((c.currentPage-1)*c.pageSize, c.currentPage*c.pageSize)">
+
+          <div>
+            <input type="checkbox"
+                   ng-model="r.selected"
+                   ng-change="c.syncSelectionStates()">
+          </div>
+
+          <div ng-repeat="col in c.columns">
+
+            <span ng-if="col.key === 'state'" class="state-pill">
+              {{c.getStateLabel(r[col.key])}}
+            </span>
+
+            <span ng-if="col.key !== 'state'">
+              {{r[col.key] || '-'}}
+            </span>
+          </div>
+
+          <div class="preview-cell">
+            <i class="fa fa-eye preview-icon"
+               ng-click="c.openPreview(r)"></i>
+          </div>
+        </div>
+
+        <!-- PAGINATION -->
+        <div class="pagination-bar"
+             ng-if="(c.records | filter:c.dynamicFilter).length > c.pageSize">
+
+          <button class="page-btn"
+                  ng-disabled="c.currentPage==1"
+                  ng-click="c.prevPage()">
+            Previous
+          </button>
+
+          <span>
+            Page {{c.currentPage}} of {{c.getTotalPages()}}
+          </span>
+
+          <button class="page-btn"
+                  ng-disabled="c.currentPage==c.getTotalPages()"
+                  ng-click="c.nextPage()">
+            Next
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
   <!-- Migration Modal  -->
   <div class="migration-modal-backdrop" ng-if="c.showModal && !c.isCompleted">
-  <div class="migration-modal modern">
+    <div class="migration-modal modern">
 
-    <!-- CLOSE -->
-    <!--<div class="modal-close" ng-click="c.closeModal()">×</div>-->
+      <!-- CLOSE -->
+      <!--<div class="modal-close" ng-click="c.closeModal()">×</div>-->
 
-    <!-- ICON -->
-   <div class="modal-logo" ng-class="{'icon-animate': c.migrating}">
-  <svg width="150" height="110" viewBox="0 0 133 98" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M93.4217 0H10.2803L37.2925 28.7662H65.3571V57.5325L93.4217 85.5971V0Z" fill="#fff"/>
-<path d="M101.584 0H132.422L101.584 33.8613V0Z" fill="#fff"/>
-<g opacity="0.42" style="mix-blend-mode:multiply">
-<path d="M83.1415 12.0938L0 12.0938L27.0122 40.86L55.0768 40.86L55.0768 69.6262L83.1415 97.6909L83.1415 12.0938Z" fill="#116AF8"/>
-</g>
-</svg>
- 
-</div>
+      <!-- ICON -->
+      <div class="modal-icon" ng-class="{'icon-animate': c.isMigrating}">
+        <svg width="150" height="110" viewBox="0 0 133 98" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M93.4217 0H10.2803L37.2925 28.7662H65.3571V57.5325L93.4217 85.5971V0Z" fill="#fff"/>
+          <path d="M101.584 0H132.422L101.584 33.8613V0Z" fill="#fff"/>
+          <g opacity="0.42" style="mix-blend-mode:multiply">
+            <path d="M83.1415 12.0938L0 12.0938L27.0122 40.86L55.0768 40.86L55.0768 69.6262L83.1415 97.6909L83.1415 12.0938Z" fill="#116AF8"/>
+          </g>
+        </svg>
 
-    <!-- TITLE -->
-    <h2 class="modal-title">Migration in Progress</h2>
-    <p class="modal-subtitle">
-      Migrating your records with intelligent dependency handling
-    </p>
+      </div>
 
-    <!-- STATS -->
-    <div class="modal-stats">
-      <div class="stat-box">
-        <div class="stat-label">Records Processed</div>
-        <div class="stat-value">
-          {{c.inserted + c.updated}} / {{c.total}}
+      <!-- TITLE -->
+      <h2 class="modal-title">Migration in Progress</h2>
+      <p class="modal-subtitle">
+        Migrating your records with intelligent dependency handling
+      </p>
+
+      <!-- STATS -->
+      <div class="modal-stats">
+        <div class="stat-box">
+          <div class="stat-label">Records Processed</div>
+          <div class="stat-value">
+            {{c.inserted + c.updated}} / {{c.total}}
+          </div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Progress</div>
+          <div class="stat-value">
+            {{c.progress}}%
+          </div>
         </div>
       </div>
 
-      <div class="stat-box">
-        <div class="stat-label">Progress</div>
-        <div class="stat-value">
-          {{c.progress}}%
+      <!-- PROGRESS BAR -->
+      <div class="modal-progress-bar">
+        <div class="modal-progress-fill"
+             ng-style="{'width': c.progress + '%'}">
         </div>
       </div>
-    </div>
 
-    <!-- PROGRESS BAR -->
-    <div class="modal-progress-bar">
-      <div class="modal-progress-fill"
-           ng-style="{'width': c.progress + '%'}">
+      <!-- FOOTER TEXT -->
+      <div class="modal-footer-text">
+        Please do not close this window during migration
       </div>
-    </div>
 
-    <!-- FOOTER TEXT -->
-    <div class="modal-footer-text">
-      Please do not close this window during migration
     </div>
-
   </div>
-</div>
-  
-<!--success modal-->
+
+  <!--success modal-->
   <div class="success-modal-backdrop" 
-     ng-if="c.isCompleted && c.showModal"
-     ng-class="{'failure-backdrop': c.migrationResult.error}">
-  <div class="success-modal"
-     ng-class="{'failure-modal': c.migrationResult.error}">
+       ng-if="c.isCompleted && c.showModal"
+       ng-class="{'failure-backdrop': c.migrationResult.error}">
+    <div class="success-modal"
+         ng-class="{'failure-modal': c.migrationResult.error}">
 
-    <!-- CLOSE -->
-    <div class="success-close" ng-click="c.closeModal()">×</div>
+      <!-- CLOSE -->
+      <div class="success-close" ng-click="c.closeModal()">×</div>
 
-    <!-- ICON -->
-    <div class="success-icon"
-     ng-class="{'success-red': c.migrationResult.error}">
+      <!-- ICON -->
+      <div class="success-icon"
+           ng-class="{'success-red': c.migrationResult.error}">
 
-  <span ng-if="c.migrationResult.error">✖</span>
-  <span ng-if="!c.migrationResult.error">✓</span>
+        <span ng-if="c.migrationResult.error">✖</span>
+        <span ng-if="!c.migrationResult.error">✓</span>
 
-</div>
-
-    <!-- TITLE -->
-    <h2 class="success-title">
-  {{ c.migrationResult.error ? 'Migration Failed' : 'Migration Completed Successfully!' }}
-</h2>
-    <p class="success-subtitle">
-  <span ng-if="c.migrationResult.error">
-    {{c.migrationResult.message || 'Something went wrong during migration'}}
-  </span>
-
-  <span ng-if="!c.migrationResult.error">
-    All {{c.total}} records have been migrated successfully
-  </span>
-</p>
-
-    <!-- STATS -->
-    <div class="success-stats" ng-if="!c.migrationResult.error">
-
-      <div class="success-card">
-        <div class="icon green">✓</div>
-        <div class="value">{{c.inserted + c.updated}}</div>
-        <div class="label">Successful</div>
       </div>
 
-      <div class="success-card">
-        <div class="icon dark">⏱</div>
-        <div class="value">{{c.duration || '—'}}</div>
-        <div class="label">Duration</div>
+      <!-- TITLE -->
+      <h2 class="success-title">
+        {{ c.migrationResult.error ? 'Migration Failed' : 'Migration Completed Successfully!' }}
+      </h2>
+      <p class="success-subtitle">
+        <span ng-if="c.migrationResult.error">
+          {{c.migrationResult.message || 'Something went wrong during migration'}}
+        </span>
+
+        <span ng-if="!c.migrationResult.error">
+          All {{c.total}} records have been migrated successfully
+        </span>
+      </p>
+
+      <!-- STATS -->
+      <div class="success-stats" ng-if="!c.migrationResult.error">
+
+        <div class="success-card">
+          <div class="icon green">✓</div>
+          <div class="value">{{c.inserted + c.updated}}</div>
+          <div class="label">Successful</div>
+        </div>
+
+        <div class="success-card">
+          <div class="icon dark">⏱</div>
+          <div class="value">{{c.duration || '—'}}</div>
+          <div class="label">Duration</div>
+        </div>
+
+        <div class="success-card">
+          <div class="icon purple">⛁</div>
+          <div class="value">{{c.tableCount || 0}}</div>
+          <div class="label">Tables</div>
+        </div>
+
       </div>
 
-      <div class="success-card">
-        <div class="icon purple">⛁</div>
-        <div class="value">{{c.tableCount || 0}}</div>
-        <div class="label">Tables</div>
+      <!-- ACTIONS -->
+      <div class="success-actions">
+
+        <a href="/_tracenow?id=tracenow_migration_details" class="details-btn">
+          ]]>📄<![CDATA[ View Details
+        </a>
+
+        <button class="done-btn" ng-click="c.closeModal()">
+          Done →
+        </button>
+
       </div>
 
     </div>
-
-    <!-- ACTIONS -->
-    <div class="success-actions">
-
-      <a href="/_tracenow?id=tracenow_migration_details" class="details-btn">
-        ]]>📄<![CDATA[ View Details
-      </a>
-
-      <button class="done-btn" ng-click="c.closeModal()">
-        Done →
-      </button>
-
-    </div>
-
   </div>
-</div>
   <!-- PREVIEW MODAL -->
-<div class="preview-overlay" ng-if="c.previewOpen">
+  <div class="preview-overlay" ng-if="c.previewOpen">
 
     <div class="preview-modal">
 
-        <div class="preview-header">
-            <h3>Record Preview</h3>
-            <button ng-click="c.closePreview()">×</button>
-        </div>
+      <div class="preview-header">
+        <h3>Record Preview</h3>
+        <button ng-click="c.closePreview()">×</button>
+      </div>
 
-        <div class="preview-grid">
+      <div class="preview-grid">
 
-            <div ng-repeat="(key,val) in c.previewData">
+        <div ng-repeat="(key,val) in c.previewData">
 
-                <label>{{key.replace('_',' ')}}</label>
-                <div>{{val || '-'}}</div>
-
-            </div>
+          <label>{{key.replace('_',' ')}}</label>
+          <div>{{val || '-'}}</div>
 
         </div>
 
+      </div>
+
     </div>
 
-</div>
+  </div>
 
-    <!-- SNACKBAR -->
-    <div class="snackbar" ng-if="c.showSnackbar">
-        {{c.snackbarMessage}}
-    </div>
+  <!-- SNACKBAR -->
+  <div class="snackbar" ng-if="c.showSnackbar">
+    {{c.snackbarMessage}}
+  </div>
 
 </div>
 ]]></template>

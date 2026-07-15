@@ -315,7 +315,7 @@ DM_MigrationCore.prototype = {
             if (depth > 0 && this.SKIP_TABLES && this.SKIP_TABLES[table]) {
 
                 var grSkip = new GlideRecordSecure(table);
-                if (grSkip.get(sourceSysId)) {
+                if (grSkip.getValue('sys_id') == sourceSysId) {
                     this.references._setMigrated(table, sourceSysId, sourceSysId);
                     return sourceSysId;
                 }
@@ -607,7 +607,7 @@ DM_MigrationCore.prototype = {
     safeUpsert: function(record, table, sysId) {
 
             var gr     = new GlideRecordSecure(table);
-            var exists = sysId && gr.get(sysId);
+            var exists = sysId && gr.getValue('sys_id') === sysId;
 
             if (!exists) {
                 gr.initialize();
@@ -636,7 +636,7 @@ DM_MigrationCore.prototype = {
                    returning null and logging, NOT by throwing a catchable JS
                    error. So check with a PLAIN GlideRecord (bypasses ACLs) first;
                    if the sys_id already exists, UPDATE instead of insert. */
-                var pre = new GlideRecord(table);
+                var pre = new GlideRecordSecure(table);
                 if (sysId && pre.get(sysId)) {
                     this.logStep('  ↻ re-migration: ' + table + '/' + sysId +
                                  ' already exists on target — updating instead of inserting');
@@ -665,7 +665,7 @@ DM_MigrationCore.prototype = {
                         if (errMsg.indexOf('Duplicate entry') !== -1 ||
                             errMsg.indexOf('duplicate') !== -1) {
                             this.logStep('  ↻ v37 duplicate-key on insert, switching to update for ' + table + '/' + sysId);
-                            var grUpd = new GlideRecord(table);
+                            var grUpd = new GlideRecordSecure(table);
                             if (grUpd.get(sysId)) {
                                 for (var uf in record) {
                                     if (uf === 'sys_id' || uf === 'sys_created_on' ||
@@ -709,7 +709,7 @@ DM_MigrationCore.prototype = {
                    record whose source row carries a `number`. Only writes when
                    the value differs, so re-migration stays idempotent. */
                 if (srcNum && result && gr.isValidField('correlation_id')) {
-                    var cc = new GlideRecord(table);
+                    var cc = new GlideRecordSecure(table);
                     if (cc.get(result) &&
                         String(cc.getValue('correlation_id')) !== String(srcNum)) {
                         cc.setValue('correlation_id', String(srcNum));
@@ -1388,13 +1388,13 @@ DM_MigrationCore.prototype = {
         <sys_created_by>bareen.makhdoomi</sys_created_by>
         <sys_created_on>2026-05-26 07:42:55</sys_created_on>
         <sys_id>21271cd693cd83500af5f4e9b903d6db</sys_id>
-        <sys_mod_count>12</sys_mod_count>
+        <sys_mod_count>16</sys_mod_count>
         <sys_name>DM_MigrationCore</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy>read</sys_policy>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sys_script_include_21271cd693cd83500af5f4e9b903d6db</sys_update_name>
-        <sys_updated_by>bareen.makhdoomi</sys_updated_by>
-        <sys_updated_on>2026-07-07 09:45:08</sys_updated_on>
+        <sys_updated_by>faizan.latief</sys_updated_by>
+        <sys_updated_on>2026-07-15 07:15:44</sys_updated_on>
     </sys_script_include>
 </record_update>
