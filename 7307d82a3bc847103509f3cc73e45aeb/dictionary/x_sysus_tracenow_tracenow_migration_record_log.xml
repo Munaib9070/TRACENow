@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?><database>
     <element db_object_id="63d12b6893ed07100af5f4e9b903d62e" label="TraceNow Migration Record Log" max_length="40" name="x_sysus_tracenow_tracenow_migration_record_log" type="collection">
-        <element label="Status" max_length="40" name="status" type="string"/>
         <element label="Migration" max_length="32" name="migration" reference="x_sysus_tracenow_migration_details" type="reference"/>
-        <element label="Migration Log" max_length="2000" name="migration_log" type="string"/>
-        <element label="Short Description" max_length="40" name="short_description" type="string"/>
-        <element label="State" max_length="40" name="state" type="string"/>
         <element label="Action" max_length="40" name="action" type="string"/>
-        <element label="Source Sys ID" max_length="40" name="source_sys_id" type="string"/>
-        <element label="Record Number" max_length="40" name="record_number" type="string"/>
-        <element label="Reason" max_length="200" name="reason" type="string"/>
-        <element label="Table" max_length="40" name="table" type="string"/>
         <element label="Duration" max_length="40" name="duration" type="string"/>
+        <element label="Migration Log" max_length="2000" name="migration_log" type="string"/>
+        <element label="Record Number" max_length="40" name="record_number" type="string"/>
+        <element label="Source Sys ID" max_length="40" name="source_sys_id" type="string"/>
+        <element label="Short Description" max_length="40" name="short_description" type="string"/>
+        <element label="Reason" max_length="200" name="reason" type="string"/>
+        <element label="Status" max_length="40" name="status" type="string"/>
+        <element label="State" max_length="40" name="state" type="string"/>
+        <element label="Table" max_length="40" name="table" type="string"/>
         <index name="index">
             <element name="migration"/>
         </index>

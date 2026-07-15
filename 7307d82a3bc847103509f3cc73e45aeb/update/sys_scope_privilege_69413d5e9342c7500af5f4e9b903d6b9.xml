@@ -16,7 +16,7 @@
         <sys_updated_by>bareen.makhdoomi</sys_updated_by>
         <sys_updated_on>2026-07-15 07:19:06</sys_updated_on>
         <target_name>sn_openframe_phone_log</target_name>
-        <target_scope display_value="Openframe">3d7925f9eb5002003e97afcef106fee6</target_scope>
+        <target_scope display_value="">3d7925f9eb5002003e97afcef106fee6</target_scope>
         <target_type>sys_db_object</target_type>
     </sys_scope_privilege>
 </record_update>

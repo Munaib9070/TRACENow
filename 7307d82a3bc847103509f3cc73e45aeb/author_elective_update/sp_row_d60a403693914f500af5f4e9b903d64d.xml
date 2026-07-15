@@ -44,7 +44,7 @@
         <update_guid_history>9a0a403669914f50b4a40b960a5a1850:2121588471</update_guid_history>
     </sys_update_version>
     <sys_metadata_delete action="INSERT_OR_UPDATE">
-        <sys_audit_delete display_value="1">9ad20f3e93558f500af5f4e9b903d690</sys_audit_delete>
+        <sys_audit_delete display_value="">9ad20f3e93558f500af5f4e9b903d690</sys_audit_delete>
         <sys_class_name>sys_metadata_delete</sys_class_name>
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-06-09 19:45:23</sys_created_on>

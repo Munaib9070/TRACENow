@@ -4,22 +4,22 @@
         <license_condition/>
         <license_model>none</license_model>
         <license_roles/>
-        <name>x_sysus_tracenow_tracenow_migration_record_log</name>
+        <name>x_sysus_tracenow_support_request</name>
         <op_delete>true</op_delete>
         <op_insert>true</op_insert>
         <op_update>true</op_update>
         <owner_condition/>
         <sys_class_name>ua_table_licensing_config</sys_class_name>
-        <sys_created_by>faizan.latief</sys_created_by>
-        <sys_created_on>2026-06-15 08:31:18</sys_created_on>
-        <sys_id>fa1223a893ed07100af5f4e9b903d61e</sys_id>
+        <sys_created_by>munaib.ashraf</sys_created_by>
+        <sys_created_on>2026-05-26 07:48:45</sys_created_on>
+        <sys_id>3769a3da934e0310ae6879b877373ca4</sys_id>
         <sys_mod_count>0</sys_mod_count>
-        <sys_name>x_sysus_tracenow_tracenow_migration_record_log</sys_name>
+        <sys_name>x_sysus_tracenow_support_request</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
-        <sys_update_name>ua_table_licensing_config_fa1223a893ed07100af5f4e9b903d61e</sys_update_name>
-        <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-06-15 08:31:18</sys_updated_on>
+        <sys_update_name>ua_table_licensing_config_3769a3da934e0310ae6879b877373ca4</sys_update_name>
+        <sys_updated_by>munaib.ashraf</sys_updated_by>
+        <sys_updated_on>2026-05-26 07:48:45</sys_updated_on>
     </ua_table_licensing_config>
 </record_update>

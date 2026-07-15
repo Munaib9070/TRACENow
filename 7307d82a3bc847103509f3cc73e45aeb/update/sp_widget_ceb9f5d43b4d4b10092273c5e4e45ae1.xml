@@ -122,8 +122,7 @@ var interval = setInterval(function () {
 
     //  Wait for data + DOM
     $timeout(loadCharts, 500);
-};
-]]></client_script>
+};]]></client_script>
         <controller_as>c</controller_as>
         <css>/* ===== PAGE LAYOUT FIX ===== */
 .dm-page-layout {

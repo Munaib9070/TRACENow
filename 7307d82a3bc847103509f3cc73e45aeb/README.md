@@ -28,8 +28,8 @@ If you find yourself unable to import your repository due to the presence of fil
    * Virtual Agent Service Portal Widgets
    * Virtual Agent Platform Topic Blocks
    * Virtual Agent integration with notifications
-   * Virtual Agent Language Detection and Translation
-   * Virtual Agent integration with actionable notifications
+   * 
+   * 
    * Virtual Agent Spoke
    * Virtual Agent Platform Topics
    * Virtual Agent Designer

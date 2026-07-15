@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sys_package_dependency_m2m">
     <sys_package_dependency_m2m action="INSERT_OR_UPDATE">
-        <dependency display_value="Virtual Agent Spoke" source="com.glide.cs.va_spoke">9c04777704b52210559073c06a02f787</dependency>
+        <dependency display_value="Virtual Agent Spoke" source="com.glide.cs.va_spoke">2314c5cab12d03104dfacd84f170696a</dependency>
         <min_version>1.0.0</min_version>
         <sys_created_by>bareen.makhdoomi</sys_created_by>
         <sys_created_on>2026-06-22 11:43:56</sys_created_on>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sys_package_dependency_m2m">
     <sys_package_dependency_m2m action="INSERT_OR_UPDATE">
-        <dependency display_value="Virtual Agent Web Client" source="com.glide.cs.sn-va-web-client-app">b3e3b37704b52210559073c06a02f7d2</dependency>
+        <dependency display_value="Virtual Agent Web Client" source="com.glide.cs.sn-va-web-client-app">121485cab12d03104dfacd84f17069ff</dependency>
         <min_version>27.4.3</min_version>
         <sys_created_by>bareen.makhdoomi</sys_created_by>
         <sys_created_on>2026-06-22 11:43:56</sys_created_on>

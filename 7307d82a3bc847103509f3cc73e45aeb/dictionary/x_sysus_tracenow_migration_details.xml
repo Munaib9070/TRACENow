@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?><database>
     <element db_object_id="1d495c2e3bc847103509f3cc73e45abc" label="Migration details" max_length="40" name="x_sysus_tracenow_migration_details" type="collection">
-        <element attributes="edge_encryption_enabled=true" default="javascript:global.getNextObjNumberPadded();" label="Number" max_length="40" name="number" type="string"/>
-        <element label="Records Fetched" max_length="40" name="records_fetched" type="integer"/>
+        <element label="Records Failed" max_length="40" name="records_failed" type="string"/>
+        <element label="Records Updated" max_length="40" name="records_updated" type="string"/>
         <element label="Instance URL" max_length="150" name="instance_url" type="string"/>
         <element label="Execution Logs" max_length="1000" name="execution_logs" type="string"/>
-        <element label="Records Inserted" max_length="40" name="records_inserted" type="integer"/>
-        <element label="Duration" max_length="100" name="duration" type="string"/>
-        <element label="Records Failed" max_length="40" name="records_failed" type="string"/>
         <element label="Target Instance" max_length="40" name="target_instance" type="string"/>
-        <element label="Table" max_length="500" name="table" type="string"/>
-        <element label="Completed At" max_length="10" name="completed_at" type="string"/>
-        <element label="Records Updated" max_length="40" name="records_updated" type="string"/>
         <element label="Success Rate" max_length="40" name="success_rate" type="integer"/>
+        <element attributes="edge_encryption_enabled=true" default="javascript:global.getNextObjNumberPadded();" label="Number" max_length="40" name="number" type="string"/>
+        <element label="Records Inserted" max_length="40" name="records_inserted" type="integer"/>
+        <element label="Table" max_length="500" name="table" type="string"/>
         <element label="Started At" max_length="100" name="started_at" type="string"/>
+        <element label="Records Fetched" max_length="40" name="records_fetched" type="integer"/>
+        <element label="Duration" max_length="100" name="duration" type="string"/>
+        <element label="Completed At" max_length="10" name="completed_at" type="string"/>
     </element>
 </database>

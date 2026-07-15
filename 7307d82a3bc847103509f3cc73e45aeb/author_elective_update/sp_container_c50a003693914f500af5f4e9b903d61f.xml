@@ -52,7 +52,7 @@
         <update_guid_history>681a0036b5914f50e56fff7f9d174e8b:-381746460,c50a00368a914f50d415d26ca52efb23:583362497</update_guid_history>
     </sys_update_version>
     <sys_metadata_delete action="INSERT_OR_UPDATE">
-        <sys_audit_delete display_value="Tracenow Privacy Policy - Container 1">9ad20f3e93558f500af5f4e9b903d68c</sys_audit_delete>
+        <sys_audit_delete display_value="">9ad20f3e93558f500af5f4e9b903d68c</sys_audit_delete>
         <sys_class_name>sys_metadata_delete</sys_class_name>
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-06-09 19:45:23</sys_created_on>

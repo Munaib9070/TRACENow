@@ -96,7 +96,7 @@
         <update_guid_history>69c799d8f4018710ab00a06445e70da5:138054113</update_guid_history>
     </sys_update_version>
     <sys_metadata_delete action="INSERT_OR_UPDATE">
-        <sys_audit_delete display_value="DMM_header">489879d0930587100af5f4e9b903d6a6</sys_audit_delete>
+        <sys_audit_delete display_value="">489879d0930587100af5f4e9b903d6a6</sys_audit_delete>
         <sys_class_name>sys_metadata_delete</sys_class_name>
         <sys_created_by>bareen.makhdoomi</sys_created_by>
         <sys_created_on>2026-05-20 09:40:19</sys_created_on>

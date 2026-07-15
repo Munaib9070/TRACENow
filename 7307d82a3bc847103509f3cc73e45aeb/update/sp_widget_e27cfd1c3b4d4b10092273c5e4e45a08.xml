@@ -642,8 +642,7 @@
 		}
 	};
 
-};
-]]></client_script>
+};]]></client_script>
         <controller_as>c</controller_as>
         <css>.browse-layout {
   display: flex;
@@ -1846,7 +1845,6 @@ button:disabled {
 			}
 			result = (ok > 0);
 			if(result) {
-				console.log('result done');
 				//update number of new inserted record
 				recordsToMigrate.forEach(function(rec) {
 					var bridge = new global.DM_GlobalNumberBridge();
@@ -2059,7 +2057,6 @@ button:disabled {
 		}
 
 		catch (e) {
-			console.log('migration_logs = ' + JSON.stringify(migration_logs));
 			data.success = false;
 			data.message = "All " + input.totalrecs + " record(s) failed to migrate.";
 
@@ -2365,14 +2362,14 @@ button:disabled {
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-20 09:57:42</sys_created_on>
         <sys_id>e27cfd1c3b4d4b10092273c5e4e45a08</sys_id>
-        <sys_mod_count>176</sys_mod_count>
+        <sys_mod_count>177</sys_mod_count>
         <sys_name>tracenow_browse_tables</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
         <sys_update_name>sp_widget_e27cfd1c3b4d4b10092273c5e4e45a08</sys_update_name>
         <sys_updated_by>faizan.latief</sys_updated_by>
-        <sys_updated_on>2026-07-15 09:14:01</sys_updated_on>
+        <sys_updated_on>2026-07-15 16:10:07</sys_updated_on>
         <template><![CDATA[<div class="browse-layout"> 
   <!-- SIDEBAR -->
   <div class="dm-sidebar-slot">
@@ -2787,7 +2784,6 @@ button:disabled {
     {{c.snackbarMessage}}
   </div>
 
-</div>
-]]></template>
+</div>]]></template>
     </sp_widget>
 </record_update>

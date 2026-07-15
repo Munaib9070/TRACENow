@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?><database>
     <element db_object_id="196818da3bc18310092273c5e4e45a22" label="Support Request" max_length="40" name="x_sysus_tracenow_support_request" type="collection">
-        <element label="Description" max_length="40" name="description" type="string"/>
         <element label="Subject" max_length="40" name="subject" type="string"/>
-        <element label="Email" max_length="40" name="email" type="string"/>
-        <element label="Full Name" max_length="40" name="full_name" type="string"/>
-        <element choice="1" label="State" max_length="40" name="state" type="choice">
-            <choice>
-                <element inactive_on_update="false" label="Closed" sequence="0" value="closed"/>
-                <element inactive_on_update="false" label="Pending" sequence="1" value="pending"/>
-                <element inactive_on_update="false" label="Resolved" sequence="2" value="resolved"/>
-            </choice>
-        </element>
         <element attributes="ignore_filter_on_new=true" default="javascript:global.getNextObjNumberPadded();" label="Number" max_length="40" name="number" type="string"/>
+        <element label="Email" max_length="40" name="email" type="string"/>
         <element choice="1" label="Issue Type" max_length="40" name="issue_type" type="choice">
             <choice>
-                <element inactive_on_update="false" label="Migration Issue" sequence="0" value="migration_issue"/>
-                <element inactive_on_update="false" label="API Issue" sequence="1" value="api_issue"/>
                 <element inactive_on_update="false" label="Performance" sequence="3" value="performance"/>
                 <element inactive_on_update="false" label="Authentication" sequence="2" value="authentication"/>
+                <element inactive_on_update="false" label="API Issue" sequence="1" value="api_issue"/>
+                <element inactive_on_update="false" label="Migration Issue" sequence="0" value="migration_issue"/>
             </choice>
         </element>
+        <element label="Full Name" max_length="40" name="full_name" type="string"/>
         <element choice="1" label="Priority" max_length="40" name="priority" type="choice">
             <choice>
-                <element inactive_on_update="false" label="High" sequence="2" value="high"/>
-                <element inactive_on_update="false" label="Critical" sequence="3" value="critical"/>
-                <element inactive_on_update="false" label="Medium" sequence="1" value="medium"/>
                 <element inactive_on_update="false" label="Low" sequence="0" value="low"/>
+                <element inactive_on_update="false" label="Critical" sequence="3" value="critical"/>
+                <element inactive_on_update="false" label="High" sequence="2" value="high"/>
+                <element inactive_on_update="false" label="Medium" sequence="1" value="medium"/>
+            </choice>
+        </element>
+        <element label="Description" max_length="40" name="description" type="string"/>
+        <element choice="1" label="State" max_length="40" name="state" type="choice">
+            <choice>
+                <element inactive_on_update="false" label="Resolved" sequence="2" value="resolved"/>
+                <element inactive_on_update="false" label="Pending" sequence="1" value="pending"/>
+                <element inactive_on_update="false" label="Closed" sequence="0" value="closed"/>
             </choice>
         </element>
     </element>

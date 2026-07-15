@@ -81,7 +81,7 @@
         <update_guid_history>37a84e189fcd4b10a2eb15671bbae767:-540874396</update_guid_history>
     </sys_update_version>
     <sys_metadata_delete action="INSERT_OR_UPDATE">
-        <sys_audit_delete display_value="Connection">2909ce183bcd4b10092273c5e4e45aa9</sys_audit_delete>
+        <sys_audit_delete display_value="">2909ce183bcd4b10092273c5e4e45aa9</sys_audit_delete>
         <sys_class_name>sys_metadata_delete</sys_class_name>
         <sys_created_by>munaib.ashraf</sys_created_by>
         <sys_created_on>2026-05-20 10:52:14</sys_created_on>

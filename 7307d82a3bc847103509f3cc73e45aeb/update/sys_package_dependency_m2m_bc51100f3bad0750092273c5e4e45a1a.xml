@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sys_package_dependency_m2m">
     <sys_package_dependency_m2m action="INSERT_OR_UPDATE">
-        <dependency display_value="Virtual Agent Platform Topics" source="com.glide.cs.topics">79d37f3704b52210559073c06a02f7ed</dependency>
+        <dependency display_value="Virtual Agent Platform Topics" source="com.glide.cs.topics">f6044d8ab12d03104dfacd84f170695b</dependency>
         <min_version>1.0.0</min_version>
         <sys_created_by>bareen.makhdoomi</sys_created_by>
         <sys_created_on>2026-06-22 11:43:56</sys_created_on>

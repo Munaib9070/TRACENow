@@ -5,8 +5,10 @@
         <css_variables/>
         <dark_theme/>
         <default>false</default>
+        <embeddable_macroponents/>
         <enable_ais>true</enable_ais>
         <enable_certificate_based_authentication>false</enable_certificate_based_authentication>
+        <enable_embeddables>false</enable_embeddables>
         <enable_favorites>false</enable_favorites>
         <hide_portal_name>false</hide_portal_name>
         <homepage display_value="tracennow_dashboard">ca20ed98934187100af5f4e9b903d6f0</homepage>
@@ -16,6 +18,7 @@
         <kb_knowledge_page/>
         <login_page display_value="login">6995a144cb11120000f8d856634c9c25</login_page>
         <logo>a1158618934587100af5f4e9b903d622</logo>
+        <logo_alt_text/>
         <notfound_page/>
         <quick_start_config/>
         <rtl_enabled>false</rtl_enabled>
@@ -49,7 +52,6 @@
         <chunk_size_bytes>700000</chunk_size_bytes>
         <compressed>true</compressed>
         <content_type>image/svg+xml</content_type>
-        <encryption_context/>
         <file_name>icon</file_name>
         <hash>8fa72fd5a520cd2fb8d18c443c8a601f051a41d50e9f1b59acca9ecefb42e418</hash>
         <image_height/>
@@ -89,7 +91,6 @@
         <chunk_size_bytes>700000</chunk_size_bytes>
         <compressed>true</compressed>
         <content_type>image/svg+xml</content_type>
-        <encryption_context/>
         <file_name>logo</file_name>
         <hash>e59009ac120a2dbab067af776c73066a73801002843122bf02738e74481de9b9</hash>
         <image_height/>

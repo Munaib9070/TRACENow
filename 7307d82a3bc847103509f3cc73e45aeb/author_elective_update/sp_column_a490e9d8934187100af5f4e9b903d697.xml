@@ -47,7 +47,7 @@
         <update_guid_history>e890e9d8ca4187107cee90ac9acc9a9a:128940643</update_guid_history>
     </sys_update_version>
     <sys_metadata_delete action="INSERT_OR_UPDATE">
-        <sys_audit_delete display_value="1">4bb44ad4934587100af5f4e9b903d645</sys_audit_delete>
+        <sys_audit_delete display_value="">4bb44ad4934587100af5f4e9b903d645</sys_audit_delete>
         <sys_class_name>sys_metadata_delete</sys_class_name>
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 10:33:29</sys_created_on>

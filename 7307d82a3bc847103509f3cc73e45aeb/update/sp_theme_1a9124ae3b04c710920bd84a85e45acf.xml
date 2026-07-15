@@ -4,6 +4,7 @@
         <footer/>
         <footer_fixed>true</footer_fixed>
         <header display_value="tracenow_header">8ee97d54930587100af5f4e9b903d693</header>
+        <matching_now_experience_theme/>
         <name>TraceNow</name>
         <navbar_fixed>true</navbar_fixed>
         <sys_class_name>sp_theme</sys_class_name>

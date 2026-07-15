@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="kb_uc_can_read_mtom">
     <kb_uc_can_read_mtom action="INSERT_OR_UPDATE">
-        <kb_knowledge_base display_value="TraceNow">7ee6cec39399cf500af5f4e9b903d6ae</kb_knowledge_base>
+        <kb_knowledge_base display_value="">7ee6cec39399cf500af5f4e9b903d6ae</kb_knowledge_base>
         <sys_class_name>kb_uc_can_read_mtom</sys_class_name>
         <sys_created_by>bareen.makhdoomi</sys_created_by>
         <sys_created_on>2026-06-10 10:02:35</sys_created_on>
@@ -15,6 +15,6 @@
         <sys_update_name>kb_uc_can_read_mtom_4707c6079399cf500af5f4e9b903d6c0</sys_update_name>
         <sys_updated_by>bareen.makhdoomi</sys_updated_by>
         <sys_updated_on>2026-06-10 10:02:35</sys_updated_on>
-        <user_criteria display_value="Any User">f747c16473e72010565db0a8d4f6a7e2</user_criteria>
+        <user_criteria display_value="">f747c16473e72010565db0a8d4f6a7e2</user_criteria>
     </kb_uc_can_read_mtom>
 </record_update>

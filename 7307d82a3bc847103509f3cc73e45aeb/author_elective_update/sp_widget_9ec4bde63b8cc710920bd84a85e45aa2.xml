@@ -94,7 +94,7 @@
         <update_guid_history>f1c799d88a018710bdc3a04e9615dcb9:505248245</update_guid_history>
     </sys_update_version>
     <sys_metadata_delete action="INSERT_OR_UPDATE">
-        <sys_audit_delete display_value="Tracenow Home">d89879d0930587100af5f4e9b903d6f5</sys_audit_delete>
+        <sys_audit_delete display_value="">d89879d0930587100af5f4e9b903d6f5</sys_audit_delete>
         <sys_class_name>sys_metadata_delete</sys_class_name>
         <sys_created_by>irfan.wani</sys_created_by>
         <sys_created_on>2026-05-20 09:40:20</sys_created_on>

@@ -28,8 +28,7 @@
   c.goBack = function() {
     $location.search({ id: "your_main_dashboard_page" });
   };
-};
-]]></client_script>
+};]]></client_script>
         <controller_as>c</controller_as>
         <css>.layout {
   display: flex;
@@ -522,8 +521,7 @@
     });
   }
 
-})();
-]]></script>
+})();]]></script>
         <servicenow>false</servicenow>
         <sys_class_name>sp_widget</sys_class_name>
         <sys_created_by>munaib.ashraf</sys_created_by>

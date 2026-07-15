@@ -116,7 +116,7 @@
         <update_guid_history>21c799d8750187105b2e94fb1680e2b5:210383725</update_guid_history>
     </sys_update_version>
     <sys_metadata_delete action="INSERT_OR_UPDATE">
-        <sys_audit_delete display_value="test widget">d89879d0930587100af5f4e9b903d6e3</sys_audit_delete>
+        <sys_audit_delete display_value="">d89879d0930587100af5f4e9b903d6e3</sys_audit_delete>
         <sys_class_name>sys_metadata_delete</sys_class_name>
         <sys_created_by>muslim.altaf</sys_created_by>
         <sys_created_on>2026-05-20 09:40:19</sys_created_on>

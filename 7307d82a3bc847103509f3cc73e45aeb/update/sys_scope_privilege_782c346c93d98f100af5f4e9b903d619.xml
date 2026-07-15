@@ -16,7 +16,7 @@
         <sys_updated_by>bareen.makhdoomi</sys_updated_by>
         <sys_updated_on>2026-06-02 10:10:28</sys_updated_on>
         <target_name>comm_task</target_name>
-        <target_scope display_value="Task Communications Management">8dfe92d95373030029200ef5d5dc348a</target_scope>
+        <target_scope display_value="">8dfe92d95373030029200ef5d5dc348a</target_scope>
         <target_type>sys_db_object</target_type>
     </sys_scope_privilege>
 </record_update>

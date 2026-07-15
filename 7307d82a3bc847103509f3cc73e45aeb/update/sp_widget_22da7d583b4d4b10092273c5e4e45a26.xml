@@ -63,8 +63,7 @@ c.goToDetails = function(status) {
 
   $location.url(url);
 };	
-};
-]]></client_script>
+};]]></client_script>
         <controller_as>c</controller_as>
         <css>/* LAYOUT */
 .layout {

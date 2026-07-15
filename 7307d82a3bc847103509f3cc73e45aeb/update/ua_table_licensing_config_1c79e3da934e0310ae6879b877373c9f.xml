@@ -4,22 +4,22 @@
         <license_condition/>
         <license_model>none</license_model>
         <license_roles/>
-        <name>x_sysus_tracenow_support_request</name>
+        <name>x_sysus_tracenow_connection</name>
         <op_delete>true</op_delete>
         <op_insert>true</op_insert>
         <op_update>true</op_update>
         <owner_condition/>
         <sys_class_name>ua_table_licensing_config</sys_class_name>
-        <sys_created_by>munaib.ashraf</sys_created_by>
-        <sys_created_on>2026-05-26 07:48:45</sys_created_on>
-        <sys_id>14989cda3bc18310092273c5e4e45aff</sys_id>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2026-04-07 09:22:44</sys_created_on>
+        <sys_id>1c79e3da934e0310ae6879b877373c9f</sys_id>
         <sys_mod_count>0</sys_mod_count>
-        <sys_name>x_sysus_tracenow_support_request</sys_name>
+        <sys_name>x_sysus_tracenow_connection</sys_name>
         <sys_package display_value="TRACENow" source="x_sysus_tracenow">7307d82a3bc847103509f3cc73e45aeb</sys_package>
         <sys_policy/>
         <sys_scope display_value="TRACENow">7307d82a3bc847103509f3cc73e45aeb</sys_scope>
-        <sys_update_name>ua_table_licensing_config_14989cda3bc18310092273c5e4e45aff</sys_update_name>
-        <sys_updated_by>munaib.ashraf</sys_updated_by>
-        <sys_updated_on>2026-05-26 07:48:45</sys_updated_on>
+        <sys_update_name>ua_table_licensing_config_1c79e3da934e0310ae6879b877373c9f</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2026-04-07 09:22:44</sys_updated_on>
     </ua_table_licensing_config>
 </record_update>
